@@ -1,0 +1,6 @@
+Fitting a 2nd degree polynome.
+Solution for x=6:  8.72488386947
+Fitting a 3rd degree polynome.
+Solution for x=6:  10.6243459038
+Fitting a 3rd degree polynome for log(x).
+Solution for x=6:  44.4388619477
