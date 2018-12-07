@@ -3,4 +3,4 @@ Logs/
 *.log
 *.nav
 *.synctex.gz
-
+*.o
