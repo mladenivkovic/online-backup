@@ -1,0 +1,11 @@
+This directory stores various scripts / programs 
+that I sorted in another directory (i.e. that don't belong
+in this repo) but want to have an online backup of.
+
+use the scripts scrbackup.sh in projects/scripts/ to create
+links. It will write down the origin of the file in 
+original_links.txt.
+Then you can use scrbackuprestore.sh to restore them when
+you need them restored.
+'Restore' means re-create the links from the original source
+path.
