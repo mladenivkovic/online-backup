@@ -1,1 +1,2 @@
 /home/mivkov/EPFL/Meshless_Methods/visualise_effective_area/two_particles/visualise_meshless_effective_area.py:/home/mivkov/coding/projekte/online-backup/meshless/visualise_effective_area_two_particles.py
+/home/mivkov/EPFL/Meshless_Methods/visualise_effective_area/uniform/visualise_uniform.py:/home/mivkov/coding/projekte/online-backup/meshless/visualize_effective_area_uniform_grid.py
