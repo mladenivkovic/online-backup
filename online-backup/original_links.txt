@@ -4,3 +4,4 @@
 /home/mivkov/EPFL/Meshless_Methods/visualise_effective_area/displaced_uniform/run.sh:/home/mivkov/coding/projekte/online-backup/meshless/run-uniform-with-displaced-particle.sh
 /home/mivkov/EPFL/Meshless_Methods/visualise_effective_area/displaced_uniform/makeIC.py:/home/mivkov/coding/projekte/online-backup/meshless/makeIC-with-displaced-particle.py
 /home/mivkov/EPFL/Meshless_Methods/visualise_effective_area/perturbed_uniform/visualise_perturbed.py:/home/mivkov/coding/projekte/online-backup/meshless/visualize_effective_area_perturbed_uniform_grid_with_displaced_particle.py
+/home/mivkov/EPFL/Meshless_Methods/visualise_effective_area/A_of_x_for_fixed_particles/visualise_A_of_x.py:/home/mivkov/coding/projekte/online-backup//meshless/visualize_effective_area_uniform_grid_A_of_x.py
