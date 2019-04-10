@@ -436,7 +436,7 @@ def main():
     uplim2 = uplim
     lowlim2 = lowlim
 
-    cmap = 'jet'
+    cmap = 'viridis'
 
     im1 = ax1.imshow(Ax, origin='lower', 
             vmin=xmin, vmax=xmax, cmap=cmap,

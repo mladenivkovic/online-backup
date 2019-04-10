@@ -26,7 +26,7 @@ boxSize = 1
 # border limits for plots
 lowlim = 0.35
 uplim = 0.55
-nx = 200
+nx = 100
 tol = 1e-5 # tolerance for float comparison
 
 
@@ -316,7 +316,7 @@ def main():
     uplim2 = uplim
     lowlim2 = lowlim
 
-    cmap = 'jet'
+    cmap = 'viridis'
 
     im1 = ax1.imshow(Ax, origin='lower', 
             vmin=xmin, vmax=xmax, cmap=cmap,

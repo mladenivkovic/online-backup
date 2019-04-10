@@ -157,7 +157,7 @@ def plot_3d(Ax, Ay, Az):
             for k in range(nx):
                 z = (k+0.5)*dx
 
-                sp = ax1.scatter3D(x, y, z, c=[A[i,j,k]], cmap='jet', vmin=cmin, vmax=cmax)
+                sp = ax1.scatter3D(x, y, z, c=[A[i,j,k]], cmap='viridis', vmin=cmin, vmax=cmax)
 
 
     ax1.set_xlabel('x')
@@ -210,21 +210,21 @@ def plot_2d_slices(Ax, Ay, Az):
             ax2 = axes[1][s]
             ax3 = axes[2][s]
 
-            i1 = ax1.imshow(A[ind, :, :], cmap='jet', origin='lower', 
+            i1 = ax1.imshow(A[ind, :, :], cmap='viridis', origin='lower', 
                 extent=(0, boxlen, 0, boxlen), vmin=cmin, vmax=cmax)
             ax1.set_xlabel('y')
             ax1.set_ylabel('z')
             ax1.set_title('along x = {0:6.3f}'.format(sliceval))
             fig.colorbar(i1, ax=ax1)
         
-            i2 = ax2.imshow(A[:, ind, :], cmap='jet', origin='lower',
+            i2 = ax2.imshow(A[:, ind, :], cmap='viridis', origin='lower',
                 extent=(0, boxlen, 0, boxlen), vmin=cmin, vmax=cmax)
             ax2.set_xlabel('x')
             ax2.set_ylabel('z')
             ax2.set_title('along y = {0:6.3f}'.format(sliceval))
             fig.colorbar(i2, ax=ax2)
 
-            i3 = ax3.imshow(A[:, :, ind], cmap='jet', origin='lower',
+            i3 = ax3.imshow(A[:, :, ind], cmap='viridis', origin='lower',
                 extent=(0, boxlen, 0, boxlen), vmin=cmin, vmax=cmax)
             ax3.set_xlabel('x')
             ax3.set_ylabel('y')
@@ -268,21 +268,21 @@ def plot_2d_sums(Ax, Ay, Az):
         ax2 = fig.add_subplot(1, 3, 2)
         ax3 = fig.add_subplot(1, 3, 3)
 
-        i1 = ax1.imshow(np.sum(A,0), cmap='jet', origin='lower', 
+        i1 = ax1.imshow(np.sum(A,0), cmap='viridis', origin='lower', 
             extent=(0, boxlen, 0, boxlen))
         ax1.set_xlabel('y')
         ax1.set_ylabel('z')
         ax3.set_title('along x axis')
         fig.colorbar(i1, ax=ax1)
     
-        i2 = ax2.imshow(np.sum(A,1), cmap='jet', origin='lower',
+        i2 = ax2.imshow(np.sum(A,1), cmap='viridis', origin='lower',
             extent=(0, boxlen, 0, boxlen))
         ax2.set_xlabel('x')
         ax2.set_ylabel('z')
         ax3.set_title('along y axis')
         fig.colorbar(i2, ax=ax2)
 
-        i3 = ax3.imshow(np.sum(A,2), cmap='jet', origin='lower',
+        i3 = ax3.imshow(np.sum(A,2), cmap='viridis', origin='lower',
             extent=(0, boxlen, 0, boxlen))
         ax3.set_xlabel('x')
         ax3.set_ylabel('y')
