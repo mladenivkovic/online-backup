@@ -435,7 +435,7 @@ def main():
     uplim2 = uplim
     lowlim2 = lowlim
 
-    cmap = 'viridis'
+    cmap = 'YlGnBu_r'
 
     im1 = ax1.imshow(Ax, origin='lower', 
             vmin=xmin, vmax=xmax, cmap=cmap,

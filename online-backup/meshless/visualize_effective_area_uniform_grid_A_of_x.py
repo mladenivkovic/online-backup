@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 
 #===============================================================
-# Visualize effectife area for a chosen particle at various
-# positions within an otherwise uniform grid with respect to
-# the particle at (0.5, 0.5).
+# Compute A(x) between two specified particles at various
+# positions x
 #===============================================================
 
 
@@ -25,7 +24,7 @@ boxSize = 1
 # border limits for plots
 lowlim = 0.35
 uplim = 0.55
-nx = 100
+nx = 300
 tol = 1e-5 # tolerance for float comparison
 
 
@@ -315,7 +314,7 @@ def main():
     uplim2 = uplim
     lowlim2 = lowlim
 
-    cmap = 'viridis'
+    cmap = 'YlGnBu_r'
 
 
 
