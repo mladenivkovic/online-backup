@@ -131,7 +131,7 @@ def psi(x, y, xi, yi, h):
     UNNORMALIZED Volume fraction at position x of some particle part
     ind: neighbour index in x/y/h array
     """
-    q = np.sqrt((x - xi)**2 + (y - yi)**2)/h
+    q = np.float128(np.sqrt((x - xi)**2 + (y - yi)**2)/h)
 
     return W(q)
 
@@ -169,7 +169,7 @@ def compute_psi(xi, yi, xj, yj, h):
     """
 
     # psi_j(x_i)
-    psi_j = np.zeros(xj.shape[0], dtype=np.float)
+    psi_j = np.zeros(xj.shape[0], dtype=np.float128)
 
     for i in range(xj.shape[0]):
         psi_j[i] = psi(xi, yi, xj[i], yj[i], h)
@@ -202,6 +202,7 @@ def get_effective_surface(x, y, h, rho, m, nbors):
     # normalize psi_j. Don't forget to add the self-contributing value!
     omega_xi =  (np.sum(psi_j) + psi(x[pind], y[pind], x[pind], y[pind], h[pind]))
     psi_j /= omega_xi
+    psi_j = np.float64(psi_j)
 
     # compute B_i
     B_i = get_matrix(x[pind], y[pind], xj, yj, psi_j)
@@ -235,7 +236,7 @@ def get_effective_surface(x, y, h, rho, m, nbors):
     omega_xj = (np.sum(psi_k) + psi(x[cind], y[cind], x[cind], y[cind], h[cind]))
 
     psi_i/= omega_xj
-
+    psi_i = np.float64(psi_i)
 
     # now compute B_j^{\alpha \beta}
     B_j = get_matrix(x[cind], y[cind], xk, yk, h[cind])

@@ -167,7 +167,7 @@ def psi(x, y, xi, yi, h):
     UNNORMALIZED Volume fraction at position x of some particle part
     ind: neighbour index in x/y/h array
     """
-    q = np.sqrt((x - xi)**2 + (y - yi)**2)/h
+    q = np.float128(np.sqrt((x - xi)**2 + (y - yi)**2)/h)
 
     return W(q)
 
@@ -205,7 +205,7 @@ def compute_psi(xi, yi, xj, yj, h):
     """
 
     # psi_j(x_i)
-    psi_j = np.zeros(xj.shape[0], dtype=np.float)
+    psi_j = np.zeros(xj.shape[0], dtype=np.float128)
 
     for i in range(xj.shape[0]):
         psi_j[i] = psi(xi, yi, xj[i], yj[i], h)
@@ -243,6 +243,7 @@ def get_effective_surfaces():
     # normalize psi_j
     omega_xi =  (np.sum(psi_j) + psi(x[pind], y[pind], x[pind], y[pind], h[pind]))
     psi_j /= omega_xi
+    psi_j = np.float64(psi_j)
 
     # compute B_i
     B_i = get_matrix(x[pind], y[pind], xj, yj, psi_j)
@@ -259,7 +260,7 @@ def get_effective_surfaces():
     # Part 2: values of psi/grad_psi of particle i at neighbour positions x_j
     #---------------------------------------------------------------------------
 
-    psi_i = np.zeros(len(nbors), dtype=np.float)            # psi_i(xj)
+    psi_i = np.zeros(len(nbors), dtype=np.float128)            # psi_i(xj)
     grad_psi_i = np.empty((len(nbors), 2), dtype=np.float)  # grad_psi_i(x_j)
 
     for i,n in enumerate(nbors):
@@ -282,7 +283,7 @@ def get_effective_surfaces():
 
         # get gradient
         dx = np.array([x[pind]-x[n], y[pind]-y[n]])
-        grad_psi_i[i] = np.dot(B_j, dx) * psi_i[i]
+        grad_psi_i[i] = np.dot(B_j, dx) * np.float64(psi_i[i])
 
 
 

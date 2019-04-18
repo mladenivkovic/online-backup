@@ -119,7 +119,7 @@ def psi(x, y, xi, yi, h):
     UNNORMALIZED Volume fraction at position x of some particle part
     ind: neighbour index in x/y/h array
     """
-    q = np.sqrt((x - xi)**2 + (y - yi)**2)/h
+    q = np.float128(np.sqrt((x - xi)**2 + (y - yi)**2)/h)
 
     return W(q)
 
@@ -162,7 +162,7 @@ def compute_psi(xx, yy, xj, yj, hh):
     """
 
     # psi_j(x_i)
-    psis = np.zeros(xj.shape[0], dtype=np.float)
+    psis = np.zeros(xj.shape[0], dtype=np.float128)
 
     for i in range(xj.shape[0]):
         psis[i] = psi(xx, yy, xj[i], yj[i], hh)
@@ -191,6 +191,7 @@ def get_effective_surface(xx, yy, hh, nbors):
     # normalize psis
     omega =  (np.sum(psis))
     psis /= omega
+    psis = np.float64(psis)
 
 
     # find where psi_i and psi_j are in that array
