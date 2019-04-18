@@ -18,7 +18,7 @@ smoothing_lengths = [   2,      1,  0.5,
                         0.1,  0.05, 0.01]
 nrows = 3
 ncols = 3
-nx = 500    # how many points to compute for
+nx = 100    # how many points to compute for
 
 # particle positions
 p1 = [0.2, 0.2]
@@ -27,7 +27,8 @@ p3 = [0.7, 0.4]
 
 
 #  kernels = ['gaussian']
-kernels = ['cubic_spline', 'gaussian']
+kernels = ['cubic_spline']
+#  kernels = ['cubic_spline', 'gaussian']
 
 
 #==================
@@ -38,8 +39,8 @@ def W(q, h, kernel):
     """ 
 
     if kernel=='cubic_spline':
-        sigma = np.float128(1.)/np.pi
-        if q < 0.5:
+        sigma = 10./(7*np.pi*h**2)
+        if q < 1:
             return 1. - q*q * (1.5 - 0.75*q) 
         elif q < 2:
             return 0.25*(2-q)**3

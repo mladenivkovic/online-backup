@@ -108,11 +108,11 @@ def W(q, h, kernel):
 
     if kernel == 'cubic_spline': 
 
-        sigma = 1./np.pi
-        if q < 0.5:
-            return 1. - q*q * (1.5 - 0.75*q) 
+        sigma = 10./(7*np.pi*h**2)
+        if q < 1:
+            return sigma*(1. - 1.5* q**2 * (1 - 0.5*q) )
         elif q < 2:
-            return 0.25*(2-q)**3
+            return sigma*0.25*(2-q)**3
         else:
             return 0
 

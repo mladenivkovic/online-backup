@@ -44,13 +44,13 @@ V = 0.5
 
 
 #==================
-def W(q):
+def W(q,h):
 #==================
     """
     cubic spline kernel
     """ 
-    sigma = 1./np.pi
-    if q < 0.5:
+    sigma = 10./(7*np.pi*h**2)
+    if q < 1:
         return 0.25*(2-q)**3 - (1-q)**3
     elif q < 2:
         return 0.25*(2-q)**3
@@ -68,7 +68,7 @@ def psi(x, part):
     """
     q = np.sqrt((x[0]-part[0])**2 + (x[1]-part[1])**2 + (x[2]-part[2])**2)/h
 
-    return W(q)
+    return W(q, h)
 
 
 
