@@ -47,7 +47,7 @@ def W(q, h, kernel):
             return 0
 
     if kernel == 'gaussian':
-        return 1./np.sqrt(0.5*np.pi)**3/h**2*np.exp(-2*q**2)
+        return 1./(np.sqrt(0.5*np.pi)*h)**3*np.exp(-2*q**2)
 
 
 #=======================
