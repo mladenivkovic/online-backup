@@ -25,7 +25,9 @@ boxSize = 1
 
 # border limits for plots
 lowlim = 0.4-0.2*boxSize/L
-uplim = 0.6+0.2*boxSize/L
+uplim = 0.4-(0.2-203/100)*boxSize/L
+
+print("lowlim:", lowlim, "uplim:", uplim)
 tol = 1e-3 # tolerance for float comparison
 
 
