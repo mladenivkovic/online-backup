@@ -104,11 +104,11 @@ def W(q, h):
     """
     cubic spline kernel
     """ 
-    sigma = 10./(7*np.pi*h**2)
+    sigma = np.float128(10./(7*np.pi*h**2))
     if q < 1:
-        return 1. - q*q * (1.5 - 0.75*q) 
+        return np.float128(1. - q*q * (1.5 - 0.75*q))
     elif q < 2:
-        return 0.25*(2-q)**3
+        return np.float128(0.25*(2-q)**3)
     else:
         return 0
 
