@@ -99,9 +99,9 @@ def find_neighbours(xx, yy, hh, hlim, kernel):
 
 
 
-#==================
+#=========================
 def W(q, h, kernel):
-#==================
+#=========================
     """
     Various kernels
     """ 

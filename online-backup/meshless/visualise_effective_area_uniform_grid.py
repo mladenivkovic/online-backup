@@ -15,9 +15,17 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-import h5py
+
+import meshless as ms
 
 
+
+#---------------------------
+# initialize variables
+#---------------------------
+
+
+# temp during rewriting
 x = None
 y = None
 h = None
@@ -30,6 +38,7 @@ pind = None                         # index of particle you chose with pcoord
 npart = 0
 
 nbors = []                          # indices of all relevant neighbour particles
+
 
 
 
@@ -58,162 +67,6 @@ ncolrs = len(fullcolorlist)
 
 
 
-#=========================
-def read_file():
-#=========================
-    """
-    Just read the file man.
-    """
-
-    f = h5py.File(srcfile)
-
-    global x, y, h, npart, rho, m
-
-    x = f[ptype]['Coordinates'][:,0]
-    y = f[ptype]['Coordinates'][:,1]
-    h = f[ptype]['SmoothingLength'][:]
-    rho = f[ptype]['Density'][:]
-    m = f[ptype]['Masses'][:]
-
-    npart = x.shape[0]
-
-    f.close()
-
-    return
-
-
-
-
-#========================
-def find_index():
-#========================
-    """
-    Find the index in the read-in arrays where
-    the particle with coordinates of your choice is
-    """
-
-    global pind
-
-    for i in range(npart):
-        if x[i]==pcoord[0] and y[i] == pcoord[1]:
-            pind = i
-            break
-
-    print("got pind", pind, 'with x=', x[pind], 'y=', y[pind], 'h=', h[pind])
-
-    return
-
-
-
-
-#=============================
-def find_neighbours(ind):
-#=============================
-    """
-    Find indices of all neighbours within 2h (where kernel != 0)
-    """
-
-
-    x0 = x[ind]
-    y0 = y[ind]
-    fhsq = h[ind]*h[ind]*4
-    neigh = []
-
-    for i in range(x.shape[0]):
-        if i==ind:
-            continue
-
-        dist = (x[i]-x0)**2 + (y[i]-y0)**2
-        if dist < fhsq:
-            neigh.append(i)
-
-    return neigh
-
-
-
-
-#==================
-def W(q, h):
-#==================
-    """
-    cubic spline kernel
-    """ 
-    sigma = 10./(7*np.pi*h**2)
-    if q < 1:
-        return 1. - q*q * (1.5 - 0.75*q) 
-    elif q < 2:
-        return 0.25*(2-q)**3
-    else:
-        return 0
-
-
-
-#===============
-def V(ind):
-#===============
-    """
-    Volume estimate for particle with index ind
-    """
-
-    return m[ind]/rho[ind]
-
-
-
-
-#=======================
-def psi(x, y, xi, yi, h):
-#=======================
-    """
-    UNNORMALIZED Volume fraction at position x of some particle part
-    ind: neighbour index in x/y/h array
-    """
-    q = np.float128(np.sqrt((x - xi)**2 + (y - yi)**2)/h)
-
-    return W(q, h)
-
-
-
-#=============================================
-def get_matrix(xi, yi, xj, yj, psi_j):
-#=============================================
-    """
-    Get B_i ^{alpha beta}
-    xi, yi: floats; Evaluate B at this position
-    xj, yj: arrays; Neighbouring points
-    psi_j:  array;  volume fraction of neighbours at position x_i; psi_j(x_i)
-    """
-
-    E00 = np.sum((xj-xi)**2 * psi_j)
-    E01 = np.sum((xj-xi)*(yj-yi) * psi_j)
-    E11 = np.sum((yj-yi)**2 * psi_j)
-          
-    E = np.matrix([[E00, E01], [E01, E11]])
-
-    B = E.getI()
-    return B
-
-
-
-#=============================================
-def compute_psi(xi, yi, xj, yj, h):
-#=============================================
-    """
-    Compute all psi_j(x_i)
-    xi, yi: floats
-    xj, yj: arrays
-    h: float
-    """
-
-    # psi_j(x_i)
-    psi_j = np.zeros(xj.shape[0], dtype=np.float128)
-
-    for i in range(xj.shape[0]):
-        psi_j[i] = psi(xi, yi, xj[i], yj[i], h)
-
-    return psi_j
-
-
-
 
 
 
@@ -238,7 +91,7 @@ def get_effective_surfaces():
     #-------------------------------------------------------
 
     # compute psi_j(x_i)
-    psi_j = compute_psi(x[pind], y[pind], xj, yj, h[pind])
+    psi_j = ms.compute_psi(x[pind], y[pind], xj, yj, h[pind])
 
     # normalize psi_j
     omega_xi =  (np.sum(psi_j) + psi(x[pind], y[pind], x[pind], y[pind], h[pind]))
@@ -352,13 +205,54 @@ def main():
     
 
     global nbors
-    read_file()
-    find_index()
-    nbors = find_neighbours(pind)
+    global x, y, h, npart, rho, m
+    global pind
 
-    get_effective_surfaces()
+    # TODO: remove returns
+    x, y, h, rho, m, npart = ms.read_file(srcfile, ptype)
+    pind = ms.find_index(x, y, h, pcoord)
+    nbors = ms.find_neighbours(pind, x, y, h)
+
+    print("Computing effective surfaces")
+
+    A_ij, x_ij = ms.Aij_Hopkins(pind, x, y, h, m, rho)
 
     
+
+    print("Plotting")
+
+    fig = plt.figure(figsize=(12,12))
+    ax1 = fig.add_subplot(111)
+
+    pointsize = 200
+    ax1.set_facecolor('lavender')
+    ax1.scatter(x[pind], y[pind], c='k', s=pointsize*2)
+    ax1.set_xlim((0.25,0.75))
+    ax1.set_ylim((0.25,0.75))
+
+    for i,n in enumerate(nbors):
+        cc = i
+        while cc > ncolrs:
+            cc -= ncolrs
+        col = fullcolorlist[cc]
+
+        ax1.scatter(x[n], y[n], c=col, s=pointsize, zorder=0, lw=1, edgecolor='k')
+        #  arrind = int(((x[pind]-x[n])**2+(y[pind]-y[n])**2)/(2*0.1*0.1)+1)
+        #  arrwidth = arrind*2
+        arrind = 2
+        arrwidth = arrind*2
+        ax1.arrow(x_ij[i][0], x_ij[i][1], A_ij[i][0], A_ij[i][1], 
+            color=col, lw=arrwidth, zorder=100-arrind)
+
+
+
+    ax1.set_title(r'Hopkins $\mathbf{A}_{ij}$ at $\mathbf{x}_{ij} = \mathbf{x}_i + \frac{h_i}{h_i+h_j}(\mathbf{x}_j - \mathbf{x}_i)$')
+    ax1.set_xlabel('x')
+    ax1.set_ylabel('y')
+
+
+    plt.savefig('effective_area_all_neighbours.png', dpi=200)
+
 
 
 

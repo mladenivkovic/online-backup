@@ -251,7 +251,7 @@ def get_effective_surface(x, y, h, rho, m, nbors):
 
 
     #-------------------------------
-    # Part 3: Compute A_ij, x_ij
+    # Part 3: Compute A_ij
     #-------------------------------
 
     V = m/rho
@@ -267,94 +267,6 @@ def get_effective_surface(x, y, h, rho, m, nbors):
         return A_ij
 
 
-
-
-
-
-#========================================================
-def get_effective_surface_old(x, y, h, rho, m, nbors):
-#========================================================
-    """
-    As done for the uniform case; To make sure I didn't mess up
-    """
-
-    xj = x[nbors]
-    yj = y[nbors]
-    hj = h[nbors]
-
-
-
-    #-------------------------------------------------------
-    # Part 1: For particle at x_i (Our chosen particle)
-    #-------------------------------------------------------
-
-    # compute psi_j(x_i)
-    psi_j = compute_psi(x[pind], y[pind], xj, yj, h[pind])
-
-    # normalize psi_j
-    omega_xi =  (np.sum(psi_j) + psi(x[pind], y[pind], x[pind], y[pind], h[pind]))
-    psi_j /= omega_xi
-
-    # compute B_i
-    B_i = get_matrix(x[pind], y[pind], xj, yj, psi_j)
-
-    # compute grad_psi_j(x_i)
-    grad_psi_j = np.empty((len(nbors), 2), dtype=np.float)
-    for i, n in enumerate(nbors):
-        dx = np.array([xj[i]-x[pind], yj[i]-y[pind]])
-        grad_psi_j[i] = np.dot(B_i, dx) * psi_j[i]
-
-
-
-    #---------------------------------------------------------------------------
-    # Part 2: values of psi/grad_psi of particle i at neighbour positions x_j
-    #---------------------------------------------------------------------------
-
-    psi_i = np.zeros(len(nbors), dtype=np.float)            # psi_i(xj)
-    grad_psi_i = np.empty((len(nbors), 2), dtype=np.float)  # grad_psi_i(x_j)
-
-    for i,n in enumerate(nbors):
-        # first compute all psi(xj) from neighbour's neighbours to get weight omega
-        nneigh = find_neighbours(n, x, y, h)
-        xk = x[nneigh]
-        yk = y[nneigh]
-        for j, nn in enumerate(nneigh):
-            psi_k = compute_psi(x[n], y[n], xk, yk, h[n])
-            if nn == pind: # store psi_i, which is the psi for the particle whe chose at position xj; psi_i(xj)
-                psi_i[i] = psi_k[j]
-    
-        omega_xj = (np.sum(psi_k) + psi(x[n], y[n], x[n], y[n], h[n]))
-
-        psi_i[i]/= omega_xj
-
-
-        # now compute B_j^{\alpha \beta}
-        B_j = get_matrix(x[n], y[n], xk, yk, h[n])
-
-        # get gradient
-        dx = np.array([x[pind]-x[n], y[pind]-y[n]])
-        grad_psi_i[i] = np.dot(B_j, dx) * psi_i[i]
-
-
-
-    #-------------------------------
-    # Part 3: Compute A_ij, x_ij
-    #-------------------------------
-
-    A_ij = np.empty((len(nbors),2), dtype = np.float)
-
-    V = m/rho
-
-    for i,n in enumerate(nbors):
-
-        if n==cind:
-            return V[pind]*grad_psi_j[i] - V[n]*grad_psi_i[i]
-            
-    raise ValueError("Something didn't work")
-
-
-
-    return
 
 
 
@@ -394,9 +306,7 @@ def main():
             # displaced particle has index -1
             nbors = find_neighbours(pind, x, y, h)
 
-
-            #  A[ii, jj] = get_effective_surface_old(x, y, h, rho, m, nbors)
-            A[ii, jj] = get_effective_surface(x, y, h, rho, m, nbors)
+            A[jj, ii] = get_effective_surface(x, y, h, rho, m, nbors)
             
             jj += 1
 
@@ -419,8 +329,8 @@ def main():
     ax3 = fig.add_subplot(133, aspect='equal')
 
 
-    Ax = A[:,:,0].transpose() # pyplot.imshow takes [y,x] !
-    Ay = A[:,:,1].transpose()
+    Ax = A[:,:,0]
+    Ay = A[:,:,1]
     Anorm = np.sqrt(Ax**2 + Ay**2)
     xmin = Ax.min()
     xmax = Ax.max()
