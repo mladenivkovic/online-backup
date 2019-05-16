@@ -11,8 +11,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable, axes_size 
+import meshless as ms
 
-import h5py
 
 
 ptype = 'PartType0'             # for which particle type to look for
@@ -29,341 +29,12 @@ uplim = 0.6
 tol = 1e-3 # tolerance for float comparison
 
 
-
-
-#=========================
-def read_file(srcfile):
-#=========================
-    """
-    Just read the file man.
-    """
-
-    f = h5py.File(srcfile)
-
-
-    x = f[ptype]['Coordinates'][:,0]
-    y = f[ptype]['Coordinates'][:,1]
-    h = f[ptype]['SmoothingLength'][:]
-    rho = f[ptype]['Density'][:]
-    m = f[ptype]['Masses'][:]
-
-    ids = f[ptype]['ParticleIDs'][:]
-
-    global pind, cind
-
-    L = int(np.sqrt(x.shape[0]-1)+0.5)
-
-    # compute ID of central particle at (0.5, 0.5)
-    i = L//2-1
-    cid = i*L + i + 1
-    cind = np.asscalar(np.where(ids==cid)[0])
-
-    # get ID of added particle
-    pid = x.shape[0]
-    pind = np.asscalar(np.where(ids==pid)[0])
-
-    f.close()
-
-    return x, y, h, rho, m, ids
-
-
-
-
-
-#======================================
-def find_neighbours(ind, x, y, h):
-#======================================
-    """
-    Find indices of all neighbours within 2h (where kernel != 0) for particle with index ind
-    """
-
-
-    x0 = x[ind]
-    y0 = y[ind]
-    fhsq = h[ind]*h[ind]*4
-    neigh = []
-
-    for i in range(x.shape[0]):
-        if i==ind:
-            continue
-
-        dist = (x[i]-x0)**2 + (y[i]-y0)**2
-        if dist < fhsq:
-            neigh.append(i)
-
-    return neigh
-
-
-
-
-#==================
-def W(q, h):
-#==================
-    """
-    cubic spline kernel
-    """ 
-    sigma = 10./(7*np.pi*h**2)
-    if q < 1:
-        return 1. - q*q * (1.5 - 0.75*q) 
-    elif q < 2:
-        return 0.25*(2-q)**3
-    else:
-        return 0
-
-
-
-#===============
-def V(ind):
-#===============
-    """
-    Volume estimate for particle with index ind
-    """
-
-    return m[ind]/rho[ind]
-
-
-
-
-#=======================
-def psi(x, y, xi, yi, h):
-#=======================
-    """
-    UNNORMALIZED Volume fraction at position x of some particle part
-    ind: neighbour index in x/y/h array
-    """
-    q = np.float128(np.sqrt((x - xi)**2 + (y - yi)**2)/h)
-
-    return W(q, h)
-
-
-
-#=============================================
-def get_matrix(xi, yi, xj, yj, psi_j):
-#=============================================
-    """
-    Get B_i ^{alpha beta}
-    xi, yi: floats; Evaluate B at this position
-    xj, yj: arrays; Neighbouring points
-    psi_j:  array;  volume fraction of neighbours at position x_i; psi_j(x_i)
-    """
-
-    E00 = np.sum((xj-xi)**2 * psi_j)
-    E01 = np.sum((xj-xi)*(yj-yi) * psi_j)
-    E11 = np.sum((yj-yi)**2 * psi_j)
-          
-    E = np.matrix([[E00, E01], [E01, E11]])
-
-    B = E.getI()
-    return B
-
-
-
-#=============================================
-def compute_psi(xi, yi, xj, yj, h):
-#=============================================
-    """
-    Compute all psi_j(x_i)
-    xi, yi: floats
-    xj, yj: arrays
-    h: float
-    """
-
-    # psi_j(x_i)
-    psi_j = np.zeros(xj.shape[0], dtype=np.float128)
-
-    for i in range(xj.shape[0]):
-        psi_j[i] = psi(xi, yi, xj[i], yj[i], h)
-
-    return psi_j
-
-
-
-
-
-
-#==================================================
-def get_effective_surface(x, y, h, rho, m, nbors):
-#==================================================
-    """
-    Compute and plot the effective area using proper gradients
-    """
-
-    xj = x[nbors]
-    yj = y[nbors]
-    hj = h[nbors]
-
-    #-------------------------------------------------------
-    # Part 1: For particle at x_i (Our chosen particle)
-    #-------------------------------------------------------
-
-    # compute psi_j(x_i)
-    psi_j = compute_psi(x[pind], y[pind], xj, yj, h[pind])
-
-    # normalize psi_j. Don't forget to add the self-contributing value!
-    omega_xi =  (np.sum(psi_j) + psi(x[pind], y[pind], x[pind], y[pind], h[pind]))
-    psi_j /= omega_xi
-    psi_j = np.float64(psi_j)
-
-    # compute B_i
-    B_i = get_matrix(x[pind], y[pind], xj, yj, psi_j)
-
-    # get index of central particle in nbors list
-    cind_n = nbors.index(cind)
-
-    # compute grad_psi_j(x_i)
-    grad_psi_j = np.empty((1, 2), dtype=np.float)
-    dx = np.array([x[cind]-x[pind], y[cind]-y[pind]])
-    grad_psi_j = np.dot(B_i, dx) * psi_j[cind_n]
-
-
-
-    #---------------------------------------------------------------------------
-    # Part 2: values of psi/grad_psi of particle i at neighbour positions x_j
-    #---------------------------------------------------------------------------
-
-    psi_i = 0.0                                    # psi_i(xj)
-    grad_psi_i = np.empty((1, 2), dtype=np.float)  # grad_psi_i(x_j)
-
-    # first compute all psi(xj) from central's neighbours to get weight omega
-    nneigh = find_neighbours(cind, x, y, h)
-    xk = x[nneigh]
-    yk = y[nneigh]
-    for j, nn in enumerate(nneigh):
-        psi_k = compute_psi(x[cind], y[cind], xk, yk, h[cind])
-        if nn == pind: # store psi_i, which is the psi for the particle whe chose at position xj; psi_i(xj)
-            psi_i = psi_k[j]
-
-    omega_xj = (np.sum(psi_k) + psi(x[cind], y[cind], x[cind], y[cind], h[cind]))
-
-    psi_i/= omega_xj
-    psi_i = np.float64(psi_i)
-
-    # now compute B_j^{\alpha \beta}
-    B_j = get_matrix(x[cind], y[cind], xk, yk, h[cind])
-
-    # get gradient
-    dx = np.array([x[pind]-x[cind], y[pind]-y[cind]])
-    grad_psi_i = np.dot(B_j, dx) * psi_i
-
-
-
-    #-------------------------------
-    # Part 3: Compute A_ij, x_ij
-    #-------------------------------
-
-    V = m/rho
-
-    A_ij = None
-
-    A_ij = V[pind]*grad_psi_j - V[cind]*grad_psi_i
-
-    if A_ij is None:
-        print("PROBLEM: A_IJ IS NONE")
-        raise ValueError
-    else:
-        return A_ij
-
-
-
-
-
-
-#========================================================
-def get_effective_surface_old(x, y, h, rho, m, nbors):
-#========================================================
-    """
-    As done for the uniform case; To make sure I didn't mess up
-    """
-
-    xj = x[nbors]
-    yj = y[nbors]
-    hj = h[nbors]
-
-
-
-    #-------------------------------------------------------
-    # Part 1: For particle at x_i (Our chosen particle)
-    #-------------------------------------------------------
-
-    # compute psi_j(x_i)
-    psi_j = compute_psi(x[pind], y[pind], xj, yj, h[pind])
-
-    # normalize psi_j
-    omega_xi =  (np.sum(psi_j) + psi(x[pind], y[pind], x[pind], y[pind], h[pind]))
-    psi_j /= omega_xi
-
-    # compute B_i
-    B_i = get_matrix(x[pind], y[pind], xj, yj, psi_j)
-
-    # compute grad_psi_j(x_i)
-    grad_psi_j = np.empty((len(nbors), 2), dtype=np.float)
-    for i, n in enumerate(nbors):
-        dx = np.array([xj[i]-x[pind], yj[i]-y[pind]])
-        grad_psi_j[i] = np.dot(B_i, dx) * psi_j[i]
-
-
-
-    #---------------------------------------------------------------------------
-    # Part 2: values of psi/grad_psi of particle i at neighbour positions x_j
-    #---------------------------------------------------------------------------
-
-    psi_i = np.zeros(len(nbors), dtype=np.float)            # psi_i(xj)
-    grad_psi_i = np.empty((len(nbors), 2), dtype=np.float)  # grad_psi_i(x_j)
-
-    for i,n in enumerate(nbors):
-        # first compute all psi(xj) from neighbour's neighbours to get weight omega
-        nneigh = find_neighbours(n, x, y, h)
-        xk = x[nneigh]
-        yk = y[nneigh]
-        for j, nn in enumerate(nneigh):
-            psi_k = compute_psi(x[n], y[n], xk, yk, h[n])
-            if nn == pind: # store psi_i, which is the psi for the particle whe chose at position xj; psi_i(xj)
-                psi_i[i] = psi_k[j]
-    
-        omega_xj = (np.sum(psi_k) + psi(x[n], y[n], x[n], y[n], h[n]))
-
-        psi_i[i]/= omega_xj
-
-
-        # now compute B_j^{\alpha \beta}
-        B_j = get_matrix(x[n], y[n], xk, yk, h[n])
-
-        # get gradient
-        dx = np.array([x[pind]-x[n], y[pind]-y[n]])
-        grad_psi_i[i] = np.dot(B_j, dx) * psi_i[i]
-
-
-
-    #-------------------------------
-    # Part 3: Compute A_ij, x_ij
-    #-------------------------------
-
-    A_ij = np.empty((len(nbors),2), dtype = np.float)
-
-    V = m/rho
-
-    for i,n in enumerate(nbors):
-
-        if n==cind:
-            return V[pind]*grad_psi_j[i] - V[n]*grad_psi_i[i]
-            
-    raise ValueError("Something didn't work")
-
-
-
-    return
-
-
-
-
-
-
-
-
-
 #========================
 def main():
 #========================
+
+
+    nx, filenummax, fileskip =  ms.get_sample_size()
     
 
     #-----------------------------
@@ -372,36 +43,37 @@ def main():
 
     print("Computing effective surfaces")
 
-    A = np.zeros((100, 100, 2), dtype=np.float) # storing computed effective surfaces
-    #  A = np.zeros((20, 20, 2), dtype=np.float) # storing computed effective surfaces
-
-    global pind
+    A = np.zeros((nx, nx, 2), dtype=np.float) # storing computed effective surfaces
 
     ii = 0
     jj = 0
-    for i in range(1, 200, 2):
-        for j in range(1, 200, 2):
-    #  for i in range(1, 200, 10):
-    #      for j in range(1, 200, 10):
+    for i in range(1, filenummax, fileskip):
+        for j in range(1, filenummax, fileskip):
 
             srcfile = 'snapshot-'+str(i).zfill(3)+'-'+str(j).zfill(3)+'_0000.hdf5'
             print('working for ', srcfile)
 
-            x, y, h, rho, m , ids= read_file(srcfile)
+            x, y, h, rho, m, ids, npart= ms.read_file(srcfile, ptype)
+
+
+            cind = ms.find_central_particle(L, ids)
+            pind = ms.find_added_particle(ids)
             # displaced particle has index -1
-            nbors = find_neighbours(pind, x, y, h)
+            nbors = ms.find_neighbours(pind, x, y, h)
 
-             # pyplot.imshow takes [y,x] !
-            #  A[jj, ii] = get_effective_surface_old(x, y, h, rho, m, nbors)
-            A[jj, ii] = get_effective_surface(x, y, h, rho, m, nbors)
-            
+            Aij = ms.Aij_Hopkins(pind, x, y, h, m, rho)
+
+            ind = nbors.index(cind)
+
+            # pyplot.imshow takes [y,x] !
+            A[jj, ii] = Aij[ind]
+
             jj += 1
-
-        ii += 1
         jj = 0
+        ii += 1
     
 
-    print('last displacement:', x[pind], y[pind])
+
 
 
 
