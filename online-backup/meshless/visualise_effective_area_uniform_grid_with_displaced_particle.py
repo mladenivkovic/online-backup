@@ -47,8 +47,8 @@ def main():
 
     ii = 0
     jj = 0
-    for i in range(1, filenummax, fileskip):
-        for j in range(1, filenummax, fileskip):
+    for i in range(1, filenummax+1, fileskip):
+        for j in range(1, filenummax+1, fileskip):
 
             srcfile = 'snapshot-'+str(i).zfill(3)+'-'+str(j).zfill(3)+'_0000.hdf5'
             print('working for ', srcfile)

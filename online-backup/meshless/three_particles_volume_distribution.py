@@ -12,13 +12,15 @@
 import numpy as np
 from matplotlib import pyplot as plt
 
+import meshless as ms
+
 
 smoothing_lengths = [   2,      1,  0.5, 
                         0.25, 0.2,  0.15,  
                         0.1,  0.05, 0.01]
 nrows = 3
 ncols = 3
-nx = 100    # how many points to compute for
+nx = 200    # how many points to compute for
 
 # particle positions
 p1 = [0.2, 0.2]
@@ -27,51 +29,8 @@ p3 = [0.7, 0.4]
 
 
 #  kernels = ['gaussian']
-kernels = ['cubic_spline']
-#  kernels = ['cubic_spline', 'gaussian']
-
-
-#==================
-def W(q, h, kernel):
-#==================
-    """
-    Compute the kernel for given string kernel and kernel parameter q = x/h
-    """ 
-
-    if kernel=='cubic_spline':
-        sigma = 10./(7*np.pi*h**2)
-        if q < 1:
-            return 1. - q*q * (1.5 - 0.75*q) 
-        elif q < 2:
-            return 0.25*(2-q)**3
-        else:
-            return 0
-
-    if kernel == 'gaussian':
-        return 1./(np.sqrt(0.5*np.pi)*h)**3*np.exp(-2*q**2)
-
-
-#=======================
-def psi(x, y, part, h, kernel):
-#=======================
-    """
-    UNNORMALIZED Volume fraction at position x of some particle part
-    """
-
-    # correct for periodicity
-    dx = np.float128(abs(x - part[0]))
-    if dx > 0.5:
-        dx = 1 - dx
-    dy = np.float128(abs(y - part[1]))
-    if dy > 0.5:
-        dy = 1 - dy
-        
-    q = np.sqrt(dx*dx + dy*dy)/h
-
-    return W(q, h, kernel)
-
-
-
+#  kernels = ['cubic_spline']
+kernels = ['cubic_spline', 'gaussian']
 
 
 
@@ -82,7 +41,7 @@ def compute_psis(x, y, h, kernel):
     psis = np.zeros(3, dtype=np.float128)
 
     for i, part in enumerate([p1, p2, p3]):
-        psis[i] = psi(x, y, part, h, kernel)
+        psis[i] = ms.psi(x, y, part[0], part[1], h, kernel)
 
     if np.sum(psis)==0:
         psis = 0
