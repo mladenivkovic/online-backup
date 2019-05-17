@@ -10,14 +10,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable, axes_size 
+import meshless as ms
 
 import h5py
 
 
+srcfile = 'snapshot_0000.hdf5'
 ptype = 'PartType0'             # for which particle type to look for
-iind = None                     # index of particle at (0.4, 0.4)
-jind = None                     # index of particle in the center (0.5, 0.5)
-
 
 L = 10      # nr of particles along one axis
 boxSize = 1
@@ -27,217 +26,8 @@ lowlimx = 0.35
 uplimx = 0.55
 lowlimy = 0.35
 uplimy = 0.55
-nx = 200
+nx = 50
 tol = 1e-5 # tolerance for float comparison
-
-
-x = None
-y = None
-h = None
-rho = None
-m = None
-ids = None
-V = None
-
-
-
-
-#=========================
-def read_file(srcfile):
-#=========================
-    """
-    Just read the file man.
-    """
-
-    f = h5py.File(srcfile)
-
-    global x, y, h, rho, m, ids, V
-
-    x = f[ptype]['Coordinates'][:,0]
-    y = f[ptype]['Coordinates'][:,1]
-    h = f[ptype]['SmoothingLength'][:]
-    rho = f[ptype]['Density'][:]
-    m = f[ptype]['Masses'][:]
-
-    ids = f[ptype]['ParticleIDs'][:]
-
-    V = m/rho
-
-    f.close()
-
-    return 
-
-
-
-
-
-#======================================
-def find_neighbours(xx, yy, hh, hlim):
-#======================================
-    """
-    Find indices of all neighbours within hlim*h (where kernel != 0)
-    from the position (xx, yy) with smoothing length h=hh
-    """
-
-
-    fhsq = hh*hh*hlim*hlim
-    neigh = []
-
-    for i in range(x.shape[0]):
-        dist = (x[i]-xx)**2 + (y[i]-yy)**2
-        if dist <= fhsq:
-            neigh.append(i)
-
-    return neigh
-
-
-
-
-#==================
-def W(q, h):
-#==================
-    """
-    cubic spline kernel
-    """ 
-    sigma = 10./(7*np.pi*h**2)
-    if q < 1:
-        return 1. - q*q * (1.5 - 0.75*q) 
-    elif q < 2:
-        return 0.25*(2-q)**3
-    else:
-        return 0
-
-
-
-
-
-
-#=======================
-def psi(x, y, xi, yi, h):
-#=======================
-    """
-    UNNORMALIZED Volume fraction at position x of some particle part
-    ind: neighbour index in x/y/h array
-    """
-    q = np.float128(np.sqrt((x - xi)**2 + (y - yi)**2)/h)
-
-    return W(q, h)
-
-
-
-#=============================================
-def get_matrix(xx, yy, xj, yj, psi_j):
-#=============================================
-    """
-    Get B_i ^{alpha beta}
-    xx, yy: floats; Evaluate B at this position
-    xj, yj: arrays; Neighbouring points
-    psi_j:  array;  volume fraction of neighbours at position x; psi(x)
-    """
-
-    E00 = np.sum((xj-xx)**2 * psi_j)
-    E01 = np.sum((xj-xx)*(yj-yy) * psi_j)
-    E11 = np.sum((yj-yy)**2 * psi_j)
-          
-    E = np.matrix([[E00, E01], [E01, E11]])
-
-    try:
-        B = E.getI()
-    except np.linalg.linalg.LinAlgError:
-        print("SINGULAR MATRIX:", E)
-        return np.matrix([[0, 0], [0, 0]])
-        
-    return B
-
-
-
-#=============================================
-def compute_psi(xx, yy, xj, yj, hh):
-#=============================================
-    """
-    Compute all psi_j(x_i)
-    xi, yi: floats
-    xj, yj: arrays
-    h: float
-    """
-
-    # psi_j(x_i)
-    psis = np.zeros(xj.shape[0], dtype=np.float128)
-
-    for i in range(xj.shape[0]):
-        psis[i] = psi(xx, yy, xj[i], yj[i], hh)
-
-    return psis
-
-
-
-
-
-
-#==================================================
-def get_effective_surface(xx, yy, hh, nbors):
-#==================================================
-    """
-    Compute and plot the effective area using proper gradients
-    """
-
-    xj = x[nbors]
-    yj = y[nbors]
-    hj = h[nbors]
-
-    # compute all psi(x)
-    psis = compute_psi(xx, yy, xj, yj, hh)
-
-    # normalize psis
-    omega =  (np.sum(psis))
-    psis /= omega
-    psis = np.float64(psis)
-
-
-    # find where psi_i and psi_j are in that array
-    try:
-        inb = nbors.index(iind)
-        jnb = nbors.index(jind)
-    except ValueError:
-        return None
-
-    # compute matrix B
-    B = get_matrix(xx, yy, xj, yj, psis)
-
-    # compute grad_psi_j(x_i)
-    dx = np.array([x[iind]-xx, y[iind]-yy])
-    grad_psi_i = np.dot(B, dx) * psis[inb]
-    dx = np.array([x[jind]-xx, y[jind]-yy])
-    grad_psi_j = np.dot(B, dx) * psis[jnb]
-
-
-    A_ij = psis[inb]*grad_psi_j - psis[jnb]*grad_psi_i
-
-    if A_ij is None:
-        print("PROBLEM: A_IJ IS NONE")
-        raise ValueError
-    else:
-        return A_ij
-
-
-
-
-
-
-
-
-
-#===================================
-def get_smoothing_length(xx, yy):
-#===================================
-    """
-    Compute h(x) at position (xx, yy), where there is 
-    not necessariliy a particle
-    """
-    vol = boxSize*boxSize*boxSize
-    hh = np.sum(h*V)/vol
-    return hh
-
 
 
 
@@ -253,11 +43,7 @@ def main():
 
     print("Computing effective surfaces")
 
-    srcfile = 'snapshot_0000.hdf5'
-    read_file(srcfile)
-
-    # find where particles i (0.4, 0.4) and j (0.4, 0.5) are
-
+    x, y, h, rho, m, ids, npart = ms.read_file(srcfile, ptype)
 
 
     # chosen particle coordinates for diagonal/vertical case
@@ -270,9 +56,6 @@ def main():
 
         print('working for', direction)
 
-
-
-        global iind, jind
         iind = None
         jind = None
 
@@ -290,9 +73,7 @@ def main():
         dxsq = (x[iind]-x[jind])**2 + (y[iind]-y[jind])**2
         hsq = h[iind]**2
         hfactmin = np.sqrt(dxsq/hsq)
-        hminround = np.round(hfactmin, 1)+0.1
-        #  hfact = [4, 2]+list(np.linspace(hminround, 2, 3, endpoint=False)[::-1])
-        hfact = [4, 2, 1.8, 1.5, 1.2]
+        hfact = [2, 1.8, 1.6, 1.4, 1.2]
         print('hfactmin is:', hfactmin)
         print('hfacts are:', hfact)
 
@@ -318,7 +99,7 @@ def main():
 
         # initialize figure
 
-        nrows = 5
+        nrows = len(hfact)
         ncols = 3
         fig = plt.figure(figsize=(3.6*ncols,3*nrows))
 
@@ -344,15 +125,15 @@ def main():
             for i in range(nx):
                 xx = lowlimx + dx * i
 
+                if i%10 == 0:
+                    print("i =", i+1, "/", nx)
+
                 for j in range(nx):
                     yy = lowlimy + dx * j
 
+                    hh = ms.h_of_x(xx, yy, x, y, h, m, rho, fact=hf)
 
-                    hh = get_smoothing_length(xx, yy)
-
-                    nbors = find_neighbours(xx, yy, hh, hf)
-
-                    A[j, i] = get_effective_surface(xx, yy, hh, nbors) # not a typo: need A[j,i] for imshow
+                    A[j, i] = ms.Integrand_Aij_Ivanova(iind, jind, xx, yy, hh, x, y, h, m, rho, fact=hf) # not a typo: need A[j,i] for imshow
 
 
 

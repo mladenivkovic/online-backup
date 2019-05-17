@@ -15,6 +15,7 @@ import meshless as ms
 import h5py
 
 
+srcfile = 'snapshot_0000.hdf5'
 ptype = 'PartType0'             # for which particle type to look for
 
 L = 10      # nr of particles along one axis
@@ -41,7 +42,6 @@ def main():
 
     print("Computing effective surfaces")
 
-    srcfile = 'snapshot_0000.hdf5'
     x, y, h, rho, m, ids, npart = ms.read_file(srcfile, ptype)
 
     # find where particles i (0.4, 0.4) and j (0.5, 0.5) are
