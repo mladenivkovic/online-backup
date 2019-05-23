@@ -132,7 +132,7 @@ def main():
 
         #-------------------------
         # loop over all kernels
-        #-------------------------
+        #------------------------
 
 
         for col, kernel in enumerate(kernels):
@@ -140,7 +140,8 @@ def main():
             print('working for ', kernel)
 
             # translate h to H
-            H = h*H_over_h[col]
+            # kernels are normed to support region < 2H
+            H = ms.get_H(h, kernel)
 
             A = np.zeros((nx, nx, 2), dtype=np.float) # storing computed effective surfaces
 
@@ -301,7 +302,7 @@ def main():
         fig.suptitle(title_prefix[f]+r" of integrand of effective Area $\mathbf{A}_{ij}(\mathbf{x}) = \psi_i(\mathbf{x}) \nabla \psi_j(\mathbf{x}) - \psi_j(\mathbf{x}) \nabla \psi_i(\mathbf{x})$ of a particle (white) w.r.t. the central particle (black)"'\n'"in a uniform distribution for different kernels for $\eta_0 = 1.23485$", fontsize=18)
         plt.tight_layout(rect=(0, 0, 1, 0.95))
         plt.subplots_adjust(wspace=0, hspace=0)
-        plt.savefig('effective_area_A_of_x_uniform_different_kernels-'+title_prefix[f]+'.png', dpi=150)
+        plt.savefig('effective_area_A_of_x_uniform_different_kernels_properly_uniform-'+title_prefix[f]+'.png', dpi=150)
         plt.close()
 
     print('finished.')

@@ -15,8 +15,10 @@ from matplotlib import pyplot as plt
 import meshless as ms
 
 
-smoothing_lengths = [   2,      1,  0.5, 
-                        0.25, 0.2,  0.15,  
+#  smoothing_lengths = [   0.25, 0.2,  0.15,
+#                          0.1,  0.05, 0.01]
+smoothing_lengths = [   2,      1,  0.5,
+                        0.25, 0.2,  0.15,
                         0.1,  0.05, 0.01]
 nrows = 3
 ncols = 3
