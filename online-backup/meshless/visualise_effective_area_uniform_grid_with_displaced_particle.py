@@ -16,12 +16,9 @@ import meshless as ms
 
 
 ptype = 'PartType0'             # for which particle type to look for
-pind = -1                       # index of particle you chose with pcoord
-cind = None                     # index of particle in the center (0.5, 0.5)
-
-
-L = 10      # nr of particles along one axis
 boxSize = 1
+L = 10
+
 
 # border limits for plots
 lowlim = 0.4

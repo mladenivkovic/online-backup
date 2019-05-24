@@ -10,8 +10,8 @@ rerun_swift=false
 
 # whether you're doing a test run to see whether your code is not crashing,
 # or you want quality pics
-testing=true
-# testing=false
+# testing=true
+testing=false
 
 
 dir=$PWD

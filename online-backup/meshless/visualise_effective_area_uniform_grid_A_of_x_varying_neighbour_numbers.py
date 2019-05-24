@@ -26,7 +26,7 @@ lowlimx = 0.35
 uplimx = 0.55
 lowlimy = 0.35
 uplimy = 0.55
-nx = 10
+nx = 100
 tol = 1e-5 # tolerance for float comparison
 
 

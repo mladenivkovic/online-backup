@@ -21,15 +21,12 @@ srcfile = 'snapshot_0000.hdf5'
 # border limits for plots
 lowlim = 0.35
 uplim = 0.55
-nx = 10
+nx = 100
 tol = 1e-5 # tolerance for float comparison
 
 
 kernels = ms.kernels
 kfacts = ms.kernelfacts
-
-kernels = ['cubic_spline', 'quartic_spline', 'gaussian']
-kfacts = [1, 1, None]
 
 
 #========================

@@ -24,7 +24,7 @@ boxSize = 1
 # border limits for plots
 lowlim = 0.35
 uplim = 0.55
-nx = 10
+nx = 100
 tol = 1e-5 # tolerance for float comparison
 
 
