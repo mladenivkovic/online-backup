@@ -16,19 +16,15 @@ import meshless as ms
 ptype = 'PartType0'             # for which particle type to look for
 
 
-L = 18      # nr of particles along one axis
-boxSize = 1
-
 # border limits for plots
 lowlim = 0.43
 uplim = 0.52
-nx = 20
+nx = 10
 tol = 0.025 # tolerance for float comparison; easier to find particles you're looking for
 
 
-kernels = ms.kernels_shortlist
-kfacts = ms.kernel_shortlist_facts
-H_over_h = ms.kernel_shortlist_H_over_h
+kernels = ms.kernels
+kfacts = ms.kernelfacts
 
 
 
@@ -75,9 +71,6 @@ def main():
     print("Computing effective surfaces")
 
     eta_facts, srcfiles = get_sample_size()
-    # TODO: temp
-    #  eta_facts = eta_facts[:2]
-    #  srcfiles = srcfiles[:2]
 
 
 
@@ -96,6 +89,8 @@ def main():
 
     dx = (uplim - lowlim)/nx
 
+    gauss = kernels.index('gaussian')
+
 
     #--------------------------------
     # Loop over all files
@@ -109,7 +104,6 @@ def main():
 
 
         x, y, h, rho, m, ids, npart = ms.read_file(srcfiles[row], ptype)
-
 
         # find where particles i (0.45, 0.45) and j (0.5, 0.5) are
         iind = None
@@ -137,15 +131,17 @@ def main():
 
         for col, kernel in enumerate(kernels):
 
+            # Compute gaussian only once. It doesn't depend on eta, as it has no compact support.
+            if kernel == 'gaussian':
+                if Ax_list[0][gauss] is not None:
+                    continue
+
             print('working for ', kernel)
 
             # translate h to H
-            # kernels are normed to support region < 2H
             H = ms.get_H(h, kernel)
 
             A = np.zeros((nx, nx, 2), dtype=np.float) # storing computed effective surfaces
-
-
             #---------------------
             # compute A
             #---------------------
@@ -176,6 +172,14 @@ def main():
 
 
 
+
+    # if there is a gaussian kernel in there
+    if gauss is not None:
+        for r in range(1, nrows):
+            Ax_list[r][gauss] = Ax_list[0][gauss]
+            Ay_list[r][gauss] = Ay_list[0][gauss]
+            Anorm_list[r][gauss] = Anorm_list[0][gauss]
+        
 
 
 

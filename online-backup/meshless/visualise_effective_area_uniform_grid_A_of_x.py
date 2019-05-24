@@ -24,7 +24,7 @@ boxSize = 1
 # border limits for plots
 lowlim = 0.35
 uplim = 0.55
-nx = 200
+nx = 10
 tol = 1e-5 # tolerance for float comparison
 
 
@@ -43,6 +43,7 @@ def main():
     print("Computing effective surfaces")
 
     x, y, h, rho, m, ids, npart = ms.read_file(srcfile, ptype)
+    H = ms.get_H(h)
 
     # find where particles i (0.4, 0.4) and j (0.5, 0.5) are
     iind = None
@@ -70,9 +71,9 @@ def main():
         for j in range(nx):
             yy = lowlim + dx * j
 
-            hh = ms.h_of_x(xx, yy, x, y, h, m, rho)
+            hh = ms.h_of_x(xx, yy, x, y, H, m, rho)
 
-            A[j, i] = ms.Integrand_Aij_Ivanova(iind, jind, xx, yy, hh, x, y, h, m, rho) # not a typo: need A[j,i] for imshow
+            A[j, i] = ms.Integrand_Aij_Ivanova(iind, jind, xx, yy, hh, x, y, H, m, rho) # not a typo: need A[j,i] for imshow
 
 
 

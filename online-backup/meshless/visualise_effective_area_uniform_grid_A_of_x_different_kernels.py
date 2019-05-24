@@ -15,27 +15,21 @@ import h5py
 
 
 ptype = 'PartType0'             # for which particle type to look for
-iind = None                     # index of particle at (0.4, 0.4)
-jind = None                     # index of particle in the center (0.5, 0.5)
-
 
 srcfile = 'snapshot_0000.hdf5'
-L = 10      # nr of particles along one axis
-boxSize = 1
 
 # border limits for plots
 lowlim = 0.35
 uplim = 0.55
-nx = 50
+nx = 10
 tol = 1e-5 # tolerance for float comparison
 
 
 kernels = ms.kernels
 kfacts = ms.kernelfacts
 
-#  kernels = ['cubic_spline', 'quintic_spline',
-        #  'gaussian', 'gaussian_compact', 'supergaussian',
-        #  'wendland_C2', 'wendland_C4', 'wendland_C6']
+kernels = ['cubic_spline', 'quartic_spline', 'gaussian']
+kfacts = [1, 1, None]
 
 
 #========================
@@ -49,6 +43,8 @@ def main():
     print("Computing effective surfaces")
 
     x, y, h, rho, m, ids, npart = ms.read_file(srcfile, ptype)
+
+    H = ms.get_H(h)
 
     # find where particles i (0.4, 0.4) and j (0.5, 0.5) are
     iind = None
@@ -115,9 +111,9 @@ def main():
             for j in range(nx):
                 yy = lowlim + dx * j
 
-                hh = ms.h_of_x(xx, yy, x, y, h, m, rho, kernel=kernel)
+                hh = ms.h_of_x(xx, yy, x, y, H, m, rho, kernel=kernel)
 
-                A[j,i] = ms.Integrand_Aij_Ivanova(iind, jind, xx, yy, hh, x, y, h, m, rho, kernel=kernel, fact=kfacts[k]) # not a typo: need A[j,i] for imshow
+                A[j,i] = ms.Integrand_Aij_Ivanova(iind, jind, xx, yy, hh, x, y, H, m, rho, kernel=kernel, fact=kfacts[k]) # not a typo: need A[j,i] for imshow
 
 
         #---------------------

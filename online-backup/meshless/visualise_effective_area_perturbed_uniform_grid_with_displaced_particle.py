@@ -29,6 +29,7 @@ uplim = 0.4-(0.2-203/100)*boxSize/L
 
 tol = 1e-3 # tolerance for float comparison
 
+cheatfact = 1.5 # enlarge H with this cheat to skip singular matrices
 
 
 
@@ -61,13 +62,23 @@ def main():
 
             x, y, h, rho, m, ids, npart = ms.read_file(srcfile, ptype)
 
+            H = ms.get_H(h)
+            H *= cheatfact
+
             cind = ms.find_central_particle(L, ids)
             pind = ms.find_added_particle(ids)
 
-            nbors = ms.find_neighbours(pind, x, y, h)
-            Aij = ms.Aij_Hopkins(pind, x, y, h, m, rho)
+            nbors = ms.find_neighbours(pind, x, y, H)
+            Aij = ms.Aij_Hopkins(pind, x, y, H, m, rho)
 
-            ind = nbors.index(cind)
+            try:
+                ind = nbors.index(cind)
+            except ValueError:
+                print(nbors)
+                print(x[nbors])
+                print(y[nbors])
+                print(cind, x[cind], y[cind])
+                print(pind, x[pind], y[pind], 2*h[pind])
             A[jj, ii] = Aij[ind]
             
             jj += 1

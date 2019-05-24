@@ -55,13 +55,15 @@ def main():
 
             x, y, h, rho, m, ids, npart= ms.read_file(srcfile, ptype)
 
+            H = ms.get_H(h)
+
 
             cind = ms.find_central_particle(L, ids)
             pind = ms.find_added_particle(ids)
             # displaced particle has index -1
-            nbors = ms.find_neighbours(pind, x, y, h)
+            nbors = ms.find_neighbours(pind, x, y, H)
 
-            Aij = ms.Aij_Hopkins(pind, x, y, h, m, rho)
+            Aij = ms.Aij_Hopkins(pind, x, y, H, m, rho)
 
             ind = nbors.index(cind)
 

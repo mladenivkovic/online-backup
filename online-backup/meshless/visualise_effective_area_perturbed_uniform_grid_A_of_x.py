@@ -17,17 +17,12 @@ import h5py
 
 srcfile = 'snapshot_0000.hdf5'
 ptype = 'PartType0'             # for which particle type to look for
-iind = None                     # index of particle at (0.4, 0.4)
-jind = None                     # index of particle in the center (0.5, 0.5)
 
-
-L = 10      # nr of particles along one axis
-boxSize = 1
 
 # border limits for plots
 lowlim = 0.35
 uplim = 0.55
-nx = 100
+nx = 10
 tol = 5e-2 # tolerance for particle finding
 
 
@@ -66,6 +61,8 @@ def main():
     dx = (uplim - lowlim)/nx
 
 
+    H = ms.get_H(h)
+
     for i in range(nx):
         xx = lowlim + dx * i
 
@@ -75,9 +72,9 @@ def main():
             yy = lowlim + dx * j
 
 
-            hh = ms.h_of_x(xx, yy, x, y, h, m, rho)
+            hh = ms.h_of_x(xx, yy, x, y, H, m, rho)
 
-            A[j, i] = ms.Integrand_Aij_Ivanova(iind, jind, xx, yy, hh, x, y, h, m, rho) # not a typo: need A[j,i] for imshow
+            A[j, i] = ms.Integrand_Aij_Ivanova(iind, jind, xx, yy, hh, x, y, H, m, rho) # not a typo: need A[j,i] for imshow
 
 
 

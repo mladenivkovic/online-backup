@@ -18,15 +18,15 @@ import h5py
 srcfile = 'snapshot_0000.hdf5'
 ptype = 'PartType0'             # for which particle type to look for
 
-L = 10      # nr of particles along one axis
 boxSize = 1
+L = 10
 
 # border limits for plots
 lowlimx = 0.35
 uplimx = 0.55
 lowlimy = 0.35
 uplimy = 0.55
-nx = 50
+nx = 10
 tol = 1e-5 # tolerance for float comparison
 
 
@@ -45,6 +45,7 @@ def main():
 
     x, y, h, rho, m, ids, npart = ms.read_file(srcfile, ptype)
 
+    H = ms.get_H(h)
 
     # chosen particle coordinates for diagonal/vertical case
     x1_case = [0.4, 0.5] # x coords for both cases for particle 1
@@ -131,9 +132,9 @@ def main():
                 for j in range(nx):
                     yy = lowlimy + dx * j
 
-                    hh = ms.h_of_x(xx, yy, x, y, h, m, rho, fact=hf)
+                    hh = ms.h_of_x(xx, yy, x, y, H, m, rho, fact=hf)
 
-                    A[j, i] = ms.Integrand_Aij_Ivanova(iind, jind, xx, yy, hh, x, y, h, m, rho, fact=hf) # not a typo: need A[j,i] for imshow
+                    A[j, i] = ms.Integrand_Aij_Ivanova(iind, jind, xx, yy, hh, x, y, H, m, rho, fact=hf) # not a typo: need A[j,i] for imshow
 
 
 

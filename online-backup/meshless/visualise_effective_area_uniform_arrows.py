@@ -7,7 +7,7 @@
 # This program is not written flexibly, and will only do the
 # plots for one specific particle of this specific test case.
 #
-# For a chosen particle, for each neighbour within 2h the 
+# For a chosen particle, for each neighbour within H the 
 # effective surface is plotted as a vectors in the plane
 #===============================================================
 
@@ -69,13 +69,14 @@ def main():
     
 
     x, y, h, rho, m, ids, npart = ms.read_file(srcfile, ptype)
-    pind = ms.find_index(x, y, h, pcoord)
-    nbors = ms.find_neighbours(pind, x, y, h)
+    pind = ms.find_index(x, y, pcoord)
+    H = ms.get_H(h)
+    nbors = ms.find_neighbours(pind, x, y, H)
 
     print("Computing effective surfaces")
 
-    A_ij = ms.Aij_Hopkins(pind, x, y, h, m, rho)
-    x_ij = ms.x_ij(pind, x, y, h, nbors=nbors)
+    A_ij = ms.Aij_Hopkins(pind, x, y, H, m, rho)
+    x_ij = ms.x_ij(pind, x, y, H, nbors=nbors)
 
     
 
