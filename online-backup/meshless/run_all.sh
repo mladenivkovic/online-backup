@@ -91,24 +91,35 @@ fi
 
 declare -a dirlist
 
-dirlist=(uniform_arrows)
-dirlist+=(three_particles_volume_distribution)
-dirlist+=(hopkins_vs_ivanova_arrows)
 dirlist+=(A_of_x_different_kernels_uniform)
-dirlist+=(A_of_x_for_fixed_particles)
-dirlist+=(A_of_x_perturbed_uniform)
+# dirlist+=(A_of_x_for_fixed_particles)
+# dirlist+=(A_of_x_perturbed_uniform)
 dirlist+=(A_of_x_varying_neighbour_numbers)
 dirlist+=(A_of_x_varying_neighbour_numbers_and_kernels)
 dirlist+=(A_of_x_varying_neighbour_numbers_properly_perturbed)
 dirlist+=(A_of_x_varying_neighbour_numbers_properly_uniform)
-if [ $testing = true ]; then
-    dirlist+=(part_displaced_uniform/testing)
-    dirlist+=(part_perturbed_uniform/testing)
-else
-    dirlist+=(part_displaced_uniform/ics_and_outputs)
-    dirlist+=(part_perturbed_uniform/ics_and_outputs)
-fi
+# dirlist+=(hopkins_vs_ivanova_arrows)
+# dirlist+=(hopkins_vs_ivanova_arrows_perturbed)
+# dirlist+=(uniform_arrows)
 
+# if [ $testing = true ]; then
+#     dirlist+=(hopkins_vs_ivanova_part_displaced_uniform/testing)
+#     dirlist+=(part_displaced_uniform/testing)
+#     dirlist+=(part_perturbed_uniform/testing)
+# else
+#     dirlist+=(hopkins_vs_ivanova_part_displaced_uniform/ics_and_outputs)
+#     dirlist+=(part_displaced_uniform/ics_and_outputs)
+#     dirlist+=(part_perturbed_uniform/ics_and_outputs)
+# fi
+
+
+
+
+# Directories not to include because there are special cases
+# dirlist+=(check_volume)
+# dirlist+=(three_particles_volume_distribution)
+# dirlist+=(two_particles_primitive)
+# dirlist+=(voronoi)
 
 
 

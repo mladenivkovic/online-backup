@@ -53,7 +53,8 @@ def main():
     x2_case = [0.5, 0.5]
     y2_case = [0.5, 0.5]
 
-    for case, direction in enumerate(['diagonal', 'vertical']):
+    for case, direction in enumerate(['vertical']):
+    #  for case, direction in enumerate(['diagonal', 'vertical']):
 
         print('working for', direction)
 
@@ -157,10 +158,6 @@ def main():
             ymax = Ay.max()
             normmin = Anorm.min()
             normmax = Anorm.max()
-
-
-            # reset lowlim and maxlim so cells are centered around the point they represent
-            dx = (uplim - lowlim) / A.shape[0]
 
 
 
