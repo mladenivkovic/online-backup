@@ -12,3 +12,8 @@
 /home/mivkov/EPFL/Meshless_Methods/visualise_effective_area/A_of_x_perturbed_uniform/visualise_A_of_x_perturbed.py:/home/mivkov/coding/projekte/online-backup/meshless/visualise_effective_area_perturbed_uniform_grid_A_of_x.py
 /home/mivkov/EPFL/Meshless_Methods/visualise_effective_area/A_of_x_varying_neighbour_numbers_properly_uniform/visualise_A_of_x_varying_neighbour_numbers_properly.py:/home/mivkov/coding/projekte/online-backup/meshless/visualise_A_of_x_varying_neighbour_numbers_properly_uniform.py
 /home/mivkov/EPFL/Meshless_Methods/visualise_effective_area/run_all.sh:/home/mivkov/coding/projekte/online-backup/meshless//run_all.sh
+/home/mivkov/EPFL/Meshless_Methods/visualise_effective_area/check_volume/check_volume.py:/home/mivkov/coding/projekte/online-backup/meshless/check_volume.py
+/home/mivkov/EPFL/Meshless_Methods/visualise_effective_area/check_directions/check_directions.py:/home/mivkov/coding/projekte/online-backup/meshless/check_directions.py
+/home/mivkov/EPFL/Meshless_Methods/visualise_effective_area/hopkins_vs_ivanova_arrows/visualise_hopkins_vs_ivanova_arrows.py:/home/mivkov/coding/projekte/online-backup/meshless/visualise_hopkins_vs_ivanova_arrows.py
+/home/mivkov/EPFL/Meshless_Methods/visualise_effective_area/hopkins_vs_ivanova_part_displaced_uniform/visualise_hopkins_vs_ivanova_displaced_uniform.py:/home/mivkov/coding/projekte/online-backup/meshless/visualise_hopkins_vs_ivanova_displaced_uniform.py
+/home/mivkov/EPFL/Meshless_Methods/visualise_effective_area/hopkins_vs_ivanova_arrows_perturbed/visualise_hopkins_vs_ivanova_arrows_perturbed.py:/home/mivkov/coding/projekte/online-backup/meshless/visualise_hopkins_vs_ivanova_arrows_perturbed.py

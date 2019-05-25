@@ -1,30 +1,59 @@
 #!/usr/bin/env python3
 
+
 #===============================================================
-# Compute A(x) between two specified particles at various
-# positions x
+# Compute the effective surface for Hopkins and Ivanova on a
+# perturbed uniform field of particles, draw the arrows
+# representing this surface in the same colour as the neighbours
+# and also draw straight lines from the chosen particle to the
+# neighbour so you can check whether the direction is correct
 #===============================================================
 
 
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1 import make_axes_locatable, axes_size 
+
 
 import meshless as ms
 
-import h5py
 
 
-srcfile = 'snapshot_0000.hdf5'
-ptype = 'PartType0'             # for which particle type to look for
+#---------------------------
+# initialize variables
+#---------------------------
 
 
-# border limits for plots
-lowlim = 0.35
-uplim = 0.55
-nx = 100
-tol = 5e-2 # tolerance for particle finding
+# temp during rewriting
+srcfile = './snapshot_0000.hdf5'    # swift output file
+ptype = 'PartType0'                 # for which particle type to look for
+pcoords = [ [0.5, 0.5],
+            [0.7, 0.7]]             # coordinates of particle to work for
 
+
+
+
+fullcolorlist=['red', 
+        'green', 
+        'blue', 
+        'gold', 
+        'magenta', 
+        'cyan',
+        'lime',
+        'saddlebrown',
+        'darkolivegreen',
+        'cornflowerblue',
+        'orange',
+        'dimgrey',
+        'navajowhite',
+        'darkslategray',
+        'mediumpurple',
+        'lightpink',
+        'mediumseagreen',
+        'maroon',
+        'midnightblue',
+        'silver']
+
+ncolrs = len(fullcolorlist)
 
 
 
@@ -35,173 +64,141 @@ def main():
 #========================
     
 
-    #-----------------------------
-    # Part1 : compute all A
-    #-----------------------------
-
-    print("Computing effective surfaces")
-
     x, y, h, rho, m, ids, npart = ms.read_file(srcfile, ptype)
 
-    # find where particles i (0.4, 0.4) and j (0.5, 0.5) are
-    iind = None
-    jind = None
-
-    for i in range(x.shape[0]):
-        if abs(x[i] - 0.4) < tol and abs(y[i] - 0.4) < tol:
-            iind = i
-        if abs(x[i] - 0.5) < tol and abs(y[i] - 0.5) < tol:
-            jind = i
-
-
-    if iind is None or jind is None:
-        raise ValueError("iind=", iind, "jind=", jind)
-
-    A = np.zeros((nx, nx, 2), dtype=np.float) # storing computed effective surfaces
-    dx = (uplim - lowlim)/nx
-
-
+    # convert H to h
     H = ms.get_H(h)
 
-    for i in range(nx):
-        xx = lowlim + dx * i
-
-        print("i = ", i, "/", nx)
-
-        for j in range(nx):
-            yy = lowlim + dx * j
-
-
-            hh = ms.h_of_x(xx, yy, x, y, H, m, rho)
-
-            A[j, i] = ms.Integrand_Aij_Ivanova(iind, jind, xx, yy, hh, x, y, H, m, rho) # not a typo: need A[j,i] for imshow
+    # prepare figure
+    nrows = len(pcoords)
+    fig = plt.figure(figsize=(10, 5*nrows+0.5))
 
 
 
+    count = 0
+    for row, pcoord in enumerate(pcoords):
+        
+        print("Working for particle at", pcoord)
+
+        pind = ms.find_index(x, y, pcoord, tolerance=0.05)
+        nbors = ms.find_neighbours(pind, x, y, H)
+
+        print("Computing effective surfaces")
+
+
+        A_ij_Hopkins = ms.Aij_Hopkins(pind, x, y, H, m, rho)
+        A_ij_Ivanova = ms.Aij_Ivanova(pind, x, y, H, m, rho)
+
+        x_ij = ms.x_ij(pind, x, y, H, nbors=nbors)
+
+        print("Sum Hopkins:", np.sum(A_ij_Hopkins, axis=0)) 
+        print("Sum Ivanova:", np.sum(A_ij_Ivanova, axis=0)) 
+
+
+        print("Plotting")
+
+        ax1 = fig.add_subplot(nrows, 2, count+1)
+        ax2 = fig.add_subplot(nrows, 2, count+2)
+        count +=2
+
+        pointsize = 100
+        xmin = pcoord[0]-0.25
+        xmax = pcoord[0]+0.25
+        ymin = pcoord[1]-0.25
+        ymax = pcoord[1]+0.25
+
+        # plot particles in order of distance:
+        # closer ones first, so that you still can see the short arrows
+
+        dist = np.zeros(len(nbors))
+        for i, n in enumerate(nbors):
+            dist[i] = (x[n]-pcoord[0])**2 + (y[n]-pcoord[1])**2
+
+        args = np.argsort(dist)
+
+
+        for ax in [ax1, ax2]:
+            ax.set_facecolor('lavender')
+            ax.scatter(x[pind], y[pind], c='k', s=pointsize*2)
+            ax.set_xlim((xmin, xmax))
+            ax.set_ylim((ymin, ymax))
+            ax.set_xlabel('x')
+            ax.set_ylabel('y')
+
+
+            for i in range(len(nbors)):
+
+                ii = args[i]
+                n = nbors[ii]
+
+                cc = i
+                while cc > ncolrs-1:
+                    cc -= ncolrs
+                col = fullcolorlist[cc]
+
+                arrwidth = 2
+
+                def extrapolate():
+                    
+                    dx = x[pind] - x[n]
+                    dy = y[pind] - y[n]
+
+                    m = dy / dx
+
+                    if m == 0:
+                        x0 = 0
+                        y0 = y[pind]
+                        x1 = 1
+                        y1 = y[pind]
+                        return [x0, x1], [y0, y1]
+
+                    if dx < 0 :
+                        xn = 1
+                        yn = y[pind] + m * (xn - x[pind])
+                        return [x[pind], xn], [y[pind], yn]
+                    else:
+                        xn = 0
+                        yn = y[pind] + m * (xn - x[pind])
+                        return [x[pind], xn], [y[pind], yn]
+
+
+                # straight line
+                xx, yy = extrapolate()
+                ax.plot(xx, yy, c=col, zorder=0, lw=1)
+                # plot points
+                ax.scatter(x[n], y[n], c=col, s=pointsize, zorder=1, lw=1, edgecolor='k')
 
 
 
-    #-----------------------------
-    # Part2: Plot results
-    #-----------------------------
+        for i in range(len(nbors)):
 
-    print("Plotting")
+            ii = args[i]
+            n = nbors[ii]
 
-    fig = plt.figure(figsize=(14,5))
-    ax1 = fig.add_subplot(131, aspect='equal')
-    ax2 = fig.add_subplot(132, aspect='equal')
-    ax3 = fig.add_subplot(133, aspect='equal')
+            cc = i
+            while cc > ncolrs-1:
+                cc -= ncolrs
+            col = fullcolorlist[cc]
 
+            arrwidth = 2
 
-    Ax = A[:,:,0] 
-    Ay = A[:,:,1]
-    Anorm = np.sqrt(Ax**2 + Ay**2)
-    xmin = Ax.min()
-    xmax = Ax.max()
-    ymin = Ay.min()
-    ymax = Ay.max()
-    normmin = Anorm.min()
-    normmax = Anorm.max()
+            ax1.arrow(  x_ij[ii][0], x_ij[ii][1], A_ij_Hopkins[ii][0], A_ij_Hopkins[ii][1], 
+                        color=col, lw=arrwidth, zorder=10+i)
 
-
-    # reset lowlim and maxlim so cells are centered around the point they represent
-    dx = (uplim - lowlim) / A.shape[0]
-
-
-    #  uplim2 = uplim - 0.005
-    #  lowlim2 = lowlim + 0.005
-    uplim2 = uplim
-    lowlim2 = lowlim
-
-    cmap = 'YlGnBu_r'
+            ax2.arrow(  x_ij[ii][0], x_ij[ii][1], A_ij_Ivanova[ii][0], A_ij_Ivanova[ii][1], 
+                        color=col, lw=arrwidth, zorder=10+i)
 
 
 
-    im1 = ax1.imshow(Ax, origin='lower', 
-            vmin=xmin, vmax=xmax, cmap=cmap,
-            extent=(lowlim2, uplim2, lowlim2, uplim2))
-    im2 = ax2.imshow(Ay, origin='lower', 
-            vmin=ymin, vmax=ymax, cmap=cmap,
-            extent=(lowlim2, uplim2, lowlim2, uplim2))
-    im3 = ax3.imshow(Anorm, origin='lower', 
-            vmin=normmin, vmax=normmax, cmap=cmap,
-            extent=(lowlim2, uplim2, lowlim2, uplim2))
 
-    for ax, im in [(ax1, im1), (ax2, im2), (ax3, im3)]:
-        divider = make_axes_locatable(ax)
-        cax = divider.append_axes("right", size="2%", pad=0.05)
-        fig.colorbar(im, cax=cax)
+        ax1.set_title(r'Hopkins $\mathbf{A}_{ij}$ at $\mathbf{x}_{ij} = \mathbf{x}_i + \frac{h_i}{h_i+h_j}(\mathbf{x}_j - \mathbf{x}_i)$', fontsize=12, pad=12)
 
-    # superpose particles
-
-    inds = np.argsort(ids)
-
-    mask = np.logical_and(x>=lowlim-tol, x<=uplim+tol)
-    mask = np.logical_and(mask, y>=lowlim-tol)
-    mask = np.logical_and(mask, y<=uplim+tol)
-
-    ps = 50
-    fc = 'grey'
-    ec = 'black'
-    lw = 2
-
-    # plot neighbours (and the ones you drew anyway)
-    ax1.scatter(x[mask], y[mask], s=ps, lw=lw,
-            facecolor=fc, edgecolor=ec)
-    ax2.scatter(x[mask], y[mask], s=ps, lw=lw, 
-            facecolor=fc, edgecolor=ec)
-    ax3.scatter(x[mask], y[mask], s=ps, lw=lw,
-            facecolor=fc, edgecolor=ec)
-
-    # plot the chosen one
-    ps = 100
-    fc = 'white'
-    ax1.scatter(x[iind], y[iind], s=ps, lw=lw,
-            facecolor=fc, edgecolor=ec)
-    ax2.scatter(x[iind], y[iind], s=ps, lw=lw, 
-            facecolor=fc, edgecolor=ec)
-    ax3.scatter(x[iind], y[iind], s=ps, lw=lw,
-            facecolor=fc, edgecolor=ec)
+        ax2.set_title(r'Ivanova $\mathbf{A}_{ij}$ at $\mathbf{x}_{ij} = \mathbf{x}_i + \frac{h_i}{h_i+h_j}(\mathbf{x}_j - \mathbf{x}_i)$', fontsize=12, pad=12)
 
 
-    # plot central (and the ones you drew anyway)
-    fc = 'black'
-    ax1.scatter(x[jind], y[jind], s=ps, lw=lw,
-            facecolor=fc, edgecolor=ec)
-    ax2.scatter(x[jind], y[jind], s=ps, lw=lw, 
-            facecolor=fc, edgecolor=ec)
-    ax3.scatter(x[jind], y[jind], s=ps, lw=lw,
-            facecolor=fc, edgecolor=ec)
-
-
-
-    ax1.set_xlim((lowlim2,uplim2))
-    ax1.set_ylim((lowlim2,uplim2))
-    ax2.set_xlim((lowlim2,uplim2))
-    ax2.set_ylim((lowlim2,uplim2))
-    ax3.set_xlim((lowlim2,uplim2))
-    ax3.set_ylim((lowlim2,uplim2))
-
-
-
-    ax1.set_title(r'$x$ component of $\mathbf{A}_{ij}$')
-    ax2.set_title(r'$y$ component of $\mathbf{A}_{ij}$')
-    ax3.set_title(r'$|\mathbf{A}_{ij}|$')
-    ax1.set_xlabel('x')
-    ax1.set_ylabel('y')
-    ax2.set_xlabel('x')
-    ax2.set_ylabel('y')
-    ax3.set_xlabel('x')
-    ax3.set_ylabel('y')
-
-
-    fig.suptitle(r'Effective Area $\mathbf{A}_{ij}(\mathbf{x}) = \psi_i(\mathbf{x}) \nabla \psi_j(\mathbf{x}) - \psi_j(\mathbf{x}) \nabla \psi_i(\mathbf{x})$ of a particle (white) w.r.t. the central particle (black) in a uniform distribution')
     plt.tight_layout()
-    plt.savefig('effective_area_A_of_x.png', dpi=300)
+    plt.savefig('check_directions.png', dpi=200)
 
-    print('finished.')
-
-    return
 
 
 
