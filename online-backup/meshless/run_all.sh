@@ -91,11 +91,9 @@ fi
 
 declare -a dirlist
 
-dirlist+=(A_of_x_different_kernels_uniform)
+# dirlist+=(A_of_x_different_kernels_uniform)
 # dirlist+=(A_of_x_for_fixed_particles)
 # dirlist+=(A_of_x_perturbed_uniform)
-dirlist+=(A_of_x_varying_neighbour_numbers)
-dirlist+=(A_of_x_varying_neighbour_numbers_and_kernels)
 dirlist+=(A_of_x_varying_neighbour_numbers_properly_perturbed)
 dirlist+=(A_of_x_varying_neighbour_numbers_properly_uniform)
 # dirlist+=(hopkins_vs_ivanova_arrows)
@@ -121,7 +119,9 @@ dirlist+=(A_of_x_varying_neighbour_numbers_properly_uniform)
 # dirlist+=(two_particles_primitive)
 # dirlist+=(voronoi)
 
-
+# not interesting any more and takes too long
+# dirlist+=(A_of_x_varying_neighbour_numbers)
+# dirlist+=(A_of_x_varying_neighbour_numbers_and_kernels)
 
 
 for d in "${dirlist[@]}"; do
