@@ -2,11 +2,8 @@
 
 
 #===============================================================
-# Compute the effective surface for Hopkins and Ivanova on a
-# perturbed uniform field of particles, draw the arrows
-# representing this surface in the same colour as the neighbours
-# and also draw straight lines from the chosen particle to the
-# neighbour so you can check whether the direction is correct
+# Check by computing the effective surface a la Hopkins using
+# two different ways and pray that it gives identical results.
 #===============================================================
 
 
@@ -29,7 +26,7 @@ ptype = 'PartType0'                 # for which particle type to look for
 pcoords = [ [0.5, 0.5],
             [0.7, 0.7]]             # coordinates of particle to work for
 
-
+print_by_particle = False           # whether to print differences for each particle separately
 
 
 fullcolorlist=['red', 
@@ -91,16 +88,6 @@ def main():
 
         x_ij = ms.x_ij(pind, x, y, H, nbors=nbors)
 
-        print("Sum Hopkins:", np.sum(A_ij_Hopkins, axis=0)) 
-        print("Sum Hopkins_v2:", np.sum(A_ij_Hopkins_v2, axis=0)) 
-        print("Max difference x:", np.max((A_ij_Hopkins[:,0] - A_ij_Hopkins_v2[:,0])/A_ij_Hopkins[:,0]))
-        print("Max difference y:", np.max((A_ij_Hopkins[:,1] - A_ij_Hopkins_v2[:,1])/A_ij_Hopkins[:,0]))
-        abs1 = np.sqrt(A_ij_Hopkins[:,0]**2 + A_ij_Hopkins[:,1]**2)
-        abs2 = np.sqrt(A_ij_Hopkins_v2[:,0]**2 + A_ij_Hopkins_v2[:,1]**2)
-        print("Max difference norm:", np.max((abs1 - abs2)/abs1))
-        print(abs1)
-        print(abs2)
-
 
         print("Plotting")
 
@@ -123,6 +110,19 @@ def main():
 
         args = np.argsort(dist)
 
+        print("Sum Hopkins:", np.sum(A_ij_Hopkins, axis=0)) 
+        print("Sum Hopkins_v2:", np.sum(A_ij_Hopkins_v2, axis=0)) 
+
+        print("===================================================")
+        print("===================================================")
+        print("===================================================")
+
+        print("Max difference x:", np.max((A_ij_Hopkins[:,0] - A_ij_Hopkins_v2[:,0])/A_ij_Hopkins[:,0]))
+        print("Max difference y:", np.max((A_ij_Hopkins[:,1] - A_ij_Hopkins_v2[:,1])/A_ij_Hopkins[:,1]))
+        abs1 = np.sqrt(A_ij_Hopkins[:,0]**2 + A_ij_Hopkins[:,1]**2)
+        abs2 = np.sqrt(A_ij_Hopkins_v2[:,0]**2 + A_ij_Hopkins_v2[:,1]**2)
+        print("Max difference norm:", np.max((abs1 - abs2)/abs1))
+        print()
 
         for ax in [ax1, ax2]:
             ax.set_facecolor('lavender')
@@ -144,6 +144,18 @@ def main():
                 col = fullcolorlist[cc]
 
                 arrwidth = 2
+
+                if print_by_particle:
+                    print("Particle colour", col)
+                    print("Max difference x:", (A_ij_Hopkins[ii,0] - A_ij_Hopkins_v2[ii,0])/A_ij_Hopkins[ii,0])
+                    print("Max difference y:", (A_ij_Hopkins[ii,1] - A_ij_Hopkins_v2[ii,1])/A_ij_Hopkins[ii,1])
+                    print("x v1:", A_ij_Hopkins[ii,0], "v2:", A_ij_Hopkins_v2[ii, 0], A_ij_Hopkins[ii,0] - A_ij_Hopkins_v2[ii,0])
+                    print("y v1:", A_ij_Hopkins[ii,1], "v2:", A_ij_Hopkins_v2[ii, 1], A_ij_Hopkins[ii,1] - A_ij_Hopkins_v2[ii,1])
+                    abs1 = np.sqrt(A_ij_Hopkins[ii,0]**2 + A_ij_Hopkins[ii,1]**2)
+                    abs2 = np.sqrt(A_ij_Hopkins_v2[ii,0]**2 + A_ij_Hopkins_v2[ii,1]**2)
+                    print("Max difference norm:", (abs1 - abs2)/abs1)
+                    print()
+
 
                 def extrapolate():
                     
