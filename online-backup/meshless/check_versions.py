@@ -20,12 +20,12 @@ import meshless as ms
 #---------------------------
 
 
-# temp during rewriting
 srcfile = './snapshot_perturbed.hdf5'    # swift output file
 ptype = 'PartType0'                 # for which particle type to look for
 pcoords = [ [0.5, 0.5],
             [0.7, 0.7]]             # coordinates of particle to work for
 
+verbose = False                     # how talkative the code is
 print_by_particle = False           # whether to print differences for each particle separately
 
 
@@ -56,6 +56,41 @@ ncolrs = len(fullcolorlist)
 
 
 
+
+
+#--------------------------------------
+def extrapolate(x, y, pind, n):
+#--------------------------------------
+    """
+    Extrapolate coordinates for particle-particle line
+    """
+    
+    dx = x[pind] - x[n]
+    dy = y[pind] - y[n]
+
+    m = dy / dx
+
+    if m == 0:
+        x0 = 0
+        y0 = y[pind]
+        x1 = 1
+        y1 = y[pind]
+        return [x0, x1], [y0, y1]
+
+    if dx < 0 :
+        xn = 1
+        yn = y[pind] + m * (xn - x[pind])
+        return [x[pind], xn], [y[pind], yn]
+    else:
+        xn = 0
+        yn = y[pind] + m * (xn - x[pind])
+        return [x[pind], xn], [y[pind], yn]
+
+
+
+
+
+
 #========================
 def main():
 #========================
@@ -68,7 +103,8 @@ def main():
 
     # prepare figure
     nrows = len(pcoords)
-    fig = plt.figure(figsize=(10, 5*nrows+0.5))
+    ncols = 5
+    fig = plt.figure(figsize=(5*ncols+0.5, 5*nrows+0.5))
 
 
 
@@ -85,15 +121,23 @@ def main():
 
         A_ij_Hopkins = ms.Aij_Hopkins(pind, x, y, H, m, rho)
         A_ij_Hopkins_v2 = ms.Aij_Hopkins_v2(pind, x, y, H, m, rho)
+        A_ij_Ivanova = ms.Aij_Ivanova(pind, x, y, H, m, rho)
+        A_ij_Ivanova_v2 = ms.Aij_Ivanova_analytical_gradients(pind, x, y, H, m, rho)
+        A_ij_Ivanova_v3 = ms.Aij_Ivanova_Taylor(pind, x, y, H, m, rho)
+        #  A_ij_Ivanova = A_ij_Ivanova_v3
+        #  A_ij_Ivanova_v2 = A_ij_Ivanova_v3
 
         x_ij = ms.x_ij(pind, x, y, H, nbors=nbors)
 
 
         print("Plotting")
 
-        ax1 = fig.add_subplot(nrows, 2, count+1)
-        ax2 = fig.add_subplot(nrows, 2, count+2)
-        count +=2
+        ax1 = fig.add_subplot(nrows, 5, count+1, aspect='equal')
+        ax2 = fig.add_subplot(nrows, 5, count+2, aspect='equal')
+        ax3 = fig.add_subplot(nrows, 5, count+3, aspect='equal')
+        ax4 = fig.add_subplot(nrows, 5, count+4, aspect='equal')
+        ax5 = fig.add_subplot(nrows, 5, count+5, aspect='equal')
+        count += ncols
 
         pointsize = 100
         xmin = pcoord[0]-0.25
@@ -110,21 +154,53 @@ def main():
 
         args = np.argsort(dist)
 
-        print("Sum Hopkins:", np.sum(A_ij_Hopkins, axis=0)) 
-        print("Sum Hopkins_v2:", np.sum(A_ij_Hopkins_v2, axis=0)) 
 
-        print("===================================================")
-        print("===================================================")
-        print("===================================================")
 
-        print("Max difference x:", np.max((A_ij_Hopkins[:,0] - A_ij_Hopkins_v2[:,0])/A_ij_Hopkins[:,0]))
-        print("Max difference y:", np.max((A_ij_Hopkins[:,1] - A_ij_Hopkins_v2[:,1])/A_ij_Hopkins[:,1]))
-        abs1 = np.sqrt(A_ij_Hopkins[:,0]**2 + A_ij_Hopkins[:,1]**2)
-        abs2 = np.sqrt(A_ij_Hopkins_v2[:,0]**2 + A_ij_Hopkins_v2[:,1]**2)
-        print("Max difference norm:", np.max((abs1 - abs2)/abs1))
-        print()
+        if verbose:
+            print("Sum Hopkins:   ", np.sum(A_ij_Hopkins, axis=0)) 
+            print("Sum Hopkins_v2:", np.sum(A_ij_Hopkins_v2, axis=0)) 
+            print("Sum Ivanova:   ", np.sum(A_ij_Ivanova, axis=0)) 
+            print("Sum Ivanova_v2:", np.sum(A_ij_Ivanova_v2, axis=0)) 
+            print("Sum Ivanova_v3:", np.sum(A_ij_Ivanova_v3, axis=0)) 
 
-        for ax in [ax1, ax2]:
+            abs1   = np.sqrt(A_ij_Hopkins[:,0]**2 + A_ij_Hopkins[:,1]**2)
+            abs2   = np.sqrt(A_ij_Hopkins_v2[:,0]**2 + A_ij_Hopkins_v2[:,1]**2)
+            abs_i  = np.sqrt(A_ij_Ivanova[:,0]**2 + A_ij_Ivanova[:,1]**2)
+            abs_i2 = np.sqrt(A_ij_Ivanova_v2[:,0]**2 + A_ij_Ivanova_v2[:,1]**2)
+            abs_i3 = np.sqrt(A_ij_Ivanova_v3[:,0]**2 + A_ij_Ivanova_v3[:,1]**2)
+
+            #  print("Max difference x:", np.max((A_ij_Hopkins[:,0] - A_ij_Hopkins_v2[:,0])/A_ij_Hopkins[:,0]))
+            #  print("Max difference y:", np.max((A_ij_Hopkins[:,1] - A_ij_Hopkins_v2[:,1])/A_ij_Hopkins[:,1]))
+            #  print("Max difference norm:", np.max((abs1 - abs2)/abs1))
+
+            print("Sum abs Hopkins:   ", np.sum(abs1))
+            print("Sum abs Hopkins_v2:", np.sum(abs2))
+            print("Sum abs Ivanova:   ", np.sum(abs_i))
+            print("Sum abs Ivanova_v2:", np.sum(abs_i2))
+            print("Sum abs Ivanova_v3:", np.sum(abs_i3))
+
+            #  print("Ratio Hopkins/Ivanova", np.sum(abs1)/np.sum(abs_i))
+            #  V_i = ms.V(pind, m, rho)
+            #  print(V_i)
+            #  R = (V_i/np.pi)**(1/2)
+            #  print("Particle surface", 2*np.pi*R)
+            #  print("mean h^2", np.mean(h**2))
+
+            print()
+            print("I1/I2", A_ij_Ivanova/A_ij_Ivanova_v2)
+            print("I1/I3", A_ij_Ivanova/A_ij_Ivanova_v3)
+            print("I2/I3", A_ij_Ivanova_v2/A_ij_Ivanova_v3)
+
+            print()
+            print("===================================================")
+            print("===================================================")
+            print("===================================================")
+
+
+
+
+
+        for ax in [ax1, ax2, ax3, ax4, ax5]:
             ax.set_facecolor('lavender')
             ax.scatter(x[pind], y[pind], c='k', s=pointsize*2)
             ax.set_xlim((xmin, xmax))
@@ -157,32 +233,8 @@ def main():
                     print()
 
 
-                def extrapolate():
-                    
-                    dx = x[pind] - x[n]
-                    dy = y[pind] - y[n]
-
-                    m = dy / dx
-
-                    if m == 0:
-                        x0 = 0
-                        y0 = y[pind]
-                        x1 = 1
-                        y1 = y[pind]
-                        return [x0, x1], [y0, y1]
-
-                    if dx < 0 :
-                        xn = 1
-                        yn = y[pind] + m * (xn - x[pind])
-                        return [x[pind], xn], [y[pind], yn]
-                    else:
-                        xn = 0
-                        yn = y[pind] + m * (xn - x[pind])
-                        return [x[pind], xn], [y[pind], yn]
-
-
                 # straight line
-                xx, yy = extrapolate()
+                xx, yy = extrapolate(x, y, pind, n)
                 ax.plot(xx, yy, c=col, zorder=0, lw=1)
                 # plot points
                 ax.scatter(x[n], y[n], c=col, s=pointsize, zorder=1, lw=1, edgecolor='k')
@@ -207,12 +259,27 @@ def main():
             ax2.arrow(  x_ij[ii][0], x_ij[ii][1], A_ij_Hopkins_v2[ii][0], A_ij_Hopkins_v2[ii][1], 
                         color=col, lw=arrwidth, zorder=10+i)
 
+            ax3.arrow(  x_ij[ii][0], x_ij[ii][1], A_ij_Ivanova[ii][0], A_ij_Ivanova[ii][1], 
+                        color=col, lw=arrwidth, zorder=10+i)
+
+            ax4.arrow(  x_ij[ii][0], x_ij[ii][1], A_ij_Ivanova_v2[ii][0], A_ij_Ivanova_v2[ii][1], 
+                        color=col, lw=arrwidth, zorder=10+i)
+
+            ax5.arrow(  x_ij[ii][0], x_ij[ii][1], A_ij_Ivanova_v3[ii][0], A_ij_Ivanova_v3[ii][1], 
+                        color=col, lw=arrwidth, zorder=10+i)
 
 
 
         ax1.set_title(r'Hopkins $\mathbf{A}_{ij}$ at $\mathbf{x}_{ij} = \mathbf{x}_i + \frac{h_i}{h_i+h_j}(\mathbf{x}_j - \mathbf{x}_i)$', fontsize=12, pad=12)
 
         ax2.set_title(r'Hopkins_v2 $\mathbf{A}_{ij}$ at $\mathbf{x}_{ij} = \mathbf{x}_i + \frac{h_i}{h_i+h_j}(\mathbf{x}_j - \mathbf{x}_i)$', fontsize=12, pad=12)
+
+        ax3.set_title(r'Ivanova $\mathbf{A}_{ji}$ at $\mathbf{x}_{ij} = \mathbf{x}_i + \frac{h_i}{h_i+h_j}(\mathbf{x}_j - \mathbf{x}_i)$', fontsize=12, pad=12)
+
+        ax4.set_title(r'Ivanova with analytical gradient $\mathbf{A}_{ji}$ at $\mathbf{x}_{ij} = \mathbf{x}_i + \frac{h_i}{h_i+h_j}(\mathbf{x}_j - \mathbf{x}_i)$', fontsize=12, pad=12)
+
+        ax5.set_title(r'Ivanova by Taylor expansion $\mathbf{A}_{ji}$ at $\mathbf{x}_{ij} = \mathbf{x}_i + \frac{h_i}{h_i+h_j}(\mathbf{x}_j - \mathbf{x}_i)$', fontsize=12, pad=12)
+
 
 
     plt.tight_layout()

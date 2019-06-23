@@ -24,6 +24,7 @@ import meshless as ms
 
 
 # temp during rewriting
+#  srcfile = './snapshot_high_eta.hdf5'    # swift output file
 srcfile = './snapshot_0000.hdf5'    # swift output file
 ptype = 'PartType0'                 # for which particle type to look for
 pcoords = [ [0.5, 0.5],
