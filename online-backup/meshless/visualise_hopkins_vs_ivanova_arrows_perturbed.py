@@ -74,32 +74,32 @@ def main():
 
 
     A_ij_Hopkins = ms.Aij_Hopkins(pind, x, y, H, m, rho)
-    #  A_ij_Ivanova = A_ij_Hopkins
     A_ij_Ivanova = ms.Aij_Ivanova(pind, x, y, H, m, rho)
+    A_ij_Ivanova2 = ms.Aij_Ivanova_analytical_gradients(pind, x, y, H, m, rho)
+    A_ij_Ivanova3 = ms.Aij_Ivanova_approximate_gradients(pind, x, y, H, m, rho)
 
     x_ij = ms.x_ij(pind, x, y, H, nbors=nbors)
 
     print("Sum Hopkins:", np.sum(A_ij_Hopkins, axis=0)) 
     print("Sum Ivanova:", np.sum(A_ij_Ivanova, axis=0)) 
+    print("Sum Ivanova2:", np.sum(A_ij_Ivanova2, axis=0)) 
+    print("Sum Ivanova3:", np.sum(A_ij_Ivanova3, axis=0)) 
+
+    print("")
+    print("Ratios Hopkins/Ivanova")
+
+
+    print(r" Ratios Hopkins/Ivanova $|A_{ij}|$    \\")
+    for i in range(len(nbors)):
+        AI = np.sqrt(A_ij_Ivanova[i][0]**2 + A_ij_Ivanova[i][1]**2)
+        AH = np.sqrt(A_ij_Hopkins[i][0]**2 + A_ij_Hopkins[i][1]**2)
+        print(r'{0:8.6f} \\'.format(AH/AI))
+
+
+
 
 
     print("Plotting")
-
-    fig = plt.figure(figsize=(18, 9))
-    ax1 = fig.add_subplot(121)
-    ax2 = fig.add_subplot(122)
-
-    pointsize = 200
-    ax1.set_facecolor('lavender')
-    ax1.scatter(x[pind], y[pind], c='k', s=pointsize*2)
-    ax1.set_xlim((0.25,0.75))
-    ax1.set_ylim((0.25,0.75))
-
-    ax2.set_facecolor('lavender')
-    ax2.scatter(x[pind], y[pind], c='k', s=pointsize*2)
-    ax2.set_xlim((0.25,0.75))
-    ax2.set_ylim((0.25,0.75))
-
     # plot particles in order of distance:
     # closer ones first, so that you still can see the short arrows
 
@@ -109,42 +109,76 @@ def main():
 
     args = np.argsort(dist)
 
-    for i in range(len(nbors)):
 
+    fig = plt.figure(figsize=(34, 9))
+    ax1 = fig.add_subplot(141, aspect='equal')
+    ax2 = fig.add_subplot(142, aspect='equal')
+    ax3 = fig.add_subplot(143, aspect='equal')
+    ax4 = fig.add_subplot(144, aspect='equal')
+
+    pointsize = 200
+    arrwidth = 2
+
+    for ax in [ax1, ax2, ax3, ax4]:
+        ax.set_facecolor('lavender')
+        ax.scatter(x[pind], y[pind], c='k', s=pointsize*2)
+        ax.set_xlim((0.25,0.75))
+        ax.set_ylim((0.25,0.75))
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
+
+
+        for i in range(len(nbors)):
+
+            ii = args[i]
+            n = nbors[ii]
+
+            cc = i
+            while cc > ncolrs-1:
+                cc -= ncolrs
+            col = fullcolorlist[cc]
+
+            arrwidth = 2
+
+            ax.scatter(x[n], y[n], c=col, s=pointsize, zorder=0, lw=1, edgecolor='k')
+
+
+    for i in range(len(nbors)):
         ii = args[i]
         n = nbors[ii]
+
 
         cc = i
         while cc > ncolrs-1:
             cc -= ncolrs
         col = fullcolorlist[cc]
 
-        arrwidth = 2
 
-        ax1.scatter(x[n], y[n], c=col, s=pointsize, zorder=0, lw=1, edgecolor='k')
+
         ax1.arrow(x_ij[ii][0], x_ij[ii][1], A_ij_Hopkins[ii][0], A_ij_Hopkins[ii][1], 
-            color=col, lw=arrwidth, zorder=10+i)
+                color=col, lw=arrwidth, zorder=10+i)
 
-        ax2.scatter(x[n], y[n], c=col, s=pointsize, zorder=0, lw=1, edgecolor='k')
         ax2.arrow(x_ij[ii][0], x_ij[ii][1], A_ij_Ivanova[ii][0], A_ij_Ivanova[ii][1], 
-            color=col, lw=arrwidth, zorder=10+i)
+                color=col, lw=arrwidth, zorder=10+i)
 
+        ax3.arrow(x_ij[ii][0], x_ij[ii][1], A_ij_Ivanova2[ii][0], A_ij_Ivanova2[ii][1], 
+                color=col, lw=arrwidth, zorder=10+i)
 
-    print("IVANOVA:", A_ij_Ivanova)
-    print("HOPKINS:", A_ij_Hopkins)
+        ax4.arrow(x_ij[ii][0], x_ij[ii][1], A_ij_Ivanova3[ii][0], A_ij_Ivanova3[ii][1], 
+                color=col, lw=arrwidth, zorder=10+i)
 
 
     ax1.set_title(r'Hopkins $\mathbf{A}_{ij}$ at $\mathbf{x}_{ij} = \mathbf{x}_i + \frac{h_i}{h_i+h_j}(\mathbf{x}_j - \mathbf{x}_i)$', fontsize=18, pad=12)
-    ax1.set_xlabel('x')
-    ax1.set_ylabel('y')
 
     ax2.set_title(r'Ivanova $\mathbf{A}_{ij}$ at $\mathbf{x}_{ij} = \mathbf{x}_i + \frac{h_i}{h_i+h_j}(\mathbf{x}_j - \mathbf{x}_i)$', fontsize=18, pad=12)
-    ax2.set_xlabel('x')
-    ax2.set_ylabel('y')
+
+    ax3.set_title(r'Ivanova v2 analytic gradients $\mathbf{A}_{ij}$ at $\mathbf{x}_{ij} = \mathbf{x}_i + \frac{h_i}{h_i+h_j}(\mathbf{x}_j - \mathbf{x}_i)$', fontsize=18, pad=12)
+
+    ax4.set_title(r'Ivanova v2 approx gradients $\mathbf{A}_{ij}$ at $\mathbf{x}_{ij} = \mathbf{x}_i + \frac{h_i}{h_i+h_j}(\mathbf{x}_j - \mathbf{x}_i)$', fontsize=18, pad=12)
 
 
     plt.tight_layout()
-    plt.savefig('effective_area_hopkins_vs_ivanova.png', dpi=200)
+    plt.savefig('effective_area_hopkins_vs_ivanova_perturbed.png', dpi=200)
 
 
 

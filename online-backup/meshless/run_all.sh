@@ -10,8 +10,8 @@ rerun_swift=false
 
 # whether you're doing a test run to see whether your code is not crashing,
 # or you want quality pics
-# testing=true
-testing=false
+testing=true
+# testing=false
 
 
 dir=$PWD
@@ -91,24 +91,24 @@ fi
 
 declare -a dirlist
 
-# dirlist+=(A_of_x_different_kernels_uniform)
-# dirlist+=(A_of_x_for_fixed_particles)
-# dirlist+=(A_of_x_perturbed_uniform)
+dirlist+=(A_of_x_different_kernels_uniform)
+dirlist+=(A_of_x_for_fixed_particles)
+dirlist+=(A_of_x_perturbed_uniform)
 dirlist+=(A_of_x_varying_neighbour_numbers_properly_perturbed)
 dirlist+=(A_of_x_varying_neighbour_numbers_properly_uniform)
-# dirlist+=(hopkins_vs_ivanova_arrows)
-# dirlist+=(hopkins_vs_ivanova_arrows_perturbed)
-# dirlist+=(uniform_arrows)
+dirlist+=(hopkins_vs_ivanova_arrows)
+dirlist+=(hopkins_vs_ivanova_arrows_perturbed)
+dirlist+=(uniform_arrows)
 
-# if [ $testing = true ]; then
-#     dirlist+=(hopkins_vs_ivanova_part_displaced_uniform/testing)
-#     dirlist+=(part_displaced_uniform/testing)
-#     dirlist+=(part_perturbed_uniform/testing)
-# else
-#     dirlist+=(hopkins_vs_ivanova_part_displaced_uniform/ics_and_outputs)
-#     dirlist+=(part_displaced_uniform/ics_and_outputs)
-#     dirlist+=(part_perturbed_uniform/ics_and_outputs)
-# fi
+if [ $testing = true ]; then
+    dirlist+=(hopkins_vs_ivanova_part_displaced_uniform/testing)
+    dirlist+=(part_displaced_uniform/testing)
+    dirlist+=(part_perturbed_uniform/testing)
+else
+    dirlist+=(hopkins_vs_ivanova_part_displaced_uniform/ics_and_outputs)
+    dirlist+=(part_displaced_uniform/ics_and_outputs)
+    dirlist+=(part_perturbed_uniform/ics_and_outputs)
+fi
 
 
 

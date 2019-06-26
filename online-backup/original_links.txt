@@ -18,3 +18,4 @@
 /home/mivkov/EPFL/Meshless_Methods/visualise_effective_area/hopkins_vs_ivanova_part_displaced_uniform/visualise_hopkins_vs_ivanova_displaced_uniform.py:/home/mivkov/coding/projekte/online-backup/meshless/visualise_hopkins_vs_ivanova_displaced_uniform.py
 /home/mivkov/EPFL/Meshless_Methods/visualise_effective_area/hopkins_vs_ivanova_arrows_perturbed/visualise_hopkins_vs_ivanova_arrows_perturbed.py:/home/mivkov/coding/projekte/online-backup/meshless/visualise_hopkins_vs_ivanova_arrows_perturbed.py
 /home/mivkov/EPFL/Meshless_Methods/visualise_effective_area/check_multiple_versions/check_versions.py:/home/mivkov/coding/projekte/online-backup/meshless/check_versions.py
+/home/mivkov/EPFL/Meshless_Methods/visualise_effective_area/hopkins_vs_ivanova_2_particles/check_2_ivanova_vs_hopkins.py:/home/mivkov/coding/projekte/online-backup/meshless/check_2_particles_ivanova_vs_hopkins.py

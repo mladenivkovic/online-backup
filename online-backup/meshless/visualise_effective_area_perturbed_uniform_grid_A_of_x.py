@@ -22,7 +22,7 @@ ptype = 'PartType0'             # for which particle type to look for
 # border limits for plots
 lowlim = 0.35
 uplim = 0.55
-nx = 100
+nx = 10
 tol = 5e-2 # tolerance for particle finding
 
 

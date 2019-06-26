@@ -54,6 +54,8 @@ def main():
 
     AH = np.zeros((nx, nx, 2), dtype=np.float) # storing computed effective surfaces Hopkins
     AI = np.zeros((nx, nx, 2), dtype=np.float) # storing computed effective surfaces ivanova
+    AI2 = np.zeros((nx, nx, 2), dtype=np.float) # storing computed effective surfaces ivanova
+    AI3 = np.zeros((nx, nx, 2), dtype=np.float) # storing computed effective surfaces ivanova
 
     ii = 0
     jj = 0
@@ -82,6 +84,12 @@ def main():
             Aij = ms.Aij_Ivanova(pind, x, y, H, m, rho)
             AI[jj, ii] = Aij[ind]
 
+            Aij = ms.Aij_Ivanova_analytical_gradients(pind, x, y, H, m, rho)
+            AI2[jj, ii] = Aij[ind]
+
+            Aij = ms.Aij_Ivanova_approximate_gradients(pind, x, y, H, m, rho)
+            AI3[jj, ii] = Aij[ind]
+
             jj += 1
         jj = 0
         ii += 1
@@ -97,13 +105,19 @@ def main():
 
     print("Plotting")
 
-    fig = plt.figure(figsize=(14,10))
-    ax1 = fig.add_subplot(231, aspect='equal')
-    ax2 = fig.add_subplot(232, aspect='equal')
-    ax3 = fig.add_subplot(233, aspect='equal')
-    ax4 = fig.add_subplot(234, aspect='equal')
-    ax5 = fig.add_subplot(235, aspect='equal')
-    ax6 = fig.add_subplot(236, aspect='equal')
+    fig = plt.figure(figsize=(14,20))
+    ax1 = fig.add_subplot(4,3,1, aspect='equal')
+    ax2 = fig.add_subplot(4,3,2, aspect='equal')
+    ax3 = fig.add_subplot(4,3,3, aspect='equal')
+    ax4 = fig.add_subplot(4,3,4, aspect='equal')
+    ax5 = fig.add_subplot(4,3,5, aspect='equal')
+    ax6 = fig.add_subplot(4,3,6, aspect='equal')
+    ax7 = fig.add_subplot(4,3,7, aspect='equal')
+    ax8 = fig.add_subplot(4,3,8, aspect='equal')
+    ax9 = fig.add_subplot(4,3,9, aspect='equal')
+    ax10 = fig.add_subplot(4,3,10, aspect='equal')
+    ax11 = fig.add_subplot(4,3,11, aspect='equal')
+    ax12 = fig.add_subplot(4,3,12, aspect='equal')
 
 
     AHx = AH[:,:,0]
@@ -125,6 +139,28 @@ def main():
     Iymax = AIy.max()
     Inormmin = AInorm.min()
     Inormmax = AInorm.max()
+
+
+    AI2x = AI2[:,:,0]
+    AI2y = AI2[:,:,1]
+    AI2norm = np.sqrt(AI2x**2 + AI2y**2)
+    I2xmin = AI2x.min()
+    I2xmax = AI2x.max()
+    I2ymin = AI2y.min()
+    I2ymax = AI2y.max()
+    I2normmin = AI2norm.min()
+    I2normmax = AI2norm.max()
+
+
+    AI3x = AI3[:,:,0]
+    AI3y = AI3[:,:,1]
+    AI3norm = np.sqrt(AI3x**2 + AI3y**2)
+    I3xmin = AI3x.min()
+    I3xmax = AI3x.max()
+    I3ymin = AI3y.min()
+    I3ymax = AI3y.max()
+    I3normmin = AI3norm.min()
+    I3normmax = AI3norm.max()
 
     # reset lowlim and maxlim so cells are centered around the point they represent
     dx = (uplim - lowlim) / AH.shape[0]
@@ -156,8 +192,29 @@ def main():
     im6 = ax6.imshow(AInorm, origin='lower', 
             vmin=Inormmin, vmax=Inormmax, cmap=cmap,
             extent=(lowlim2, uplim2, lowlim2, uplim2))
+    im7 = ax7.imshow(AI2x, origin='lower', 
+            vmin=I2xmin, vmax=I2xmax, cmap=cmap,
+            extent=(lowlim2, uplim2, lowlim2, uplim2))
+    im8 = ax8.imshow(AIy, origin='lower', 
+            vmin=I2ymin, vmax=I2ymax, cmap=cmap,
+            extent=(lowlim2, uplim2, lowlim2, uplim2))
+    im9 = ax9.imshow(AI2norm, origin='lower', 
+            vmin=I2normmin, vmax=I2normmax, cmap=cmap,
+            extent=(lowlim2, uplim2, lowlim2, uplim2))
+    im10 = ax10.imshow(AI3x, origin='lower', 
+            vmin=I3xmin, vmax=I3xmax, cmap=cmap,
+            extent=(lowlim2, uplim2, lowlim2, uplim2))
+    im11 = ax11.imshow(AI3y, origin='lower', 
+            vmin=I3ymin, vmax=I3ymax, cmap=cmap,
+            extent=(lowlim2, uplim2, lowlim2, uplim2))
+    im12 = ax12.imshow(AI3norm, origin='lower', 
+            vmin=I3normmin, vmax=I3normmax, cmap=cmap,
+            extent=(lowlim2, uplim2, lowlim2, uplim2))
 
-    for ax, im in [(ax1, im1), (ax2, im2), (ax3, im3), (ax4, im4), (ax5, im5), (ax6, im6)]:
+
+
+    for ax, im in [(ax1, im1), (ax2, im2), (ax3, im3), (ax4, im4), (ax5, im5), (ax6, im6), 
+            (ax7, im7), (ax8, im8), (ax9, im9), (ax10, im10), (ax11, im11), (ax12, im12)]:
         divider = make_axes_locatable(ax)
         cax = divider.append_axes("right", size="2%", pad=0.05)
         fig.colorbar(im, cax=cax)
@@ -177,7 +234,7 @@ def main():
     ec = 'black'
     lw = 2
 
-    allaxes = [ax1, ax2, ax3, ax4, ax5, ax6]
+    allaxes = [ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8, ax9, ax10, ax11, ax12]
 
     for ax in allaxes:
         ax.scatter(xp[mask], yp[mask], s=ps, lw=lw,
@@ -185,6 +242,7 @@ def main():
 
         ax.set_xlim((lowlim2,uplim2))
         ax.set_ylim((lowlim2,uplim2))
+        ax.set_xlabel('x')
 
 
 
@@ -195,19 +253,18 @@ def main():
     ax5.set_title(r'$y$ component of $\mathbf{A}_{ij}$')
     ax6.set_title(r'$|\mathbf{A}_{ij}|$')
 
-    ax1.set_xlabel('x')
     ax1.set_ylabel('HOPKINS', fontsize=16)
-    ax2.set_xlabel('x')
     ax2.set_ylabel('y')
-    ax3.set_xlabel('x')
     ax3.set_ylabel('y')
-
-    ax4.set_xlabel('x')
     ax4.set_ylabel('IVANOVA', fontsize=16)
-    ax5.set_xlabel('x')
     ax5.set_ylabel('y')
-    ax6.set_xlabel('x')
     ax6.set_ylabel('y')
+    ax7.set_ylabel('IVANOVA V2 ANALYTICAL GRADS', fontsize=14)
+    ax8.set_ylabel('y')
+    ax9.set_ylabel('y')
+    ax10.set_ylabel('IVANOVA V3 APPROXIMATE GRADS', fontsize=14)
+    ax11.set_ylabel('y')
+    ax12.set_ylabel('y')
 
 
 

@@ -21,7 +21,7 @@ srcfile = 'snapshot_0000.hdf5'
 # border limits for plots
 lowlim = 0.35
 uplim = 0.55
-nx = 100
+nx = 10
 tol = 1e-5 # tolerance for float comparison
 
 
