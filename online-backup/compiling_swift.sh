@@ -25,13 +25,13 @@ if [ -f $logfile ]; then rm $logfile; fi
 
 
 DEBUGFLAGS=''
-DEBUGFLAGS_IF_IN_USE="--enable-debug --enable-sanitizer --enable-optimization=no --disable-dependency-tracking --enable-undefined-sanitizer" # if debug is selected, these debugging flags will be used.
+DEBUGFLAGS_IF_IN_USE="--enable-debug --enable-sanitizer --enable-optimization=no --enable-undefined-sanitizer" # if debug is selected, these debugging flags will be used.
 DEFAULTFLAGS='--enable-mpi=no --disable-doxygen-doc'
 DIMFLAGS='' # default 3D
 GIZMOFLAGS='--with-hydro=gizmo-mfv --with-riemann-solver=hllc'
 LIBFLAGS="--with-parmetis --with-jemalloc --with-hdf5=$HDF5_ROOT/bin/h5pcc"
 
-EXTRA_CFLAGS="-MD"
+EXTRA_CFLAGS=""
 
 
 debug_program_suffix=''
