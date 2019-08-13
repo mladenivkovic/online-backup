@@ -65,6 +65,8 @@ def main():
 
     # assume that there are equally many files for every smoothing length 
     nx, filenummax, fileskip = ms.get_sample_size(dirs[0])
+    fileskip = 100
+    nx = 3
 
     Aij_Hopkins = [np.zeros((nx,nx,2), dtype=np.float) for e in etas]
     Aij_Ivanova = [np.zeros((nx,nx,2), dtype=np.float) for e in etas]

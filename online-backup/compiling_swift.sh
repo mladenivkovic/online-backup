@@ -12,24 +12,26 @@
 # the default flags below.
 # You can also give it specific flags for
 # which to compile. See below for
-# possibilities.
+# possibilities (search keyword MYFLAGS)
 #========================================
 
 # change silent to false if you want the full ./configure and make outputs written
 # to stdout and stderr. Otherwise, will be written to $logfile.
 # script will exit if there was an error, so you'll know if something goes wrong.
 
-silent=true
+silent=false
 logfile=log_of_my_install
 if [ -f $logfile ]; then rm $logfile; fi
 
 
 DEBUGFLAGS=''
-DEBUGFLAGS_IF_IN_USE="--enable-debug --enable-sanitizer" # if debug is selected, these debugging flags will be used.
-DEFAULTFLAGS='--enable-mpi=no'
+DEBUGFLAGS_IF_IN_USE="--enable-debug --enable-sanitizer --enable-optimization=no --disable-dependency-tracking --enable-undefined-sanitizer" # if debug is selected, these debugging flags will be used.
+DEFAULTFLAGS='--enable-mpi=no --disable-doxygen-doc'
 DIMFLAGS='' # default 3D
 GIZMOFLAGS='--with-hydro=gizmo-mfv --with-riemann-solver=hllc'
 LIBFLAGS="--with-parmetis --with-jemalloc --with-hdf5=$HDF5_ROOT/bin/h5pcc"
+
+EXTRA_CFLAGS="-MD"
 
 
 debug_program_suffix=''
@@ -74,7 +76,7 @@ fi
 # standardize comp flag
 #--------------------------------------
 
-
+# HERE ARE MYFLAGS
 case $1 in
 
     default | -d | d | 3 | 3d | --3d | -3d)
@@ -129,7 +131,7 @@ esac
 
 
  
-allflags="$LIBFLAGS ""$GIZMOFLAGS ""$DEFAULTFLAGS"" $DEBUGFLAGS"" $DIMFLAGS"
+allflags="$LIBFLAGS ""$GIZMOFLAGS ""$DEFAULTFLAGS"" $DEBUGFLAGS"" $DIMFLAGS"" CFLAGS=$EXTRA_CFLAGS"
 
 
 
@@ -195,13 +197,13 @@ fi
 #-------------------------------
 
 if [ $reconfigure = true ]; then
+    file_separator $logfile "make clean"
     if [ "$silent" = 'true' ]; then
         echo make clean
-        file_separator $logfile "make clean"
         make clean >> "$logfile"
         errexit $?
     else
-        make clean
+        make clean | tee -a $logfile
         errexit $?
     fi
 
@@ -210,15 +212,7 @@ if [ $reconfigure = true ]; then
         echo "   " $flag
     done
 
-    if [ "$silent" = 'true' ]; then
-        echo make clean
-        file_separator $logfile "configure"
-        ./configure $allflags >> "$logfile"
-        errexit $?
-    else
-        ./configure $allflags
-        errexit $?
-    fi
+    ./configure $allflags
 
 else
     echo skipping configure.
@@ -237,7 +231,7 @@ if [ $silent = "true" ]; then
     make -j >> $logfile
     errexit $?
 else
-    make -j
+    make -j | tee -a $logfile
     errexit $?
 fi
 
@@ -277,8 +271,8 @@ case $comp in
     ;;
 
     clean)
-        execname=./examples/swift-3d"$debug_program_suffix"
-        execname_mpi=./examples/swift_mpi-3d"$debug_program_suffix"
+        execname=./examples/swift"$debug_program_suffix"
+        execname_mpi=./examples/swift_mpi"$debug_program_suffix"
     ;;
 
     last)
@@ -290,9 +284,11 @@ esac
 
 
 mv ./examples/swift "$execname"
+echo "./examples/swift -> $execname"
 echo finished $execname
 if [ -f ./examples/swift_mpi ]; then 
     mv ./examples/swift_mpi "$execname_mpi"
+    echo "./examples/swift_mpi -> $execname_mpi"
     echo finished $execname_mpi
 fi
 
