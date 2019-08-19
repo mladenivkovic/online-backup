@@ -25,7 +25,8 @@ if [ -f $logfile ]; then rm $logfile; fi
 
 
 DEBUGFLAGS=''
-DEBUGFLAGS_IF_IN_USE="--enable-debug --enable-sanitizer --enable-optimization=no --enable-undefined-sanitizer" # if debug is selected, these debugging flags will be used.
+DEBUGFLAGS_IF_IN_USE="--enable-debug --enable-sanitizer --enable-undefined-sanitizer" # if debug is selected, these debugging flags will be used.
+# DEBUGFLAGS_IF_IN_USE="--enable-debug --enable-sanitizer --enable-optimization=no --enable-undefined-sanitizer" # if debug is selected, these debugging flags will be used.
 DEFAULTFLAGS='--enable-mpi=no --disable-doxygen-doc'
 DIMFLAGS='' # default 3D
 GIZMOFLAGS='--with-hydro=gizmo-mfv --with-riemann-solver=hllc'
@@ -77,57 +78,66 @@ fi
 #--------------------------------------
 
 # HERE ARE MYFLAGS
-case $1 in
+comp=default
 
-    default | -d | d | 3 | 3d | --3d | -3d)
-        echo COMPILING DEFAULT
-        comp=default
-    ;;
+if [[ $# == 0 ]]; then
+    echo "NO ARGUMENTS GIVEN. COMPILING THE SAME WAY AS LAST TIME."
+    comp=last
+else
 
-    clean | c | -c | --c | --clean)
-        echo COMPILING CLEAN
-        comp=clean
-    ;;
+    while [[ $# > 0 ]]; do
+    arg="$1"
 
-    1 | --1d | -1d | -1 | --1 | 1d)
-        echo COMPILING 1D SWIFT
-        DIMFLAGS='--with-hydro-dimension=1'
-        comp=1d
-    ;;
+    case $arg in
 
-    2 | --2d | -2d | -2 | --2 | 2d)
-        echo COMPILING 2D SWIFT
-        DIMFLAGS='--with-hydro-dimension=2'
-        comp=2d
-    ;;
+        default | -d | d | 3 | 3d | --3d | -3d)
+            echo COMPILING DEFAULT 3D
+            comp=default
+        ;;
 
-    debug | deb )
-        DEBUGFLAGS=$DEBUGFLAGS_IF_IN_USE
-    ;;
+        clean | c | -c | --c | --clean)
+            echo COMPILING CLEAN
+            comp_clean='true'
+            echo "THE CLEAN FLAG ONLY ADDS A NAME SUFFIX. MAKE SURE YOU ARE ON THE RIGHT BRANCH."
+            read -p "Hit any button to continue."
+        ;;
 
-    last | --last | -l | --l)
-        echo "COMPILING WITH SAME FLAGS AS LAST TIME"
-        comp=last
-    ;;
-    
-    *)
-        echo "COMPILING WITH SAME FLAGS AS LAST TIME BY WILDCARD"
-        comp=last
-    ;;
+        1 | --1d | -1d | -1 | --1 | 1d)
+            echo COMPILING 1D SWIFT
+            DIMFLAGS='--with-hydro-dimension=1'
+            comp=1d
+        ;;
 
-esac
+        2 | --2d | -2d | -2 | --2 | 2d)
+            echo COMPILING 2D SWIFT
+            DIMFLAGS='--with-hydro-dimension=2'
+            comp=2d
+        ;;
+
+        last | --last | -l | --l)
+            echo "COMPILING WITH SAME FLAGS AS LAST TIME"
+            comp=last
+        ;;
+        
+        me | my | mine | deb | debug | test)
+            echo "ADDING DEBUG FLAGS"
+            debug_program_suffix='-debug'
+            DEBUGFLAGS=$DEBUGFLAGS_IF_IN_USE
+        ;;
+
+        *)
+            echo "COMPILING WITH SAME FLAGS AS LAST TIME BY WILDCARD"
+            comp=last
+        ;;
+
+    esac
+    shift
+    done
+fi
 
 
 
-case $2 in
 
-    me | my | mine | debug | deb | test )
-        echo "ADDING DEBUG FLAGS"
-        debug_program_suffix='-debug'
-        DEBUGFLAGS=$DEBUGFLAGS_IF_IN_USE
-    ;;
-
-esac
 
 
  
@@ -182,21 +192,25 @@ if [ -f .last_compile ]; then
 else
     # if no .last_compile is present
     reconfigure=true
-    if [ "$comp" = 'last' ]; then
+    if [ "$comp" == 'last' ]; then
         lastname=swift
         lastname_mpi=swift_mpi
     fi
 fi
 
 
-
+# if it's comp_clean, assume you haven't been up this far,
+# so reconfigure anyhow
+if [ "$comp_clean" = 'true' ]; then
+    reconfigure=true
+fi
 
 
 #-------------------------------
 # configure depending on case
 #-------------------------------
 
-if [ $reconfigure = true ]; then
+if [ "$reconfigure" = "true" ]; then
     file_separator $logfile "make clean"
     if [ "$silent" = 'true' ]; then
         echo make clean
@@ -225,7 +239,7 @@ fi
 # compile
 #-------------------------------
 
-if [ $silent = "true" ]; then
+if [ "$silent" = "true" ]; then
     echo making.
     file_separator $logfile "make"
     make -j >> $logfile
@@ -270,17 +284,19 @@ case $comp in
         execname_mpi=./examples/swift_mpi-2d"$debug_program_suffix"
     ;;
 
-    clean)
-        execname=./examples/swift"$debug_program_suffix"
-        execname_mpi=./examples/swift_mpi"$debug_program_suffix"
-    ;;
-
     last)
         execname=$lastname
         execname_mpi=$lastname_mpi
     ;;
 
 esac
+
+
+if  [ "$comp_clean" = 'true' ]; then
+    execname="$execname"-clean
+    execname_mpi="$execname_mpi"-clean
+fi
+
 
 
 mv ./examples/swift "$execname"
