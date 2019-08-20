@@ -89,7 +89,8 @@ def main():
 
     dx = (uplim - lowlim)/nx
 
-    gauss = kernels.index('gaussian')
+    #  gauss = kernels.index('gaussian')
+    # GAUSS WAS REMOVED
 
 
     #--------------------------------
@@ -132,9 +133,10 @@ def main():
         for col, kernel in enumerate(kernels):
 
             # Compute gaussian only once. It doesn't depend on eta, as it has no compact support.
-            if kernel == 'gaussian':
-                if Ax_list[0][gauss] is not None:
-                    continue
+            # GAUSSIAN WAS REMOVED
+            #  if kernel == 'gaussian':
+            #      if Ax_list[0][gauss] is not None:
+            #          continue
 
             print('working for ', kernel)
 
@@ -174,11 +176,12 @@ def main():
 
 
     # if there is a gaussian kernel in there
-    if gauss is not None:
-        for r in range(1, nrows):
-            Ax_list[r][gauss] = Ax_list[0][gauss]
-            Ay_list[r][gauss] = Ay_list[0][gauss]
-            Anorm_list[r][gauss] = Anorm_list[0][gauss]
+    # GAUSS WAS REMOVED
+    #  if gauss is not None:
+    #      for r in range(1, nrows):
+    #          Ax_list[r][gauss] = Ax_list[0][gauss]
+    #          Ay_list[r][gauss] = Ay_list[0][gauss]
+    #          Anorm_list[r][gauss] = Anorm_list[0][gauss]
         
 
 

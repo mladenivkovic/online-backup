@@ -24,19 +24,44 @@ logfile=log_of_my_install
 if [ -f $logfile ]; then rm $logfile; fi
 
 
-DEBUGFLAGS=''
-DEBUGFLAGS_IF_IN_USE="--enable-debug --enable-sanitizer --enable-undefined-sanitizer" # if debug is selected, these debugging flags will be used.
-# DEBUGFLAGS_IF_IN_USE="--enable-debug --enable-sanitizer --enable-optimization=no --enable-undefined-sanitizer" # if debug is selected, these debugging flags will be used.
-DEFAULTFLAGS='--enable-mpi=no --disable-doxygen-doc'
-DIMFLAGS='' # default 3D
-GIZMOFLAGS='--with-hydro=gizmo-mfv --with-riemann-solver=hllc'
-LIBFLAGS="--with-parmetis --with-jemalloc --with-hdf5=$HDF5_ROOT/bin/h5pcc"
+DEBUGFLAGS=''           # will be overwritten by $DEBUGFLAGS_IF_IN_USE if you select debug option
+# with optimization
+# DEBUGFLAGS_IF_IN_USE="  --enable-debug
+#                         --enable-sanitizer
+#                         --enable-undefined-sanitizer
+#                         --enable-debugging-checks"
+#                         # if debug is selected, these debugging flags will be used.
+# without optimization
+DEBUGFLAGS_IF_IN_USE="  --enable-debug 
+                        --enable-sanitizer
+                        --enable-optimization=no
+                        --enable-undefined-sanitizer
+                        --enable-debugging-checks" 
+                        # if debug is selected, these debugging flags will be used.
+DEFAULTFLAGS='          --enable-mpi=no 
+                        --disable-doxygen-doc'
+DIMFLAGS=''             # default 3D
+# without Ivanova
+# GIZMOFLAGS="            --with-hydro=gizmo-mfv
+#                         --with-riemann-solver=hllc"
+# with Ivanova
+GIZMOFLAGS="            --with-hydro=gizmo-mfv 
+                        --with-riemann-solver=hllc 
+                        --enable-ivanova-surfaces"
+LIBFLAGS="              --with-parmetis 
+                        --with-jemalloc 
+                        --with-hdf5=$HDF5_ROOT/bin/h5pcc"
 
 EXTRA_CFLAGS=""
 
 
-debug_program_suffix=''
 
+
+
+
+#======================================
+# Function definitions
+#======================================
 
 function errexit() {
     # usage: errexit $? "optional message string"
@@ -45,11 +70,34 @@ function errexit() {
         if [[ $# > 1 ]]; then
             echo "$2"
         fi
+        traceback 1
         exit $1
     else
         return 0
     fi
 }
+
+
+function traceback
+{
+  # Hide the traceback() call.
+  local -i start=$(( ${1:-0} + 1 ))
+  local -i end=${#BASH_SOURCE[@]}
+  local -i i=0
+  local -i j=0
+
+  echo "Traceback (last called is first):" 1>&2
+  for ((i=start; i < end; i++)); do
+    j=$(( i - 1 ))
+    local function="${FUNCNAME[$i]}"
+    local file="${BASH_SOURCE[$i]}"
+    local line="${BASH_LINENO[$j]}"
+    echo "     ${function}() in ${file}:${line}" 1>&2
+  done
+}
+
+
+
 
 function file_separator() {
     # usage: filename "text to add"
@@ -64,9 +112,23 @@ function file_separator() {
 
 
 
+
+
+
+
+
+
+#======================================
+# The party starts here
+#======================================
+
+
+
 if [ ! -f ./configure ]; then
     ./autogen.sh
 fi
+
+
 
 
 
@@ -79,6 +141,8 @@ fi
 
 # HERE ARE MYFLAGS
 comp=default
+debug_program_suffix=''
+
 
 if [[ $# == 0 ]]; then
     echo "NO ARGUMENTS GIVEN. COMPILING THE SAME WAY AS LAST TIME."
@@ -135,13 +199,11 @@ else
     done
 fi
 
-
-
-
-
-
- 
 allflags="$LIBFLAGS ""$GIZMOFLAGS ""$DEFAULTFLAGS"" $DEBUGFLAGS"" $DIMFLAGS"" CFLAGS=$EXTRA_CFLAGS"
+
+
+
+
 
 
 
@@ -151,7 +213,6 @@ allflags="$LIBFLAGS ""$GIZMOFLAGS ""$DEFAULTFLAGS"" $DEBUGFLAGS"" $DIMFLAGS"" CF
 #--------------------------------------
 # Check if reconfiguration is necessary
 #--------------------------------------
-
 
 
 reconfigure=false
@@ -206,6 +267,13 @@ if [ "$comp_clean" = 'true' ]; then
 fi
 
 
+
+
+
+
+
+
+
 #-------------------------------
 # configure depending on case
 #-------------------------------
@@ -227,10 +295,16 @@ if [ "$reconfigure" = "true" ]; then
     done
 
     ./configure $allflags
+    errexit $?
 
 else
     echo skipping configure.
 fi
+
+
+
+
+
 
 
 
@@ -251,10 +325,21 @@ fi
 
 
 
+
+
+
+
+
+
 #--------------------------------------
 # store what this compilation was
 #--------------------------------------
-echo "$allflags" > .last_compile
+echo "$allflags" | tr -d \\n | sed -r 's/\s+/ /g' > .last_compile
+echo >> .last_compile # tr -d \\n removes all newlines, including the last one, so add one here
+
+
+
+
 
 
 
@@ -269,6 +354,7 @@ echo renaming.
 
 case $comp in
 
+    # $debug_program_suffix='' if debug not selected
     default)
         execname=./examples/swift-3d"$debug_program_suffix"
         execname_mpi=./examples/swift_mpi-3d"$debug_program_suffix"
@@ -311,3 +397,4 @@ fi
 # store last used names
 echo "$execname" >> .last_compile
 echo "$execname_mpi" >> .last_compile
+echo finished.
