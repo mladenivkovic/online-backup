@@ -22,3 +22,8 @@
 /home/mivkov/EPFL/Meshless_Methods/visualise_effective_area/hopkins_vs_ivanova_kernel_choice/hopkins_vs_ivanova_kernel_choice.py:/home/mivkov/coding/projekte/online-backup/meshless/hopkins_vs_ivanova_kernel_choice.py
 /home/mivkov/EPFL/Meshless_Methods/visualise_effective_area/hopkins_vs_ivanova_smoothing_lengths/hopkins_vs_ivanova_smoothing_lengths.py:/home/mivkov/coding/projekte/online-backup/meshless/hopkins_vs_ivanova_smoothing_lengths.py
 /home/mivkov/local/swiftsim/myinstall.sh:/home/mivkov/coding/projekte/online-backup/compiling_swift.sh
+/home/mivkov/EPFL/Meshless_Methods/runs/scripts/check_gradients.py:/home/mivkov/coding/projekte/online-backup/gizmo-ivanova-debugging/check_gradients.py
+/home/mivkov/EPFL/Meshless_Methods/runs/scripts/compare_Aijs.py:/home/mivkov/coding/projekte/online-backup/gizmo-ivanova-debugging/compare_Aijs.py
+/home/mivkov/EPFL/Meshless_Methods/runs/scripts/extract_Aij_from_snapshot.py:/home/mivkov/coding/projekte/online-backup/gizmo-ivanova-debugging/extract_Aij_from_snapshot.py
+/home/mivkov/EPFL/Meshless_Methods/runs/scripts/get_Aij_my_way.py:/home/mivkov/coding/projekte/online-backup/gizmo-ivanova-debugging/get_Aij_my_way.py
+/home/mivkov/EPFL/Meshless_Methods/runs/scripts/sporadical_check_Aij.py:/home/mivkov/coding/projekte/online-backup/gizmo-ivanova-debugging/sporadical_check_Aij.py

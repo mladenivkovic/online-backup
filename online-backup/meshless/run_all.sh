@@ -105,8 +105,8 @@ if [ $testing = true ]; then
     dirlist+=(part_displaced_uniform/testing)
     dirlist+=(part_perturbed_uniform/testing)
 else
-    dirlist+=(hopkins_vs_ivanova_part_displaced_uniform/ics_and_outputs)
-    dirlist+=(part_displaced_uniform/ics_and_outputs)
+    # dirlist+=(hopkins_vs_ivanova_part_displaced_uniform/ics_and_outputs)
+    # dirlist+=(part_displaced_uniform/ics_and_outputs)
     dirlist+=(part_perturbed_uniform/ics_and_outputs)
 fi
 
