@@ -313,7 +313,7 @@ def main():
     
     extract_Aij_from_snapshot()
     compute_Aij_my_way()
-    compare_Aij()
+    #  compare_Aij()
     return
 
 

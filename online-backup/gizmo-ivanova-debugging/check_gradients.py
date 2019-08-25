@@ -62,6 +62,9 @@ def extract_gradients_from_snapshot():
     nneigh = parts['nneigh_grads'][:]
     grads = parts['grads'][:]
 
+    omega = parts['omega'][:]
+    vol = parts['vol'][:]
+
     f.close()
 
 
@@ -78,6 +81,8 @@ def extract_gradients_from_snapshot():
     nids = nids[inds]
     nneigh = nneigh[inds] + 1 # internally initialized as -1
     grads = grads[inds]
+    omega = omega[inds]
+    vol = vol[inds]
 
     for n in range(nids.shape[0]):
         nb = nneigh[n]
@@ -98,7 +103,7 @@ def extract_gradients_from_snapshot():
     # dump
     #------------------
 
-    data_dump = [grads, gradsum, nids, nneigh, pos, ids]
+    data_dump = [grads, gradsum, nids, nneigh, omega, vol, pos, ids]
     dumpfile = open(swift_dump, 'wb')
     pickle.dump(data_dump, dumpfile)
     dumpfile.close()
@@ -157,22 +162,27 @@ def compute_gradients_my_way():
     # compute all psi_k(x_l) for all l, k
     # first index: index k of psi: psi_k(x)
     # second index: index of x_l: psi(x_l)
-    psi_k_at_l = np.zeros((npart, npart), dtype=np.float)
 
+    psi_k_at_l = np.zeros((npart, npart), dtype=np.float)
     for k in range(npart):
+        #  for l in range(npart):
         for l in neighbours[k]:
             # kernels are symmetric in x_i, x_j, but h can vary!!!!
             psi_k_at_l[k,l] = ms.psi(x[l], y[l], x[k], y[k], h[l], kernel=kernel, fact=fact, L=L, periodic=periodic)
+            #  psi_k_at_l[l,k] = ms.psi(x[l], y[l], x[k], y[k], h[l], kernel=kernel, fact=fact, L=L, periodic=periodic)
+
+        # self contribution part: k = l +> h[k] = h[l], so use h[k] here
+        psi_k_at_l[k, k] = ms.psi(0, 0, 0, 0, h[k], kernel=kernel, fact=fact, L=L, periodic=periodic) 
 
 
     omega = np.zeros(npart, dtype=np.float)
 
-
     for l in range(npart):
         # compute normalisation omega for all particles
         # needs psi_k_at_l to be computed already
-        omega[l] =  np.sum(psi_k_at_l[:, l])
+        omega[l] = np.sum(psi_k_at_l[neighbours[l], l]) + psi_k_at_l[l,l]
         # omega_k = sum_l W(x_k - x_l) = sum_l psi_l(x_k) as it is currently stored in memory
+
 
 
     grad_psi_k_at_l = np.zeros((npart, npart, 2), dtype=np.float)
@@ -221,7 +231,7 @@ def compute_gradients_my_way():
 
 
 
-    data_dump = [sum_grad_W, grad_W_k_at_l, nids, nneighs]
+    data_dump = [sum_grad_W, grad_W_k_at_l, nids, nneighs, omega]
     dumpfile = open(python_dump, 'wb')
     pickle.dump(data_dump, dumpfile)
     dumpfile.close()
@@ -249,10 +259,10 @@ def compare_grads():
     python_filep = open(python_dump, 'rb')
 
     data_swift = pickle.load(swift_filep)
-    grads_s, sum_grad_s, nids_s, nneigh_s, pos, ids = data_swift
+    grads_s, sum_grad_s, nids_s, nneigh_s, omega_s, vol_s, pos, ids = data_swift
 
     data_python = pickle.load(python_filep)
-    sum_grad_p, all_grads_p, nids_p, nneigh_p = data_python
+    sum_grad_p, all_grads_p, nids_p, nneigh_p, omega_p = data_python
 
     swift_filep.close()
     python_filep.close()
@@ -355,24 +365,61 @@ def compare_grads():
 
 
 
-    #------------------------------------------------------
-    print("Checking gradient sums")
-    #------------------------------------------------------
+#      #------------------------------------------------------
+    #  print("Checking gradient sums")
+    #  #------------------------------------------------------
+    #
+    #  print(sum_grad_p.shape)
+    #  print(sum_grad_s.shape)
+    #
+    #  found_difference = False
+    #  #  for p in range(3):
+    #  for p in range(npart):
+    #      #  for n in range(1):
+    #
+    #      pyx = sum_grad_p[p,0]
+    #      pyy = sum_grad_p[p,1]
+    #      swx = sum_grad_s[p,0]
+    #      swy = sum_grad_s[p,1]
+    #
+    #      for P, S in [(pyx, swx), (pyy, swy)]:
+    #          if abs(P) > NULL:
+    #              diff = abs(1 - S/P)
+    #          elif abs(S) > NULL:
+    #              diff = abs(1 - P/S)
+    #          else:
+    #              continue
+    #
+    #          if diff > tolerance:
+    #              msg = "Found difference. ID {0:6d}, x: {1:12.4E} {2:12.4E}  y: {3:12.4E} {4:12.4E}, diff: {5:12.6f}".format(ids[p], pyx, swx, pyy, swy, diff)
+    #              print(msg)
+    #              found_difference = True
+    #
+    #  if not found_difference:
+    #      print("Finished, all the same.")
+    #  else:
+    #      quit()
+#
 
-    print(sum_grad_p.shape)
-    print(sum_grad_s.shape)
+
+
+
+
+
+
+    #------------------------------------------------------
+    print("Checking volumes and normalizations")
+    #------------------------------------------------------
 
     found_difference = False
-    #  for p in range(3):
     for p in range(npart):
-        #  for n in range(1):
 
-        pyx = sum_grad_p[p,0]
-        pyy = sum_grad_p[p,1]
-        swx = sum_grad_s[p,0]
-        swy = sum_grad_s[p,1]
+        pyv = 1/omega_p[p]
+        pyn = omega_p[p]
+        swv = vol_s[p]
+        swn = omega_s[p]
 
-        for P, S in [(pyx, swx), (pyy, swy)]:
+        for P, S in [(pyv, swv), (pyn, swn)]:
             if abs(P) > NULL:
                 diff = abs(1 - S/P)
             elif abs(S) > NULL:
@@ -381,14 +428,12 @@ def compare_grads():
                 continue
 
             if diff > tolerance:
-                msg = "Found difference. ID {0:6d}, x: {1:12.4E} {2:12.4E}  y: {3:12.4E} {4:12.4E}, diff: {5:12.6f}".format(ids[p], pyx, swx, pyy, swy, diff)
-                print(msg)
-                found_difference = True
+                print("Found difference: ID", ids[p], "v:", pyv, swv, "n:", pyn, swn)
 
     if not found_difference:
         print("Finished, all the same.")
-    else:
-        quit()
+
+
 
 
 

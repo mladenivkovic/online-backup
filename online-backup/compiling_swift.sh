@@ -320,7 +320,7 @@ if [ "$silent" = "true" ]; then
     errexit $?
 else
     make -j | tee -a $logfile
-    errexit $?
+    errexit "${PIPESTATUS[0]}"
 fi
 
 
