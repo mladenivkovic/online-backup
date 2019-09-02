@@ -20,10 +20,10 @@ from my_utils import yesno
 # Filenames
 #------------------------
 
-snap = '0001'                   # which snap to use
+snap = '0000'                   # which snap to use
 #  hdf_prefix = 'sodShock_'        # snapshot name prefix
-#  hdf_prefix = 'perturbedPlane_'  # snapshot name prefix
-hdf_prefix = 'uniformPlane_'    # snapshot name prefix
+hdf_prefix = 'perturbedPlane_'  # snapshot name prefix
+#  hdf_prefix = 'uniformPlane_'    # snapshot name prefix
 
 srcfile = hdf_prefix+snap+'.hdf5'
 
@@ -57,6 +57,7 @@ def extract_Aij_from_snapshot():
     parts = f['PartType0']
     ids = parts['ParticleIDs'][:]
     pos = parts['Coordinates'][:]
+    h = parts['SmoothingLengths'][:]
 
 
     Aijs = parts['Aij'][:]
@@ -92,6 +93,7 @@ def extract_Aij_from_snapshot():
 
     ids = ids[inds]
     pos = pos[inds]
+    h = h[inds]
 
 
 
@@ -106,7 +108,7 @@ def extract_Aij_from_snapshot():
     dumpfile.close()
     print("Dumped swift data")
 
-    data_dump = [pos, ids]
+    data_dump = [pos, ids, h]
     dumpfile = open(extra_dump, 'wb')
     pickle.dump(data_dump, dumpfile)
     dumpfile.close()
@@ -152,8 +154,8 @@ def compute_Aij_my_way():
             return
 
     # read data from snapshot
-    x, y, h, rho, m, ids, npart = ms.read_file(srcfile, 'PartType0')
-    #  x, y, h, rho, m, ids, npart = ms.read_file(srcfile, 'PartType0', sort=True)
+    #  x, y, h, rho, m, ids, npart = ms.read_file(srcfile, 'PartType0')
+    x, y, h, rho, m, ids, npart = ms.read_file(srcfile, 'PartType0', sort=True)
 
     # get kernel support radius instead of smoothing length
     H = ms.get_H(h)
@@ -193,6 +195,7 @@ def compute_Aij_my_way():
     #          #  print("nb: {0:8d}  Aij: {1:14.8f} {2:14.8f} ||".format(neighbour_ids[i,n], Aijs[i,n,0], Aijs[i,n,1]), end='')
     #      print()
 
+    print(nneighs[-20:])
 
     data_dump = [Aijs, nneighs, neighbour_ids]
     dumpfile = open(python_dump, 'wb')
@@ -224,7 +227,7 @@ def compare_Aij():
     Aij_p, nneigh_p, nid_p = data_python
 
     data_extra = pickle.load(extra_filep)
-    pos, ids = data_extra
+    pos, ids, h = data_extra
 
     swift_filep.close()
     extra_filep.close()
@@ -232,18 +235,69 @@ def compare_Aij():
 
 
     npart = nneigh_s.shape[0]
+    H = ms.get_H(h)
 
 
 
 
+    #---------------------------------------------
     print("Checking number of neighbours")
+    #---------------------------------------------
     found_difference = False
     for p in range(npart):
         py = nneigh_p[p]
         sw = nneigh_s[p]
         if py != sw:
-            found_difference = True
-            print("Difference: id:", ids[p], "py:", py, "sw:", sw)
+            # if a neighbour of particle i is not inside i's compact
+            # support radius, but i is inside the neighbours, swift
+            # will write it down anyway. So check that that isn't the case.
+
+            diff = py - sw
+            if diff > 0:
+                larger = nid_p[p, :nneigh_p[p]]
+                smaller = nid_s[p, :nneigh_s[p]]
+                text = "in pyton but not in swift"
+                found_difference = True
+                print("Difference: Python found more neighbours. ID:", ids[p])
+                print("sw:", nid_s[p, :nneigh_s[p]])
+                print("py:", nid_p[p, :nneigh_p[p]])
+            else:
+                larger = nid_s[p, :nneigh_s[p]]
+                smaller = nid_p[p, :nneigh_p[p]]
+                text = "in swift but not in python"
+
+                swap = False
+                remove = np.zeros((nneigh_s[p]), dtype=np.int)
+                for i,n in enumerate(larger):
+                    if not np.isin(n, smaller):
+                        xn = pos[n-1, 0]
+                        yn = pos[n-1, 1]
+                        xp = pos[p, 0]
+                        yp = pos[p, 1]
+                        dx = ms.get_dx(xn, xp, yn, yp)
+                        r = np.sqrt(dx[0]*dx[0] + dx[1]*dx[1])
+                        if r > H[n-1]:
+                            print("Neighbour", n, text)
+                            print("Difference: id:", ids[p], "neighbour:", ids[n])
+                            print("sw:", nid_s[p, :nneigh_s[p]])
+                            print("py:", nid_p[p, :nneigh_p[p]])
+                            found_difference = True
+                        else:
+                            # remove SWIFT extras
+                            swap = True
+                            remove[i] = 1
+
+                if swap:
+                    n = 0
+                    while n < nneigh_s[p]:
+                        if remove[n] == 1:
+                            nid_s[p,n:nneigh_s[p]-1] = nid_s[p, n+1:nneigh_s[p]]
+                            Aij_s[p, 2*n:2*nneigh_s[p]-2] = Aij_s[p, 2*n+2:2*nneigh_s[p]]
+                            remove[n:nneigh_s[p]-1] = remove[n+1:nneigh_s[p]]
+                            nneigh_s[p] -= 1
+                            n -= 1
+                        n+=1
+
 
     if not found_difference:
         print("Finished, all the same.")
@@ -254,7 +308,13 @@ def compare_Aij():
 
 
 
+
+
+
+    #------------------------------------------
     print("Checking neighbour IDs")
+    #------------------------------------------
+
     found_difference = False
     for p in range(npart):
         pyarr = nid_p[p]
@@ -274,12 +334,13 @@ def compare_Aij():
 
 
 
+    NULL = 1e-3
+    tolerance = 1e-2
 
     print("Checking surfaces")
     found_difference = False
-    #  for p in range(npart):
-    for p in range(3):
-        print("Particle ID", ids[p])
+    for p in range(npart):
+    #  for p in range(3):
         nb = nneigh_p[p]
         for n in range(nb):
             nbp = nid_p[p, n]
@@ -291,14 +352,19 @@ def compare_Aij():
             swy = Aij_s[p][2*n+1]
             swn = np.sqrt(swx**2 + swy**2)
 
+            if swn > NULL and pyn > NULL:
+                diff = 1 - pyn/swn
+                if diff > tolerance:
+                    print("Particle ID", ids[p])
+                    print("neighbour id:", nbp, nbs)
+                    print("Aij x:       ", pyx, swx)
+                    print("Aij y:       ", pyy, swy)
+                    print("|Aij|:       ", pyn, swn)
+                    print("diff:", diff)
+                    found_difference = True
 
-            print("neighbour id:", nbp, nbs)
-            print("Aij x:       ", pyx, swx)
-            print("Aij y:       ", pyy, swy)
-            print("|Aij|:       ", pyn, swn)
-            print("-------------------------------------------------")
-        print("========================================================================")
-
+    if not found_difference:
+        print("Finished, all the same.")
 
     return
 
@@ -313,7 +379,7 @@ def main():
     
     extract_Aij_from_snapshot()
     compute_Aij_my_way()
-    #  compare_Aij()
+    compare_Aij()
     return
 
 
