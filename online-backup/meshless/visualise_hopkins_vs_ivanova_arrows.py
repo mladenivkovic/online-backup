@@ -75,15 +75,15 @@ def main():
 
     A_ij_Hopkins = ms.Aij_Hopkins(pind, x, y, H, m, rho)
     A_ij_Ivanova = ms.Aij_Ivanova(pind, x, y, H, m, rho)
-    A_ij_Ivanova2 = ms.Aij_Ivanova_analytical_gradients(pind, x, y, H, m, rho)
-    A_ij_Ivanova3 = ms.Aij_Ivanova_approximate_gradients(pind, x, y, H, m, rho)
+    #  A_ij_Ivanova2 = ms.Aij_Ivanova_analytical_gradients(pind, x, y, H, m, rho)
+    #  A_ij_Ivanova3 = ms.Aij_Ivanova_approximate_gradients(pind, x, y, H, m, rho)
 
     x_ij = ms.x_ij(pind, x, y, H, nbors=nbors)
 
     print("Sum Hopkins:", np.sum(A_ij_Hopkins, axis=0)) 
     print("Sum Ivanova:", np.sum(A_ij_Ivanova, axis=0)) 
-    print("Sum Ivanova2:", np.sum(A_ij_Ivanova2, axis=0)) 
-    print("Sum Ivanova3:", np.sum(A_ij_Ivanova3, axis=0)) 
+    #  print("Sum Ivanova2:", np.sum(A_ij_Ivanova2, axis=0))
+    #  print("Sum Ivanova3:", np.sum(A_ij_Ivanova3, axis=0))
 
 
     print("")
@@ -115,16 +115,17 @@ def main():
     args = np.argsort(dist)
 
 
-    fig = plt.figure(figsize=(34, 9))
-    ax1 = fig.add_subplot(141, aspect='equal')
-    ax2 = fig.add_subplot(142, aspect='equal')
-    ax3 = fig.add_subplot(143, aspect='equal')
-    ax4 = fig.add_subplot(144, aspect='equal')
+    fig = plt.figure(figsize=(17, 9))
+    #  fig = plt.figure(figsize=(34, 9))
+    ax1 = fig.add_subplot(121, aspect='equal')
+    ax2 = fig.add_subplot(122, aspect='equal')
+    #  ax3 = fig.add_subplot(143, aspect='equal')
+    #  ax4 = fig.add_subplot(144, aspect='equal')
 
     pointsize = 200
     arrwidth = 2
 
-    for ax in [ax1, ax2, ax3, ax4]:
+    for ax in [ax1, ax2]: #, ax3, ax4]:
         ax.set_facecolor('lavender')
         ax.scatter(x[pind], y[pind], c='k', s=pointsize*2)
         ax.set_xlim((0.25,0.75))
@@ -166,21 +167,21 @@ def main():
         ax2.arrow(x_ij[ii][0], x_ij[ii][1], A_ij_Ivanova[ii][0], A_ij_Ivanova[ii][1], 
                 color=col, lw=arrwidth, zorder=10+i)
 
-        ax3.arrow(x_ij[ii][0], x_ij[ii][1], A_ij_Ivanova2[ii][0], A_ij_Ivanova2[ii][1], 
-                color=col, lw=arrwidth, zorder=10+i)
-
-        ax4.arrow(x_ij[ii][0], x_ij[ii][1], A_ij_Ivanova3[ii][0], A_ij_Ivanova3[ii][1], 
-                color=col, lw=arrwidth, zorder=10+i)
+        #  ax3.arrow(x_ij[ii][0], x_ij[ii][1], A_ij_Ivanova2[ii][0], A_ij_Ivanova2[ii][1],
+        #          color=col, lw=arrwidth, zorder=10+i)
+        #
+        #  ax4.arrow(x_ij[ii][0], x_ij[ii][1], A_ij_Ivanova3[ii][0], A_ij_Ivanova3[ii][1],
+        #          color=col, lw=arrwidth, zorder=10+i)
 
 
     ax1.set_title(r'Hopkins $\mathbf{A}_{ij}$ at $\mathbf{x}_{ij} = \mathbf{x}_i + \frac{h_i}{h_i+h_j}(\mathbf{x}_j - \mathbf{x}_i)$', fontsize=18, pad=12)
 
     ax2.set_title(r'Ivanova $\mathbf{A}_{ij}$ at $\mathbf{x}_{ij} = \mathbf{x}_i + \frac{h_i}{h_i+h_j}(\mathbf{x}_j - \mathbf{x}_i)$', fontsize=18, pad=12)
 
-    ax3.set_title(r'Ivanova v2 analytic gradients $\mathbf{A}_{ij}$ at $\mathbf{x}_{ij} = \mathbf{x}_i + \frac{h_i}{h_i+h_j}(\mathbf{x}_j - \mathbf{x}_i)$', fontsize=18, pad=12)
-
-    ax4.set_title(r'Ivanova v2 approx gradients $\mathbf{A}_{ij}$ at $\mathbf{x}_{ij} = \mathbf{x}_i + \frac{h_i}{h_i+h_j}(\mathbf{x}_j - \mathbf{x}_i)$', fontsize=18, pad=12)
-
+    #  ax3.set_title(r'Ivanova v2 analytic gradients $\mathbf{A}_{ij}$ at $\mathbf{x}_{ij} = \mathbf{x}_i + \frac{h_i}{h_i+h_j}(\mathbf{x}_j - \mathbf{x}_i)$', fontsize=18, pad=12)
+    #
+    #  ax4.set_title(r'Ivanova v2 approx gradients $\mathbf{A}_{ij}$ at $\mathbf{x}_{ij} = \mathbf{x}_i + \frac{h_i}{h_i+h_j}(\mathbf{x}_j - \mathbf{x}_i)$', fontsize=18, pad=12)
+    #
 
     plt.tight_layout()
     plt.savefig('effective_area_hopkins_vs_ivanova.png', dpi=200)

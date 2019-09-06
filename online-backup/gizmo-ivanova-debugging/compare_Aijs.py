@@ -14,22 +14,51 @@ import pickle
 import h5py
 import os
 import meshless as ms
-from my_utils import yesno
+from my_utils import yesno, one_arg_present
 
 #------------------------
 # Filenames
 #------------------------
 
 snap = '0000'                   # which snap to use
-#  hdf_prefix = 'sodShock_'        # snapshot name prefix
-hdf_prefix = 'perturbedPlane_'  # snapshot name prefix
+hdf_prefix = 'sodShock_'        # snapshot name prefix
+#  hdf_prefix = 'perturbedPlane_'  # snapshot name prefix
 #  hdf_prefix = 'uniformPlane_'    # snapshot name prefix
+
+# read in cmd line arg snapshot number if present and convert it to formatted string
+snap = ms.snapstr(one_arg_present(snap))
+
 
 srcfile = hdf_prefix+snap+'.hdf5'
 
 swift_dump = 'dump_swift_Aij_'+snap+'.pkl'
 extra_dump = 'dump_extra_particle_data_'+snap+'.pkl'
 python_dump = 'dump_my_python_Aij_'+snap+'.pkl'
+
+
+
+#----------------------
+# Behaviour params
+#----------------------
+
+tolerance = 1e-2    # relative tolerance threshold for relative float comparison: if (a - b)/a < tolerance, it's fine
+NULL = 1e-6         # treat values below this as zeroes
+
+
+
+
+
+
+#=====================
+def announce():
+#=====================
+
+    print("CHECKING GRADIENTS.")
+    print("tolerance is set to:", tolerance)
+    print("NULL is set to:", NULL)
+    print("---------------------------------------------------------")
+    print()
+
 
 
 
@@ -141,6 +170,10 @@ def extract_Aij_from_snapshot():
 
 
 
+
+
+
+
 #========================================
 def compute_Aij_my_way():
 #========================================
@@ -195,7 +228,8 @@ def compute_Aij_my_way():
     #          #  print("nb: {0:8d}  Aij: {1:14.8f} {2:14.8f} ||".format(neighbour_ids[i,n], Aijs[i,n,0], Aijs[i,n,1]), end='')
     #      print()
 
-    print(nneighs[-20:])
+
+
 
     data_dump = [Aijs, nneighs, neighbour_ids]
     dumpfile = open(python_dump, 'wb')
@@ -334,9 +368,6 @@ def compare_Aij():
 
 
 
-    NULL = 1e-3
-    tolerance = 1e-2
-
     print("Checking surfaces")
     found_difference = False
     for p in range(npart):
@@ -377,6 +408,7 @@ def compare_Aij():
 def main():
 #==========================
     
+    announce()
     extract_Aij_from_snapshot()
     compute_Aij_my_way()
     compare_Aij()
