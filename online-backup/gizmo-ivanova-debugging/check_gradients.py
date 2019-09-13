@@ -44,16 +44,16 @@ python_dump = 'dump_my_python_gradient_sum_'+snap+'.pkl'
 # Behaviour params
 #----------------------
 
-tolerance = 1e-3    # relative tolerance threshold for relative float comparison: if (a - b)/a < tolerance, it's fine
+tolerance = 1e-2    # relative tolerance threshold for relative float comparison: if (a - b)/a < tolerance, it's fine
 NULL = 1e-6         # treat values below this as zeroes
-NULL_SUMS = 5e-3    # treat sums below this as zeroes
+NULL_SUMS = 1e-4    # treat sums below this as zeroes
 
 
+#  do_break = False    # don't break after you found a difference
 do_break = False    # don't break after you found a difference
-#  do_break = True    # don't break after you found a difference
 
-limit_q = False      # whether to ignore differences for high q = r/H; Seems to be stupid round off errors around
-q_limit = 0.97      # upper limit for q = r/H if difference is found;
+limit_q = True      # whether to ignore differences for high q = r/H; Seems to be stupid round off errors around
+q_limit = 0.99      # upper limit for q = r/H if difference is found;
 
 
 
@@ -229,6 +229,7 @@ def compute_gradients_my_way():
 
     for i in range(npart):
         # compute normalisation omega for all particles
+
         omega[i] = np.sum(psi_j_at_i[neighbours[i], i]) + psi_j_at_i[i,i]
         # omega_i = sum_k W(x_k - x_i, h_k) = sum_k psi_i(x_k) as it is currently stored in memory
 
@@ -414,12 +415,13 @@ def compare_grads():
                     if r/H[p] > q_limit:
                         continue
 
-                print(("Found difference: Particle ID {0:8d}, "+
+                print("Found difference:")
+                print((" Particle ID {0:8d}, "+
                         "position {1:14.8e} {2:14.8e}, h = {3:14.8e}, "+
                         "H = {4:14.8e}, dist = {5:14.8e}, dist/H = {6:14.8E}").format(
                             ids[p], pos[p,0], pos[p,1], h[p], H[p], r, r/H[p])
                             )
-                print(("                 Neighbour ID {0:8d}, "+
+                print(("Neighbour ID {0:8d}, "+
                         "position {1:14.8e} {2:14.8e}, h = {3:14.8e}, "+
                         "H = {4:14.8e}").format(
                             ids[nind], pos[nind,0], pos[nind,1], h[nind], H[nind])
@@ -524,9 +526,10 @@ def compare_grads():
 
             if diff > tolerance:
 
-                print(("Found difference: ID: {0:14d}  neighbour {1:14d} difference: {6:12.6f}\n"+
-                       "                   x: {2:14.8e}         {3:14.8e}\n"+
-                       "                   y: {4:14.8e}         {5:14.8e}\n").format(
+                print("Found difference:")
+                print((" ID: {0:14d}  neighbour {1:14d} difference: {6:12.6f}\n"+
+                       "  x: {2:14.8e}         {3:14.8e}\n"+
+                       "  y: {4:14.8e}         {5:14.8e}\n").format(
                             ids[p], nids_p[p,n], pyx, swx, pyy, swy, diff)
                     )
                 found_difference = True

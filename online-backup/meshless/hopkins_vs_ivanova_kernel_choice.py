@@ -8,11 +8,13 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1 import make_axes_locatable, axes_size 
-import meshless as ms
-
+from mpl_toolkits.axes_grid1 import make_axes_locatable, axes_size, ImageGrid
 import h5py
 
+import meshless as ms
+from my_utils import setplotparams_multiple_plots
+
+setplotparams_multiple_plots(wspace=0.0, hspace=0.0)
 
 ptype = 'PartType0'             # for which particle type to look for
 
@@ -42,16 +44,14 @@ def main():
     #  nx = 10
 
 
-    nrows = len(kernels)
-    ncols = 4
+    ncols = len(kernels)
+    nrows = 2
 
     Aij_Hopkins = [np.zeros((nx,nx,2), dtype=np.float) for k in kernels]
     Aij_Ivanova = [np.zeros((nx,nx,2), dtype=np.float) for k in kernels]
-    Aij_Ivanova_v2 = [np.zeros((nx,nx,2), dtype=np.float) for k in kernels]
-    Aij_Ivanova_v3 = [np.zeros((nx,nx,2), dtype=np.float) for k in kernels]
 
-    A_list = [Aij_Hopkins, Aij_Ivanova, Aij_Ivanova_v2, Aij_Ivanova_v3]
-    A_list_funcs = [ms.Aij_Hopkins, ms.Aij_Ivanova, ms.Aij_Ivanova_analytical_gradients, ms.Aij_Ivanova_approximate_gradients]
+    A_list = [Aij_Hopkins, Aij_Ivanova]
+    A_list_funcs = [ms.Aij_Hopkins, ms.Aij_Ivanova]
 
 
 
@@ -60,7 +60,6 @@ def main():
     jj = 0
     for i in range(1, filenummax+1, fileskip):
         for j in range(1, filenummax+1, fileskip):
-
 
             srcfile = 'snapshot-'+str(i).zfill(3)+'-'+str(j).zfill(3)+'_0000.hdf5'
             print('working for ', srcfile)
@@ -82,14 +81,12 @@ def main():
 
 
             for k,kernel in enumerate(kernels):
-                print(kernel)
                 for a in range(len(A_list)):
                     f = A_list_funcs[a]
                     A = A_list[a]
                     res = f(pind, x, y, H, m, rho, kernel=kernel)
                     A[k][jj,ii] = res[ind]
 
-            
             jj += 1
 
         ii += 1
@@ -97,99 +94,122 @@ def main():
     
 
 
+    normmin = 1000
+    normmax = 0
+    Anorm_Hopkins = [np.zeros((nx, nx), dtype=np.float) for k in kernels]
+    Anorm_Ivanova = [np.zeros((nx, nx), dtype=np.float) for k in kernels]
 
-    fig = plt.figure(figsize=(4*ncols+0.5, 3.5*nrows+1.5))
+    for k, kernel in enumerate(kernels):
+        Ax = Aij_Hopkins[k][:,:,0]
+        Ay = Aij_Hopkins[k][:,:,1]
+        Anorm_Hopkins[k] = np.sqrt(Ax**2 + Ay**2)
+        
+        Ax = Aij_Ivanova[k][:,:,0]
+        Ay = Aij_Ivanova[k][:,:,1]
+        Anorm_Ivanova[k] = np.sqrt(Ax**2 + Ay**2)
+        
+        normmin = min(Anorm_Hopkins[k].min(), Anorm_Ivanova[k].min(), normmin)
+        normmax = max(Anorm_Hopkins[k].max(), Anorm_Ivanova[k].max(), normmax)
 
 
-    # prepare particles to plot
+
+
+    cmap = 'YlGnBu_r'
+
+    fig = plt.figure(figsize=(ncols*5, nrows*5.5))
 
     inds = np.argsort(ids)
-    xp = x[inds][:-1]
-    yp = y[inds][:-1]
 
-    mask = np.logical_and(xp>=lowlim-tol, xp<=uplim+tol)
-    mask = np.logical_and(mask, yp>=lowlim-tol)
-    mask = np.logical_and(mask, yp<=uplim+tol)
+    mask = np.logical_and(x>=lowlim-tol, x<=uplim+tol)
+    mask = np.logical_and(mask, y>=lowlim-tol)
+    mask = np.logical_and(mask, y<=uplim+tol)
+    mask[pind] = False
 
-    ps = 100
-    fc = 'white'
     ec = 'black'
     lw = 2
+    cmap = 'YlGnBu_r'
+
+    dx = (uplim - lowlim) / nx
+
+    uplim_plot = uplim #+ 0.5*dx
+    lowlim_plot = lowlim # - 0.5*dx
 
 
+    imgdata = [Anorm_Hopkins, Anorm_Ivanova]
+    minval = normmin
+    maxval = normmax
+
+    axrows = [[] for r in range(nrows)]
+    for row in range(nrows):
+        axcols = [None for c in range(ncols)]
+
+        axcols = ImageGrid(fig, (nrows, 1, row+1),
+                    nrows_ncols=(1, ncols), 
+                    axes_pad = 0.,
+                    share_all = False,
+                    label_mode = 'L',
+                    cbar_mode = 'edge',
+                    cbar_location = 'right',
+                    cbar_size = "7%",
+                    cbar_pad = "2%")
+        axrows[row] = axcols
 
 
-    counter = 1
-    for k, kernel in enumerate(kernels):
-
-        ax1 = fig.add_subplot(nrows, ncols, counter, aspect='equal')
-        ax2 = fig.add_subplot(nrows, ncols, counter+1, aspect='equal')
-        ax3 = fig.add_subplot(nrows, ncols, counter+2, aspect='equal')
-        ax4 = fig.add_subplot(nrows, ncols, counter+3, aspect='equal')
-        counter += ncols
-
-        axes = [ax1, ax2, ax3, ax4]
+        for col, ax in enumerate(axcols):
+        
+            im = ax.imshow(imgdata[row][col], origin='lower', 
+                vmin=minval, vmax=maxval, cmap=cmap,
+                extent=(lowlim_plot, uplim_plot, lowlim_plot, uplim_plot),
+                #  norm=matplotlib.colors.SymLogNorm(1e-3),
+                zorder=1)
 
 
-        for i, A in enumerate(A_list):
-            
-            ax = axes[i]
-            Ax = A[k][:,:,0]
-            Ay = A[k][:,:,1]
-            Anorm = np.sqrt(Ax**2 + Ay**2)
-            #  xmin = Ax.min()
-            #  xmax = Ax.max()
-            #  ymin = Ay.min()
-            #  ymax = Ay.max()
-            normmin = Anorm.min()
-            normmax = Anorm.max()
+            # superpose particles
 
-
-            # reset lowlim and maxlim so cells are centered around the point they represent
-            dx = (uplim - lowlim) / A[k].shape[0]
-
-
-            uplim2 = uplim
-            lowlim2 = lowlim
-
-            cmap = 'YlGnBu_r'
-
-            im = ax.imshow(Anorm, origin='lower', 
-                    vmin=normmin, vmax=normmax, cmap=cmap,
-                    extent=(lowlim2, uplim2, lowlim2, uplim2))
-
-            divider = make_axes_locatable(ax)
-            cax = divider.append_axes("right", size="2%", pad=0.05)
-            fig.colorbar(im, cax=cax)
-
-
-            # scatter neighbours
-            ax.scatter(xp[mask], yp[mask], s=ps, lw=lw,
-                    facecolor=fc, edgecolor=ec)
-
-            # scatter central
+            # plot neighbours (and the ones you drew anyway)
+            ps = 100
+            fc = 'white'
+            ax.scatter(x[mask], y[mask], s=ps, lw=lw,
+                    facecolor=fc, edgecolor=ec, zorder=2)
+      
+            # plot the chosen one
+            ps = 150
+            fc = 'black'
             ax.scatter(x[cind], y[cind], s=ps, lw=lw,
-                    facecolor=ec, edgecolor=ec)
-
-            ax.set_xlim((lowlim2,uplim2))
-            ax.set_ylim((lowlim2,uplim2))
+                    facecolor=fc, edgecolor=ec, zorder=3)
+           
 
 
-        ax1.set_ylabel(kernel, fontsize=12) 
+            ax.set_xlim((lowlim_plot,uplim_plot))
+            ax.set_ylim((lowlim_plot,uplim_plot))
+            if row == 1:
+                if col == ncols - 1:
+                    ax.set_xticks([0.4, 0.45, 0.5, 0.55, 0.6])
+                else:
+                    ax.set_xticks([0.4, 0.45, 0.5, 0.55])
+            ax.set_yticks([0.4, 0.45, 0.5, 0.55, 0.6])
 
-        if k==0:
-            ax1.set_title(r'Hopkins |$\mathbf{A}_{ij}$|', fontsize=12, pad=8)
 
-            ax2.set_title(r'Ivanova |$\mathbf{A}_{ij}$|', fontsize=12, pad=8)
+            if col == 0:
+                if row == 0:
+                    ax.set_ylabel(r'Hopkins $|\mathbf{A}_{ij}|$', fontsize=14)
+                if row == 1:
+                    ax.set_ylabel(r'Ivanova $|\mathbf{A}_{ij}|$', fontsize=14)
+            if row == 0:
+                name = ms.kernel_pretty_names[col]
+                ax.set_title(name, fontsize=14)
 
-            ax3.set_title(r'Ivanova v2 analytic gradients |$\mathbf{A}_{ij}$|', fontsize=12, pad=8)
 
-            ax4.set_title(r'Ivanova v2 approx gradients |$\mathbf{A}_{ij}$|', fontsize=12, pad=8)
+
+
+        # Add colorbar to every row
+        axcols.cbar_axes[0].colorbar(im)
+
+
 
 
 
     fig.suptitle(r'Effective Area $\mathbf{A}_{ij}$ of a particle w.r.t. the central particle (black) in a uniform distribution for different kernels', fontsize=14)
-    plt.tight_layout(rect=(0, 0, 1, 0.97))
     plt.savefig('different_kernels.png', dpi=300)
 
     print('finished.')

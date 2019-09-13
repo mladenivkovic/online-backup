@@ -14,6 +14,9 @@ import matplotlib.pyplot as plt
 
 
 import meshless as ms
+from my_utils import setplotparams_multiple_plots
+
+setplotparams_multiple_plots()
 
 
 
@@ -89,11 +92,24 @@ def main():
     print("Ratios Hopkins/Ivanova")
 
 
-    #  print(r" Ratios Hopkins/Ivanova $|A_{ij}|$    \\")
-    #  for i in range(len(nbors)):
-    #      AI = np.sqrt(A_ij_Ivanova[i][0]**2 + A_ij_Ivanova[i][1]**2)
-    #      AH = np.sqrt(A_ij_Hopkins[i][0]**2 + A_ij_Hopkins[i][1]**2)
-    #      print(r'{0:8.6f} \\'.format(AH/AI))
+    print("")
+    print("Ratios Hopkins/Ivanova")
+
+
+    print(r" Ratios Hopkins/Ivanova $|A_{ij}|$     & particle position \\")
+    dist = np.zeros(len(nbors), dtype=np.float)
+    for i,n in enumerate(nbors):
+        dx, dy = ms.get_dx(x[pind], x[n], y[pind], y[n])
+        dist[i] = np.sqrt(dx**2 + dy**2)
+
+    inds = np.argsort(dist)
+        
+    for ind in range(len(nbors)):
+        i = inds[ind] 
+        AI = np.sqrt(A_ij_Ivanova[i][0]**2 + A_ij_Ivanova[i][1]**2)
+        AH = np.sqrt(A_ij_Hopkins[i][0]**2 + A_ij_Hopkins[i][1]**2)
+        print(r'{0:8.6f}    & ({1:6.3f}, {2:6.3f} )\\'.format(AH/AI, x[nbors[i]], y[nbors[i]]))
+
 
 
 
@@ -110,14 +126,14 @@ def main():
     args = np.argsort(dist)
 
 
-    fig = plt.figure(figsize=(17, 9))
+    fig = plt.figure(figsize=(10, 5.5))
     #  fig = plt.figure(figsize=(34, 9))
     ax1 = fig.add_subplot(121, aspect='equal')
     ax2 = fig.add_subplot(122, aspect='equal')
     #  ax3 = fig.add_subplot(143, aspect='equal')
     #  ax4 = fig.add_subplot(144, aspect='equal')
 
-    pointsize = 200
+    pointsize = 100
     arrwidth = 2
 
     for ax in [ax1, ax2]: #, ax3, ax4]:
@@ -169,17 +185,16 @@ def main():
         #          color=col, lw=arrwidth, zorder=10+i)
 
 
-    ax1.set_title(r'Hopkins $\mathbf{A}_{ij}$ at $\mathbf{x}_{ij} = \mathbf{x}_i + \frac{h_i}{h_i+h_j}(\mathbf{x}_j - \mathbf{x}_i)$', fontsize=18, pad=12)
+    ax1.set_title(r'Hopkins $\mathbf{A}_{ij}$ at $\mathbf{x}_{ij} = \mathbf{x}_i + \frac{h_i}{h_i+h_j}(\mathbf{x}_j - \mathbf{x}_i)$') #, fontsize=18, pad=12)
 
-    ax2.set_title(r'Ivanova $\mathbf{A}_{ij}$ at $\mathbf{x}_{ij} = \mathbf{x}_i + \frac{h_i}{h_i+h_j}(\mathbf{x}_j - \mathbf{x}_i)$', fontsize=18, pad=12)
+    ax2.set_title(r'Ivanova $\mathbf{A}_{ij}$ at $\mathbf{x}_{ij} = \mathbf{x}_i + \frac{h_i}{h_i+h_j}(\mathbf{x}_j - \mathbf{x}_i)$') #, fontsize=18, pad=12)
 
     #  ax3.set_title(r'Ivanova v2 analytic gradients $\mathbf{A}_{ij}$ at $\mathbf{x}_{ij} = \mathbf{x}_i + \frac{h_i}{h_i+h_j}(\mathbf{x}_j - \mathbf{x}_i)$', fontsize=18, pad=12)
     #
     #  ax4.set_title(r'Ivanova v2 approx gradients $\mathbf{A}_{ij}$ at $\mathbf{x}_{ij} = \mathbf{x}_i + \frac{h_i}{h_i+h_j}(\mathbf{x}_j - \mathbf{x}_i)$', fontsize=18, pad=12)
 
 
-    plt.tight_layout()
-    plt.savefig('effective_area_hopkins_vs_ivanova_perturbed.png', dpi=200)
+    plt.savefig('effective_area_hopkins_vs_ivanova_perturbed.png')
 
 
 
