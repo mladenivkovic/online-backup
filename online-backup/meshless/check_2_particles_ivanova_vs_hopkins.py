@@ -12,6 +12,8 @@ import matplotlib.pyplot as plt
 
 
 import meshless as ms
+import my_utils
+my_utils.setplotparams_multiple_plots()
 
 
 
@@ -52,10 +54,6 @@ def main():
 #========================
     
 
-    #  x, y, h, rho, m, ids, npart = ms.read_file(srcfile, ptype)
-
-
-
     #  x = np.array([0.25, 0.25, 0.75, 0.75])
     #  y = np.array([0.25, 0.75, 0.25, 0.75])
     #  h = np.array([0.50, 0.50, 0.50, 0.50])
@@ -76,7 +74,8 @@ def main():
     j = ms.find_neighbours(pind, x, y, h)
 
     A_ij_I = ms.Aij_Ivanova(pind, x, y, h, m, rho)
-    A_ij_H = ms.Aij_Hopkins(pind, x, y, h, m, rho)
+    print("For 2 particles, the matrix becomes singular and the code crashes here.")
+    A_ij_H = ms.Aij_Hopkins_v2(pind, x, y, h, m, rho)
 
     x_ij = ms.x_ij(pind, x, y, h, nbors=j)
 
@@ -91,13 +90,9 @@ def main():
     pointsize = 200
     ax1.set_facecolor('lavender')
     ax1.scatter(x[pind], y[pind], c='k', s=pointsize*2)
-    ax1.set_xlim((0.25,0.75))
-    ax1.set_ylim((0.25,0.75))
 
     ax2.set_facecolor('lavender')
     ax2.scatter(x[pind], y[pind], c='k', s=pointsize*2)
-    ax2.set_xlim((0.25,0.75))
-    ax2.set_ylim((0.25,0.75))
 
     # plot particles in order of distance:
     # closer ones first, so that you still can see the short arrows
@@ -131,13 +126,13 @@ def main():
 
 
 
-    ax1.set_title(r'Hopkins $\mathbf{A}_{ij}$ at $\mathbf{x}_{ij} = \mathbf{x}_i + \frac{h_i}{h_i+h_j}(\mathbf{x}_j - \mathbf{x}_i)$', fontsize=18, pad=12)
+    ax1.set_title(r'Hopkins $\mathbf{A}_{ij}$ at $\mathbf{x}_{ij} = \mathbf{x}_i + \frac{h_i}{h_i+h_j}(\mathbf{x}_j - \mathbf{x}_i)$') #, fontsize=18, pad=12)
     ax1.set_xlabel('x')
     ax1.set_ylabel('y')
     ax1.set_xlim(0, 1)
     ax1.set_ylim(0, 1)
 
-    ax2.set_title(r'Ivanova $\mathbf{A}_{ij}$ at $\mathbf{x}_{ij} = \mathbf{x}_i + \frac{h_i}{h_i+h_j}(\mathbf{x}_j - \mathbf{x}_i)$', fontsize=18, pad=12)
+    ax2.set_title(r'Ivanova $\mathbf{A}_{ij}$ at $\mathbf{x}_{ij} = \mathbf{x}_i + \frac{h_i}{h_i+h_j}(\mathbf{x}_j - \mathbf{x}_i)$')#, fontsize=18, pad=12)
     ax2.set_xlabel('x')
     ax2.set_ylabel('y')
     ax2.set_xlim(0, 1)

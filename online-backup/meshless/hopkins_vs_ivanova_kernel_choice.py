@@ -86,6 +86,7 @@ def main():
                     A = A_list[a]
                     res = f(pind, x, y, H, m, rho, kernel=kernel)
                     A[k][jj,ii] = res[ind]
+                    #  A[k][jj, ii] = np.random.uniform() / (k+1) / 100
 
             jj += 1
 
@@ -94,8 +95,6 @@ def main():
     
 
 
-    normmin = 1000
-    normmax = 0
     Anorm_Hopkins = [np.zeros((nx, nx), dtype=np.float) for k in kernels]
     Anorm_Ivanova = [np.zeros((nx, nx), dtype=np.float) for k in kernels]
 
@@ -107,14 +106,9 @@ def main():
         Ax = Aij_Ivanova[k][:,:,0]
         Ay = Aij_Ivanova[k][:,:,1]
         Anorm_Ivanova[k] = np.sqrt(Ax**2 + Ay**2)
-        
-        normmin = min(Anorm_Hopkins[k].min(), Anorm_Ivanova[k].min(), normmin)
-        normmax = max(Anorm_Hopkins[k].max(), Anorm_Ivanova[k].max(), normmax)
 
 
 
-
-    cmap = 'YlGnBu_r'
 
     fig = plt.figure(figsize=(ncols*5, nrows*5.5))
 
@@ -136,8 +130,6 @@ def main():
 
 
     imgdata = [Anorm_Hopkins, Anorm_Ivanova]
-    minval = normmin
-    maxval = normmax
 
     axrows = [[] for r in range(nrows)]
     for row in range(nrows):
@@ -145,20 +137,21 @@ def main():
 
         axcols = ImageGrid(fig, (nrows, 1, row+1),
                     nrows_ncols=(1, ncols), 
-                    axes_pad = 0.,
+                    axes_pad = 0.5,
                     share_all = False,
                     label_mode = 'L',
-                    cbar_mode = 'edge',
+                    cbar_mode = 'each',
                     cbar_location = 'right',
-                    cbar_size = "7%",
-                    cbar_pad = "2%")
+                    cbar_size = "3%",
+                    cbar_pad = "1%")
         axrows[row] = axcols
 
 
         for col, ax in enumerate(axcols):
         
             im = ax.imshow(imgdata[row][col], origin='lower', 
-                vmin=minval, vmax=maxval, cmap=cmap,
+                cmap=cmap,
+                #  vmin=minval, vmax=maxval, cmap=cmap,
                 extent=(lowlim_plot, uplim_plot, lowlim_plot, uplim_plot),
                 #  norm=matplotlib.colors.SymLogNorm(1e-3),
                 zorder=1)
@@ -182,11 +175,7 @@ def main():
 
             ax.set_xlim((lowlim_plot,uplim_plot))
             ax.set_ylim((lowlim_plot,uplim_plot))
-            if row == 1:
-                if col == ncols - 1:
-                    ax.set_xticks([0.4, 0.45, 0.5, 0.55, 0.6])
-                else:
-                    ax.set_xticks([0.4, 0.45, 0.5, 0.55])
+            ax.set_xticks([0.4, 0.45, 0.5, 0.55, 0.6])
             ax.set_yticks([0.4, 0.45, 0.5, 0.55, 0.6])
 
 
@@ -200,10 +189,8 @@ def main():
                 ax.set_title(name, fontsize=14)
 
 
-
-
-        # Add colorbar to every row
-        axcols.cbar_axes[0].colorbar(im)
+            # Add colorbar
+            axcols.cbar_axes[col].colorbar(im)
 
 
 

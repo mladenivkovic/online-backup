@@ -8,11 +8,14 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1 import make_axes_locatable, axes_size 
-import meshless as ms
-
+from mpl_toolkits.axes_grid1 import make_axes_locatable, axes_size, ImageGrid
 import h5py
 
+
+import meshless as ms
+from my_utils import setplotparams_multiple_plots
+
+setplotparams_multiple_plots(wspace=0.0, hspace=0.0)
 
 ptype = 'PartType0'             # for which particle type to look for
 srcdir = 'ics_and_outputs'
@@ -59,35 +62,30 @@ def main():
     etas = smoothing_lengths[sortind]
 
 
-    nrows = len(etas)
-    ncols = 4
-
+    nrows = 2
+    ncols = len(etas)
 
     # assume that there are equally many files for every smoothing length 
     nx, filenummax, fileskip = ms.get_sample_size(dirs[0])
-    fileskip = 100
-    nx = 3
+    #  fileskip = 100
+    #  nx = 3
 
     Aij_Hopkins = [np.zeros((nx,nx,2), dtype=np.float) for e in etas]
     Aij_Ivanova = [np.zeros((nx,nx,2), dtype=np.float) for e in etas]
-    Aij_Ivanova_v2 = [np.zeros((nx,nx,2), dtype=np.float) for e in etas]
-    Aij_Ivanova_v3 = [np.zeros((nx,nx,2), dtype=np.float) for e in etas]
 
-    A_list = [Aij_Hopkins, Aij_Ivanova, Aij_Ivanova_v2, Aij_Ivanova_v3]
-    A_list_funcs = [ms.Aij_Hopkins, ms.Aij_Ivanova, ms.Aij_Ivanova_analytical_gradients, ms.Aij_Ivanova_approximate_gradients]
+    A_list = [Aij_Hopkins, Aij_Ivanova]
+    A_list_funcs = [ms.Aij_Hopkins, ms.Aij_Ivanova]
 
 
     for e, eta in enumerate(etas):
 
         prefix = dirs[e]
 
-
         # loop over all files
         ii = 0
         jj = 0
         for i in range(1, filenummax+1, fileskip):
             for j in range(1, filenummax+1, fileskip):
-
 
                 srcfile = os.path.join(prefix,'snapshot-'+str(i).zfill(3)+'-'+str(j).zfill(3)+'_0000.hdf5')
                 print('working for ', srcfile)
@@ -115,118 +113,120 @@ def main():
                     A = A_list[a]
                     res = f(pind, x, y, H, m, rho)
                     A[e][jj,ii] = res[ind]
+                    #  A[e][jj,ii] = np.random.uniform()
 
-                
                 jj += 1
 
             ii += 1
             jj = 0
+
+
+
+
+
+    Anorm_Hopkins = [np.zeros((nx, nx), dtype=np.float) for e in etas]
+    Anorm_Ivanova = [np.zeros((nx, nx), dtype=np.float) for e in etas]
+
+    for e, eta in enumerate(etas):
+        Ax = Aij_Hopkins[e][:,:,0]
+        Ay = Aij_Hopkins[e][:,:,1]
+        Anorm_Hopkins[e] = np.sqrt(Ax**2 + Ay**2)
         
+        Ax = Aij_Ivanova[e][:,:,0]
+        Ay = Aij_Ivanova[e][:,:,1]
+        Anorm_Ivanova[e] = np.sqrt(Ax**2 + Ay**2)
 
 
 
 
-    fig = plt.figure(figsize=(4*ncols+0.5, 3.5*nrows+1.5))
 
-
-    # prepare particles to plot
+    fig = plt.figure(figsize=(ncols*5, nrows*5.5))
 
     inds = np.argsort(ids)
-    xp = x[inds][:-1]
-    yp = y[inds][:-1]
 
-    mask = np.logical_and(xp>=lowlim-tol, xp<=uplim+tol)
-    mask = np.logical_and(mask, yp>=lowlim-tol)
-    mask = np.logical_and(mask, yp<=uplim+tol)
+    mask = np.logical_and(x>=lowlim-tol, x<=uplim+tol)
+    mask = np.logical_and(mask, y>=lowlim-tol)
+    mask = np.logical_and(mask, y<=uplim+tol)
+    mask[pind] = False
 
-    ps = 100
-    fc = 'white'
-    ec = 'black'
+    dx = (uplim - lowlim) / nx
+
+    uplim_plot = uplim #+ 0.5*dx
+    lowlim_plot = lowlim # - 0.5*dx
+
+    cmap = 'YlGnBu_r'
     lw = 2
+    ec = 'black'
 
 
+    imgdata = [Anorm_Hopkins, Anorm_Ivanova]
+
+    axrows = [[] for r in range(nrows)]
+    for row in range(nrows):
+        axcols = [None for c in range(ncols)]
+
+        axcols = ImageGrid(fig, (nrows, 1, row+1),
+                    nrows_ncols=(1, ncols), 
+                    axes_pad = 0.5,
+                    share_all = False,
+                    label_mode = 'L',
+                    cbar_mode = 'each',
+                    cbar_location = 'right',
+                    cbar_size = "3%",
+                    cbar_pad = "1%")
+        axrows[row] = axcols
 
 
-    counter = 1
-    for e, eta in enumerate(etas):
-
-        ax1 = fig.add_subplot(nrows, ncols, counter, aspect='equal')
-        ax2 = fig.add_subplot(nrows, ncols, counter+1, aspect='equal')
-        ax3 = fig.add_subplot(nrows, ncols, counter+2, aspect='equal')
-        ax4 = fig.add_subplot(nrows, ncols, counter+3, aspect='equal')
-        counter += ncols
-
-        axes = [ax1, ax2, ax3, ax4]
+        for col, ax in enumerate(axcols):
+        
+            im = ax.imshow(imgdata[row][col], origin='lower', 
+                cmap=cmap,
+                #  vmin=minval, vmax=maxval, cmap=cmap,
+                extent=(lowlim_plot, uplim_plot, lowlim_plot, uplim_plot),
+                #  norm=matplotlib.colors.SymLogNorm(1e-3),
+                zorder=1)
 
 
-        for i, A in enumerate(A_list):
-            
-            ax = axes[i]
-            Ax = A[e][:,:,0]
-            Ay = A[e][:,:,1]
-            Anorm = np.sqrt(Ax**2 + Ay**2)
-            #  xmin = Ax.min()
-            #  xmax = Ax.max()
-            #  ymin = Ay.min()
-            #  ymax = Ay.max()
-            normmin = Anorm.min()
-            normmax = Anorm.max()
+            # superpose particles
 
-
-            # reset lowlim and maxlim so cells are centered around the point they represent
-            dx = (uplim - lowlim) / A[e].shape[0]
-
-
-            uplim2 = uplim
-            lowlim2 = lowlim
-
-            cmap = 'YlGnBu_r'
-
-            im = ax.imshow(Anorm, origin='lower', 
-                    vmin=normmin, vmax=normmax, cmap=cmap,
-                    extent=(lowlim2, uplim2, lowlim2, uplim2))
-
-            divider = make_axes_locatable(ax)
-            cax = divider.append_axes("right", size="2%", pad=0.05)
-            fig.colorbar(im, cax=cax)
-
-
-            # scatter neighbours
-            ax.scatter(xp[mask], yp[mask], s=ps, lw=lw,
-                    facecolor=fc, edgecolor=ec)
-
-            # scatter central
+            # plot neighbours (and the ones you drew anyway)
+            ps = 100
+            fc = 'white'
+            ax.scatter(x[mask], y[mask], s=ps, lw=lw,
+                    facecolor=fc, edgecolor=ec, zorder=2)
+      
+            # plot the chosen one
+            ps = 150
+            fc = 'black'
             ax.scatter(x[cind], y[cind], s=ps, lw=lw,
-                    facecolor=ec, edgecolor=ec)
-
-            ax.set_xlim((lowlim2,uplim2))
-            ax.set_ylim((lowlim2,uplim2))
+                    facecolor=fc, edgecolor=ec, zorder=3)
+           
 
 
-        ax1.set_ylabel(r'$\eta =$ '+str(eta)+' $\eta_0$', fontsize=12) 
+            ax.set_xlim((lowlim_plot,uplim_plot))
+            ax.set_ylim((lowlim_plot,uplim_plot))
 
-        if e==0:
-            ax1.set_title(r'Hopkins |$\mathbf{A}_{ij}$|', fontsize=12, pad=8)
 
-            ax2.set_title(r'Ivanova |$\mathbf{A}_{ij}$|', fontsize=12, pad=8)
+            if col == 0:
+                if row == 0:
+                    ax.set_ylabel(r'Hopkins $|\mathbf{A}_{ij}|$', fontsize=14)
+                if row == 1:
+                    ax.set_ylabel(r'Ivanova $|\mathbf{A}_{ij}|$', fontsize=14)
+            if row == 0:
+                ax.set_title(r'$\eta =$ '+'{0:5.2f}'.format(etas[col])+r' $\eta_0$', fontsize=14)
 
-            ax3.set_title(r'Ivanova v2 analytic gradients |$\mathbf{A}_{ij}$|', fontsize=12, pad=8)
 
-            ax4.set_title(r'Ivanova v2 approx gradients |$\mathbf{A}_{ij}$|', fontsize=12, pad=8)
+            # Add colorbar to every row
+            axcols.cbar_axes[col].colorbar(im)
+
 
 
 
     fig.suptitle(r'Effective Area $\mathbf{A}_{ij}$ of a particle w.r.t. the central particle in a uniform distribution for different smoothing lengths with $\eta = \alpha \eta_0$ for $\eta_0 = 1.2348$', fontsize=14)
-    plt.tight_layout(rect=(0, 0, 1, 0.97))
-    plt.savefig('different_smoothing_lengths.png', dpi=300)
+
+    plt.savefig('different_smoothing_lengths.png')
 
     print('finished.')
-
-
-
-
-
-
 
     return
 
@@ -236,4 +236,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

@@ -13,6 +13,8 @@ from matplotlib import colors as clrs
 
 
 import meshless as ms
+import my_utils
+my_utils.setplotparams_multiple_plots()
 
 
 
@@ -77,10 +79,10 @@ def main():
 
     # set up figure
 
-    fig = plt.figure(figsize=(18, 10))
+    fig = plt.figure(figsize=(10, 5.5))
     axes = ImageGrid(fig, (1, 1, 1), 
                 nrows_ncols=(1, 2),
-                axes_pad=2,
+                axes_pad=0.85,
                 share_all=True,
                 aspect='equal',
                 label_mode = 'all',
@@ -92,13 +94,13 @@ def main():
     ax1, ax2 = axes
 
     im1=ax1.imshow(psi, origin='lower', extent=(lowlim, uplim, lowlim, uplim))#, norm=clrs.SymLogNorm(linthresh=1e-10))
-    ax1.set_title(r'$\psi(\mathbf{x})$, real data', fontsize=18, pad=12)
+    ax1.set_title(r'$\psi(\mathbf{x})$, real data') #, fontsize=18, pad=12)
     axes.cbar_axes[0].colorbar(im1)
 
     xx, yy = np.meshgrid(np.linspace(lowlim, uplim, nx), np.linspace(lowlim, uplim, nx))
     conts = ax2.contourf(xx, yy, psi)
     im2 = ax2.contour(conts, colors='k')
-    ax2.set_title(r'$\psi(\mathbf{x})$, contour plot', fontsize=18, pad=12)
+    ax2.set_title(r'$\psi(\mathbf{x})$, contour plot') #, fontsize=18, pad=12)
     axes.cbar_axes[1].colorbar(conts)
 
 
@@ -111,7 +113,7 @@ def main():
 
 
         # plot chosen particle and neighbours
-        pointsize = 200
+        pointsize = 70
         ax.scatter(x[pind], y[pind], c='k', s=pointsize*2)
         for n in nbors:
             ax.scatter(x[n], y[n], c='white', s=pointsize, zorder=10, lw=1, edgecolor='k')
@@ -123,8 +125,7 @@ def main():
 
 
 
-    plt.tight_layout(rect=(0, 0, 0.95, 0.95))
-    plt.savefig('psi_of_x_uniform.png', dpi=200)
+    plt.savefig('psi_of_x_uniform.png')
 
 
 

@@ -68,7 +68,6 @@ def main():
     x, y, h, rho, m, ids, npart = ms.read_file(srcfile, ptype)
 
     # convert H to h
-    #  H = h
     H = ms.get_H(h)
     pind = ms.find_index(x, y, pcoord)
     nbors = ms.find_neighbours(pind, x, y, H)
@@ -78,19 +77,10 @@ def main():
 
     A_ij_Hopkins = ms.Aij_Hopkins(pind, x, y, H, m, rho)
     A_ij_Ivanova = ms.Aij_Ivanova(pind, x, y, H, m, rho)
-    #  A_ij_Ivanova2 = ms.Aij_Ivanova_analytical_gradients(pind, x, y, H, m, rho)
-    #  A_ij_Ivanova3 = ms.Aij_Ivanova_approximate_gradients(pind, x, y, H, m, rho)
-    #  quit()
     x_ij = ms.x_ij(pind, x, y, H, nbors=nbors)
 
     print("Sum Hopkins:", np.sum(A_ij_Hopkins, axis=0)) 
     print("Sum Ivanova:", np.sum(A_ij_Ivanova, axis=0)) 
-    #  print("Sum Ivanova2:", np.sum(A_ij_Ivanova2, axis=0))
-    #  print("Sum Ivanova3:", np.sum(A_ij_Ivanova3, axis=0))
-
-    print("")
-    print("Ratios Hopkins/Ivanova")
-
 
     print("")
     print("Ratios Hopkins/Ivanova")
@@ -196,6 +186,9 @@ def main():
 
     plt.savefig('effective_area_hopkins_vs_ivanova_perturbed.png')
 
+    
+    print(A_ij_Ivanova)
+    print(A_ij_Hopkins)
 
 
 

@@ -12,6 +12,8 @@ import matplotlib.pyplot as plt
 
 
 import meshless as ms
+import my_utils
+my_utils.setplotparams_multiple_plots()
 
 
 
@@ -102,8 +104,8 @@ def main():
 
     # prepare figure
     nrows = len(pcoords)
-    ncols = 4
-    fig = plt.figure(figsize=(34, 15))
+    ncols = 2
+    fig = plt.figure(figsize=(14, 15))
 
 
 
@@ -120,8 +122,6 @@ def main():
 
         A_ij_Hopkins = ms.Aij_Hopkins(pind, x, y, H, m, rho)
         A_ij_Ivanova = ms.Aij_Ivanova(pind, x, y, H, m, rho)
-        A_ij_Ivanova_v2 = ms.Aij_Ivanova_analytical_gradients(pind, x, y, H, m, rho)
-        A_ij_Ivanova_v3 = ms.Aij_Ivanova_approximate_gradients(pind, x, y, H, m, rho)
 
         x_ij = ms.x_ij(pind, x, y, H, nbors=nbors)
 
@@ -130,8 +130,6 @@ def main():
 
         ax1 = fig.add_subplot(nrows, ncols, count+1, aspect='equal')
         ax2 = fig.add_subplot(nrows, ncols, count+2, aspect='equal')
-        ax3 = fig.add_subplot(nrows, ncols, count+3, aspect='equal')
-        ax4 = fig.add_subplot(nrows, ncols, count+4, aspect='equal')
         count += ncols
 
         pointsize = 100
@@ -154,19 +152,13 @@ def main():
         if verbose:
             print("Sum Hopkins:   ", np.sum(A_ij_Hopkins, axis=0)) 
             print("Sum Ivanova:   ", np.sum(A_ij_Ivanova, axis=0)) 
-            print("Sum Ivanova_v2:", np.sum(A_ij_Ivanova_v2, axis=0)) 
-            print("Sum Ivanova_v3:", np.sum(A_ij_Ivanova_v3, axis=0)) 
 
             abs1   = np.sqrt(A_ij_Hopkins[:,0]**2 + A_ij_Hopkins[:,1]**2)
             abs_i  = np.sqrt(A_ij_Ivanova[:,0]**2 + A_ij_Ivanova[:,1]**2)
-            abs_i2 = np.sqrt(A_ij_Ivanova_v2[:,0]**2 + A_ij_Ivanova_v2[:,1]**2)
-            abs_i3 = np.sqrt(A_ij_Ivanova_v3[:,0]**2 + A_ij_Ivanova_v3[:,1]**2)
 
 
             print("Sum abs Hopkins:   ", np.sum(abs1))
             print("Sum abs Ivanova:   ", np.sum(abs_i))
-            print("Sum abs Ivanova_v2:", np.sum(abs_i2))
-            print("Sum abs Ivanova_v3:", np.sum(abs_i3))
 
             #  print("Ratio Hopkins/Ivanova", np.sum(abs1)/np.sum(abs_i))
             V_i = ms.V(pind, m, rho)
@@ -174,11 +166,6 @@ def main():
             R = np.sqrt(V_i/np.pi)
             print("spheric surface", 2*np.pi*R)
             #  print("mean h^2", np.mean(h**2))
-
-            #  print()
-            #  print("I1/I2", A_ij_Ivanova/A_ij_Ivanova_v2)
-            #  print("I1/I3", A_ij_Ivanova/A_ij_Ivanova_v3)
-            #  print("I2/I3", A_ij_Ivanova_v2/A_ij_Ivanova_v3)
 
             print()
             print("===================================================")
@@ -189,7 +176,7 @@ def main():
 
 
 
-        for ax in [ax1, ax2, ax3, ax4]:
+        for ax in [ax1, ax2]:
             ax.set_facecolor('lavender')
             ax.scatter(x[pind], y[pind], c='k', s=pointsize*2)
             ax.set_xlim((xmin, xmax))
@@ -236,20 +223,10 @@ def main():
             ax2.arrow(  x_ij[ii][0], x_ij[ii][1], A_ij_Ivanova[ii][0], A_ij_Ivanova[ii][1], 
                         color=col, lw=arrwidth, zorder=10+i)
 
-            ax3.arrow(  x_ij[ii][0], x_ij[ii][1], A_ij_Ivanova_v2[ii][0], A_ij_Ivanova_v2[ii][1], 
-                        color=col, lw=arrwidth, zorder=10+i)
-
-            ax4.arrow(  x_ij[ii][0], x_ij[ii][1], A_ij_Ivanova_v3[ii][0], A_ij_Ivanova_v3[ii][1], 
-                        color=col, lw=arrwidth, zorder=10+i)
-
 
         ax1.set_title(r'Hopkins $\mathbf{A}_{ij}$ at $\mathbf{x}_{ij} = \mathbf{x}_i + \frac{h_i}{h_i+h_j}(\mathbf{x}_j - \mathbf{x}_i)$', fontsize=18, pad=12)
 
         ax2.set_title(r'Ivanova $\mathbf{A}_{ij}$ at $\mathbf{x}_{ij} = \mathbf{x}_i + \frac{h_i}{h_i+h_j}(\mathbf{x}_j - \mathbf{x}_i)$', fontsize=18, pad=12)
-
-        ax3.set_title(r'Ivanova v2 analytic gradients $\mathbf{A}_{ij}$ at $\mathbf{x}_{ij} = \mathbf{x}_i + \frac{h_i}{h_i+h_j}(\mathbf{x}_j - \mathbf{x}_i)$', fontsize=18, pad=12)
-
-        ax4.set_title(r'Ivanova v2 approx gradients $\mathbf{A}_{ij}$ at $\mathbf{x}_{ij} = \mathbf{x}_i + \frac{h_i}{h_i+h_j}(\mathbf{x}_j - \mathbf{x}_i)$', fontsize=18, pad=12)
 
 
     plt.tight_layout()
