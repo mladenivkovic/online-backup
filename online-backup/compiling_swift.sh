@@ -39,15 +39,16 @@ DEBUGFLAGS_IF_IN_USE="  --enable-debug
                         --enable-debugging-checks" 
                         # if debug is selected, these debugging flags will be used.
 DEFAULTFLAGS='          --enable-mpi=no 
-                        --disable-doxygen-doc'
+                        --disable-doxygen-doc
+                        --enable-task-debugging'
 DIMFLAGS=''             # default 3D
 # without Ivanova
 # GIZMOFLAGS="            --with-hydro=gizmo-mfv
 #                         --with-riemann-solver=hllc"
 # with Ivanova
 GIZMOFLAGS="            --with-hydro=gizmo-mfv 
-                        --with-riemann-solver=hllc 
-                        --enable-ivanova-surfaces"
+                        --with-riemann-solver=hllc"
+                        # --enable-ivanova-surfaces"
 LIBFLAGS="              --with-parmetis 
                         --with-jemalloc 
                         --with-hdf5=$HDF5_ROOT/bin/h5pcc"

@@ -21,8 +21,8 @@ from my_utils import yesno, one_arg_present
 #------------------------
 
 snap = '0000'                   # which snap to use
-hdf_prefix = 'sodShock_'        # snapshot name prefix
-#  hdf_prefix = 'perturbedPlane_'  # snapshot name prefix
+#  hdf_prefix = 'sodShock_'        # snapshot name prefix
+hdf_prefix = 'perturbedPlane_'  # snapshot name prefix
 #  hdf_prefix = 'uniformPlane_'    # snapshot name prefix
 
 # read in cmd line arg snapshot number if present and convert it to formatted string
@@ -41,7 +41,7 @@ python_dump = 'dump_my_python_Aij_'+snap+'.pkl'
 # Behaviour params
 #----------------------
 
-tolerance = 1e-2    # relative tolerance threshold for relative float comparison: if (a - b)/a < tolerance, it's fine
+tolerance = 1e-6    # relative tolerance threshold for relative float comparison: if (a - b)/a < tolerance, it's fine
 NULL = 1e-6         # treat values below this as zeroes
 
 

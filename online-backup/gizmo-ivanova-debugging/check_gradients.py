@@ -23,13 +23,13 @@ from my_utils import yesno, one_arg_present
 # Filenames
 #------------------------
 
-snap = '0000'                   # which snap to use
-#  snap = '0001'                   # which snap to use
+#  snap = '0000'                   # which snap to use
+snap = '0001'                   # which snap to use
 #  snap = '0002'                   # which snap to use
 #  hdf_prefix = 'sodShock_'        # snapshot name prefix
 #  hdf_prefix = 'sodShockSpherical_'        # snapshot name prefix
-hdf_prefix = 'perturbedPlane_'  # snapshot name prefix
-#  hdf_prefix = 'uniformPlane_'    # snapshot name prefix
+#  hdf_prefix = 'perturbedPlane_'  # snapshot name prefix
+hdf_prefix = 'uniformPlane_'    # snapshot name prefix
 
 # read in cmd line arg snapshot number if present and convert it to formatted string
 snap = ms.snapstr(one_arg_present(snap))
@@ -44,13 +44,13 @@ python_dump = 'dump_my_python_gradient_sum_'+snap+'.pkl'
 # Behaviour params
 #----------------------
 
-tolerance = 1e-2    # relative tolerance threshold for relative float comparison: if (a - b)/a < tolerance, it's fine
+tolerance = 1e-4    # relative tolerance threshold for relative float comparison: if (a - b)/a < tolerance, it's fine
 NULL = 1e-6         # treat values below this as zeroes
-NULL_SUMS = 1e-4    # treat sums below this as zeroes
+NULL_SUMS = 1e-8    # treat sums below this as zeroes
 
 
+do_break = True    # break after you found a difference
 #  do_break = False    # don't break after you found a difference
-do_break = False    # don't break after you found a difference
 
 limit_q = True      # whether to ignore differences for high q = r/H; Seems to be stupid round off errors around
 q_limit = 0.99      # upper limit for q = r/H if difference is found;
@@ -105,6 +105,8 @@ def extract_gradients_from_snapshot():
     nneigh = parts['nneigh_grads'][:]
     grads = parts['grads'][:]
     dwdr = parts['dwdr'][:]
+    dx = parts['dx'][:]
+    r = parts['r'][:]
 
     omega = parts['omega'][:]
     vol = parts['vol'][:]
@@ -129,6 +131,8 @@ def extract_gradients_from_snapshot():
     omega = omega[inds]
     vol = vol[inds]
     dwdr = dwdr[inds]
+    dx = dx[inds]
+    r = r[inds]
 
 
     # sort neighbour dependent data by neighbour IDs
@@ -140,14 +144,20 @@ def extract_gradients_from_snapshot():
         nids[n][:nb] = nids[n][:nb][ninds]
         # sort dwdr
         dwdr[n][:nb] = dwdr[n][:nb][ninds]
+        # sort r
+        r[n][:nb] = r[n][:nb][ninds]
         # sort individual gradient contributions
         temp = np.empty((2*nb), dtype=np.float)
+        temp_dx = np.empty((2*nb), dtype=np.float)
         for i, nn in enumerate(ninds):
 
             temp[2*i:2*i+2] = grads[n,2*nn:2*nn+2]
             #  temp[2*i] = Aijs[n, 2*nn]
+            temp_dx[2*i:2*i+2] = dx[n,2*nn:2*nn+2]
+            #  temp[2*i] = Aijs[n, 2*nn]
 
         grads[n][:2*nb] = temp
+        dx[n][:2*nb] = temp_dx
 
 
 
@@ -156,7 +166,7 @@ def extract_gradients_from_snapshot():
     # dump
     #------------------
 
-    data_dump = [grads, gradsum, dwdr, nids, nneigh, omega, vol, pos, h, ids]
+    data_dump = [grads, gradsum, dwdr, nids, nneigh, omega, vol, pos, h, ids, dx, r]
     dumpfile = open(swift_dump, 'wb')
     pickle.dump(data_dump, dumpfile)
     dumpfile.close()
@@ -238,17 +248,30 @@ def compute_gradients_my_way():
     grad_psi_j_at_i = np.zeros((npart, npart, 2), dtype=np.float)
     grad_W_j_at_i = np.zeros((npart, npart, 2), dtype=np.float)
     dwdr = np.zeros((npart, npart), dtype=np.float)
+    r_store = np.zeros((npart, npart), dtype=np.float)
+    dx_store = np.zeros((npart, npart, 2), dtype=np.float)
 
 
+    GIZMO_ZERO = 1e-10
     for i in range(npart):
         for j in neighbours[i]:
             # get kernel gradients
 
             dx, dy = ms.get_dx(x[i], x[j], y[i], y[j], L=L, periodic=periodic)
 
+            # set dx, dy explicitly to zero
+            if abs(dx) < GIZMO_ZERO : 
+                print("resetting dx", dx)
+                dx = 0.0
+
+            if abs(dy) < GIZMO_ZERO : dy = 0.0
+
             r = np.sqrt(dx**2 + dy**2)
             if r != 0:
                 dwdr[j,i] = ms.dWdr(r/h[i], h[i], kernel)
+                r_store[i,j] = r
+                dx_store[i,j,0] = dx # store i - j, not j - i
+                dx_store[i,j,1] = dy
                 grad_W_j_at_i[j, i, 0] = dwdr[j,i] * dx / r
                 grad_W_j_at_i[j, i, 1] = dwdr[j,i] * dy / r
             # else: zero anyway
@@ -289,7 +312,7 @@ def compute_gradients_my_way():
 
 
 
-    data_dump = [sum_grad_W, grad_W_j_at_i, dwdr, nids, nneighs, omega]
+    data_dump = [sum_grad_W, grad_W_j_at_i, dwdr, nids, nneighs, omega, r_store, dx_store]
     dumpfile = open(python_dump, 'wb')
     pickle.dump(data_dump, dumpfile)
     dumpfile.close()
@@ -317,11 +340,11 @@ def compare_grads():
     python_filep = open(python_dump, 'rb')
 
     data_swift = pickle.load(swift_filep)
-    grads_s, sum_grad_s, dwdr_s, nids_s, nneigh_s, omega_s, vol_s, pos, h, ids = data_swift
+    grads_s, sum_grad_s, dwdr_s, nids_s, nneigh_s, omega_s, vol_s, pos, h, ids, dx_s, r_s = data_swift
     H = ms.get_H(h)
 
     data_python = pickle.load(python_filep)
-    sum_grad_p, all_grads_p, dwdr_p, nids_p, nneigh_p, omega_p = data_python
+    sum_grad_p, all_grads_p, dwdr_p, nids_p, nneigh_p, omega_p, r_p, dx_p = data_python
 
     swift_filep.close()
     python_filep.close()
@@ -415,7 +438,7 @@ def compare_grads():
                     if r/H[p] > q_limit:
                         continue
 
-                print("Found difference:")
+                print("Found difference in radial gradients:")
                 print((" Particle ID {0:8d}, "+
                         "position {1:14.8e} {2:14.8e}, h = {3:14.8e}, "+
                         "H = {4:14.8e}, dist = {5:14.8e}, dist/H = {6:14.8E}").format(
@@ -426,8 +449,8 @@ def compare_grads():
                         "H = {4:14.8e}").format(
                             ids[nind], pos[nind,0], pos[nind,1], h[nind], H[nind])
                             )
-                print("dwdr py = {0:14.8e}, dwdr swift = {1:14.8e}, 1 - swift/py = {2:12.6f}".format(
-                        py, sw, 1 - sw/py ))
+                print("dwdr py = {0:14.8e}, dwdr swift = {1:14.8e}, diff = {2:12.6f}".format(
+                        py, sw, diff ))
                 dw = ms.dWdr(r/H[p], H[p])
                 dw2 = ms.dWdr(r/H[nind], H[nind])
                 found_difference = True
@@ -439,6 +462,133 @@ def compare_grads():
         print("Finished, all the same.")
     if do_break and found_difference:
         quit()
+
+
+
+
+
+
+
+    #------------------------------------------------------
+    print("Checking r")
+    #------------------------------------------------------
+
+    found_difference = False
+    for p in range(npart):
+        for n in range(nneigh_p[p]):
+            # dwdr_p has dimensions npart x npart;
+            # nids_p[n]-1 is the index we're looking for
+            # remember that dwdr_p[j,i] = dw_j(x_i)/dr and dwdr_s[i, j] = dw_j(x_i)
+            nind = nids_p[p,n]-1
+            py = r_p[p, nind]
+            sw = r_s[p, n]
+
+            if abs(py) > NULL:
+                diff = abs(1 - sw/py)
+            elif abs(sw) > NULL:
+                diff = abs(1 - py/sw)
+            else:
+                print("Skipping", py, sw)
+                continue
+
+            if diff > tolerance:
+
+                dx, dy = ms.get_dx(pos[p,0], pos[nind,0], pos[p,1], pos[nind,1])
+                r = np.sqrt(dx**2 + dy**2)
+
+                if limit_q:
+                    if r/H[p] > q_limit:
+                        continue
+
+                print("Found difference: in r:")
+                print((" Particle ID {0:8d}, "+
+                        "position {1:14.8e} {2:14.8e}, h = {3:14.8e}, "+
+                        "H = {4:14.8e}, dist = {5:14.8e}, dist/H = {6:14.8E}").format(
+                            ids[p], pos[p,0], pos[p,1], h[p], H[p], r, r/H[p])
+                            )
+                print(("Neighbour ID {0:8d}, "+
+                        "position {1:14.8e} {2:14.8e}, h = {3:14.8e}, "+
+                        "H = {4:14.8e}").format(
+                            ids[nind], pos[nind,0], pos[nind,1], h[nind], H[nind])
+                            )
+                print("r py = {0:14.8e}, r swift = {1:14.8e}, 1 - swift/py = {2:12.6f}".format(
+                        py, sw, 1 - sw/py ))
+                print(r)
+                found_difference = True
+
+        if do_break and found_difference:
+            break
+
+    if not found_difference:
+        print("Finished, all the same.")
+    if do_break and found_difference:
+        quit()
+
+
+
+
+
+
+    #------------------------------------------------------
+    print("Checking dx")
+    #------------------------------------------------------
+
+    found_difference = False
+    for p in range(npart):
+        for n in range(nneigh_p[p]):
+            # all_grads_p has dimensions npart x npart; it is grad_W_j_at_i
+            # nids_p[n]-1 is the index we're looking for
+            nind = nids_p[p, n]-1
+            pyx = dx_p[p, nind, 0]
+            pyy = dx_p[p, nind, 1]
+            swx = dx_s[p, 2*n]
+            swy = dx_s[p, 2*n+1]
+
+            for P, S in [(pyx, swx), (pyy, swy)]:
+                if abs(P) > NULL:
+                    diff = abs(1 - S/P)
+                elif abs(S) > NULL:
+                    diff = abs(1 - P/S)
+                else:
+                    continue
+
+                if diff > tolerance:
+
+                    dx, dy = ms.get_dx(pos[p,0], pos[nind,0], pos[p,1], pos[nind,1])
+                    r = np.sqrt(dx**2 + dy**2)
+
+                    if limit_q:
+                        if r/H[p] > q_limit:
+                            continue
+
+
+                    print("In dx:")
+                    print(("Found difference: ID: {0:14d}  neighbour {1:14d} difference: {2:12.6f} r/H: {3:14.8e}\n"+
+                           "                   x: {4:14.8e}           {5:14.8e}\n"+
+                           "                   y: {6:14.8e}           {7:14.8e}\n").format(
+                                ids[p], nids_p[p,n], diff, r/H[p], pyx, swx, pyy, swy)
+                           #  "                  hi: {8:14.8e}     hj: {9:14.8e}    1 - |hi/hj|: {10:14.8e}     1 - |hj/hi|:  {11:14.8e}\n").format(
+                                #  ids[p], nids_p[p,n], diff, r/H[p], pyx, swx, pyy, swy, h[p], h[n], 1 - abs(h[p]/h[n]), 1 - abs(h[n]/h[p]))
+                        )
+                    print(pos[p][:2], pos[nind][:2], pos[nind][:2]-pos[p][:2])
+                    found_difference = True
+                    if do_break:
+                        break
+            #  if do_break and found_difference:
+            #      break
+        if do_break and found_difference:
+            break
+
+    if not found_difference:
+        print("Finished, all the same.")
+    if found_difference and do_break:
+        quit()
+
+
+
+
+
+
 
 
 
@@ -477,11 +627,22 @@ def compare_grads():
                             continue
 
 
-                    print(("Found difference: ID: {0:14d}  neighbour {1:14d} difference: {7:12.6f} r/H: {6:14.8e}\n"+
-                           "                   x: {2:14.8e}         {3:14.8e}\n"+
-                           "                   y: {4:14.8e}         {5:14.8e}\n").format(
-                                ids[p], nids_p[p,n], pyx, swx, pyy, swy, r/H[p], diff)
-                        )
+                    print("In individual gradient contribution:")
+                    print(("Found difference: ID: {0:14d}  neighbour {1:14d} difference: {2:12.6f} r/H: {3:14.8e}\n"+
+                           "                   x: {4:14.8e}           {5:14.8e}\n"+
+                           "                   y: {6:14.8e}           {7:14.8e}").format(
+                                ids[p], nids_p[p,n], diff, r/H[p], pyx, swx, pyy, swy)) 
+                           #  "         py * hi/hj ^ndim       py * hj/hi ^ ndim  \n"+
+                           #  "                   x: {8:14.8e}           {9:14.8e}\n"+
+                           #  "                   y: {10:14.8e}           {11:14.8e}").format(
+                           #       ids[p], nids_p[p,n], diff, r/H[p], pyx, swx, pyy, swy,
+                           #       pyx*(h[p]/h[n])**3, pyx*(h[n]/h[p])**3, pyy*(h[p]/h[n])**3, pyy*(h[n]/h[p])**3)
+                        #  )
+                    print("dwdr: {0:14.8e}      {1:14.8e}".format(dwdr_p[nind,p], dwdr_s[p, n]))
+                    print("r:    {0:14.8e}      {1:14.8e}".format(r_p[p, nind], r_s[p, n]))
+                    print("dx:   {0:14.8e}      {1:14.8e}".format(dx_p[p, nind, 0], dx_s[p, 2*n]))
+                    print("dy:   {0:14.8e}      {1:14.8e}".format(dx_p[p, nind, 1], dx_s[p, 2*n+1]))
+                    print()
                     found_difference = True
                     if do_break:
                         break
@@ -494,7 +655,6 @@ def compare_grads():
         print("Finished, all the same.")
     if found_difference and do_break:
         quit()
-
 
 
 
@@ -526,11 +686,11 @@ def compare_grads():
 
             if diff > tolerance:
 
-                print("Found difference:")
-                print((" ID: {0:14d}  neighbour {1:14d} difference: {6:12.6f}\n"+
-                       "  x: {2:14.8e}         {3:14.8e}\n"+
-                       "  y: {4:14.8e}         {5:14.8e}\n").format(
-                            ids[p], nids_p[p,n], pyx, swx, pyy, swy, diff)
+                print("In gradient sums:")
+                print(("Found difference: ID: {0:14d}  neighbour {1:14d} difference: {2:12.6f}\n"+
+                       "                   x: {3:14.8e}         {4:14.8e}\n"+
+                       "                   y: {5:14.8e}         {6:14.8e}\n").format(
+                            ids[p], nids_p[p,n], diff, pyx, swx, pyy, swy)
                     )
                 found_difference = True
                 if do_break:

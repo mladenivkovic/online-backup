@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 import meshless as ms
 from my_utils import setplotparams_multiple_plots
 
-setplotparams_multiple_plots()
+setplotparams_multiple_plots(for_presentation=True)
 
 
 

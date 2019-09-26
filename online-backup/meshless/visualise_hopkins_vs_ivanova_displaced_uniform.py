@@ -16,7 +16,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable, axes_size, ImageGrid
 import meshless as ms
 from my_utils import setplotparams_multiple_plots
 
-setplotparams_multiple_plots(wspace=0.2)
+setplotparams_multiple_plots(wspace=0.2, for_presentation=True)
 
 
 
@@ -73,6 +73,7 @@ def main():
             print('working for ', srcfile)
 
             x, y, h, rho, m, ids, npart= ms.read_file(srcfile, ptype)
+            # comments/uncomment for testing purposes
             #  AH[jj,ii] = np.random.uniform()
             #  AI[jj,ii] = np.random.uniform()
             #  jj += 1
@@ -216,15 +217,15 @@ def main():
 
 
             if col == 0:
-                ax.set_title(r'$x$ component of $\mathbf{A}_{ij}$', fontsize=14)
+                ax.set_title(r'$x$ component of $\mathbf{A}_{ij}$')#, fontsize=14)
                 if row == 0:
-                    ax.set_ylabel('Hopkins', fontsize=14)
+                    ax.set_ylabel('Hopkins')#, fontsize=14)
                 if row == 1:
-                    ax.set_ylabel('Ivanova', fontsize=14)
+                    ax.set_ylabel('Ivanova')#, fontsize=14)
             if col == 1:
-                ax.set_title(r'$y$ component of $\mathbf{A}_{ij}$', fontsize=14)
+                ax.set_title(r'$y$ component of $\mathbf{A}_{ij}$')#, fontsize=14)
             if col == 2:
-                ax.set_title(r'$|\mathbf{A}_{ij}|$', fontsize=14)
+                ax.set_title(r'$|\mathbf{A}_{ij}|$')#, fontsize=14)
 
 
 

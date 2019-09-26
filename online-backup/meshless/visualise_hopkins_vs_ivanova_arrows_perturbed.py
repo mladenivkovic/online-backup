@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 import meshless as ms
 from my_utils import setplotparams_multiple_plots
 
-setplotparams_multiple_plots()
+setplotparams_multiple_plots(for_presentation=True)
 
 
 
@@ -124,7 +124,7 @@ def main():
     #  ax4 = fig.add_subplot(144, aspect='equal')
 
     pointsize = 100
-    arrwidth = 2
+    arrwidth = 1
 
     for ax in [ax1, ax2]: #, ax3, ax4]:
         ax.set_facecolor('lavender')
@@ -144,8 +144,6 @@ def main():
             while cc > ncolrs-1:
                 cc -= ncolrs
             col = fullcolorlist[cc]
-
-            arrwidth = 2
 
             ax.scatter(x[n], y[n], c=col, s=pointsize, zorder=0, lw=1, edgecolor='k')
 
@@ -167,12 +165,6 @@ def main():
 
         ax2.arrow(x_ij[ii][0], x_ij[ii][1], A_ij_Ivanova[ii][0], A_ij_Ivanova[ii][1], 
                 color=col, lw=arrwidth, zorder=10+i)
-
-        #  ax3.arrow(x_ij[ii][0], x_ij[ii][1], A_ij_Ivanova2[ii][0], A_ij_Ivanova2[ii][1],
-        #          color=col, lw=arrwidth, zorder=10+i)
-        #
-        #  ax4.arrow(x_ij[ii][0], x_ij[ii][1], A_ij_Ivanova3[ii][0], A_ij_Ivanova3[ii][1],
-        #          color=col, lw=arrwidth, zorder=10+i)
 
 
     ax1.set_title(r'Hopkins $\mathbf{A}_{ij}$ at $\mathbf{x}_{ij} = \mathbf{x}_i + \frac{h_i}{h_i+h_j}(\mathbf{x}_j - \mathbf{x}_i)$') #, fontsize=18, pad=12)
