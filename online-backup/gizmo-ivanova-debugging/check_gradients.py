@@ -44,7 +44,7 @@ python_dump = 'dump_my_python_gradient_sum_'+snap+'.pkl'
 # Behaviour params
 #----------------------
 
-tolerance = 1e-4    # relative tolerance threshold for relative float comparison: if (a - b)/a < tolerance, it's fine
+tolerance = 1e-5    # relative tolerance threshold for relative float comparison: if (a - b)/a < tolerance, it's fine
 NULL = 1e-6         # treat values below this as zeroes
 NULL_SUMS = 1e-8    # treat sums below this as zeroes
 
@@ -52,7 +52,7 @@ NULL_SUMS = 1e-8    # treat sums below this as zeroes
 do_break = True    # break after you found a difference
 #  do_break = False    # don't break after you found a difference
 
-limit_q = True      # whether to ignore differences for high q = r/H; Seems to be stupid round off errors around
+limit_q = False      # whether to ignore differences for high q = r/H; Seems to be stupid round off errors around
 q_limit = 0.99      # upper limit for q = r/H if difference is found;
 
 
@@ -260,10 +260,7 @@ def compute_gradients_my_way():
             dx, dy = ms.get_dx(x[i], x[j], y[i], y[j], L=L, periodic=periodic)
 
             # set dx, dy explicitly to zero
-            if abs(dx) < GIZMO_ZERO : 
-                print("resetting dx", dx)
-                dx = 0.0
-
+            if abs(dx) < GIZMO_ZERO : dx = 0.0
             if abs(dy) < GIZMO_ZERO : dy = 0.0
 
             r = np.sqrt(dx**2 + dy**2)
@@ -279,9 +276,9 @@ def compute_gradients_my_way():
             #      ms.grad_W_k_at_l[k, l, 0] = 0
             #      ms.grad_W_k_at_l[k, l, 1] = 0
             
-            #  if k == 0:
-            #      print("Working on neighbour", l, ids[l], dwdr[k,l],
-            #          ms.dWdr(r/h[l], h[l], kernel), ms.dWdr(r/h[k], h[k], kernel))
+            if i == 0:
+                print("contrib from ", j, grad_W_j_at_i[j, i])
+            
 
 
     sum_grad_W = np.zeros((npart, 2), dtype=np.float)
@@ -290,6 +287,9 @@ def compute_gradients_my_way():
         # you can skip the self contribution here, the gradient at r = 0 is 0
         # sum along fixed/same h_i
         sum_grad_W[i] = np.sum(grad_W_j_at_i[neighbours[i], i], axis=0)
+        if i == 0:
+            for n in neighbours[i]:
+                print("adding from", n, grad_W_j_at_i[n, i])
 
 
     # first finish computing the gradients: Need W(r, h), which is currently stored as psi
@@ -617,6 +617,7 @@ def compare_grads():
                 else:
                     continue
 
+
                 if diff > tolerance:
 
                     dx, dy = ms.get_dx(pos[p,0], pos[nind,0], pos[p,1], pos[nind,1])
@@ -687,14 +688,15 @@ def compare_grads():
             if diff > tolerance:
 
                 print("In gradient sums:")
-                print(("Found difference: ID: {0:14d}  neighbour {1:14d} difference: {2:12.6f}\n"+
-                       "                   x: {3:14.8e}         {4:14.8e}\n"+
-                       "                   y: {5:14.8e}         {6:14.8e}\n").format(
-                            ids[p], nids_p[p,n], diff, pyx, swx, pyy, swy)
+                print(("Found difference: ID: {0:14d} difference: {1:12.6f}\n"+
+                       "                   x: {2:14.8e}         {3:14.8e}\n"+
+                       "                   y: {4:14.8e}         {5:14.8e}\n").format(
+                            ids[p], diff, pyx, swx, pyy, swy)
                     )
                 found_difference = True
                 if do_break:
                     break
+        print(pyx, swx, pyy, swy)
         if do_break and found_difference:
             break
 
