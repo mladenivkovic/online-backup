@@ -29,3 +29,4 @@
 /home/mivkov/EPFL/Meshless_Methods/runs/scripts/sporadical_check_Aij.py:/home/mivkov/coding/projekte/online-backup/gizmo-ivanova-debugging/sporadical_check_Aij.py
 /home/mivkov/EPFL/Meshless_Methods/visualise_effective_area/psi_uniform/visualise_psi_of_x_uniform.py:/home/mivkov/coding/projekte/online-backup/meshless/visualise_psi_of_x_uniform.py
 /home/mivkov/EPFL/Meshless_Methods/visualise_effective_area/psi_perturbed/psi_of_x_perturbed.png:/home/mivkov/coding/projekte/online-backup/meshless/visualise_psi_of_x_perturbed.py
+/home/mivkov/EPFL/Meshless_Methods/runs/scripts/read_swift_dumps.py:/home/mivkov/coding/projekte/online-backup/gizmo-ivanova-debugging/read_swift_dumps.py

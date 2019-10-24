@@ -47,11 +47,11 @@ DIMFLAGS=''             # default 3D
 #                         --with-riemann-solver=hllc"
 # with Ivanova
 GIZMOFLAGS="            --with-hydro=gizmo-mfv 
-                        --with-riemann-solver=hllc"
-                        # --enable-ivanova-surfaces"
+                        --with-riemann-solver=hllc
+                        --enable-ivanova-surfaces"
 LIBFLAGS="              --with-parmetis 
-                        --with-jemalloc 
-                        --with-hdf5=$HDF5_ROOT/bin/h5pcc"
+                        --with-jemalloc" 
+                        # --with-hdf5=$HDF5_ROOT/bin/h5pcc"
 
 EXTRA_CFLAGS=""
 
