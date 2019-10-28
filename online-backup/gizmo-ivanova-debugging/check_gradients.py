@@ -24,9 +24,7 @@ from my_utils import yesno, one_arg_present
 # Filenames
 #------------------------
 
-#  snap = '0000'                   # which snap to use
 snap = '0001'                   # which snap to use
-#  snap = '0002'                   # which snap to use
 fname_prefix = 'swift-gizmo-debug-dump_'
 
 # read in cmd line arg snapshot number if present and convert it to formatted string
@@ -34,21 +32,21 @@ snap = ms.snapstr(one_arg_present(snap))
 
 srcfile = fname_prefix+snap+'.dat'
 
-swift_dump = 'dump_swift_gradient_sum_'+snap+'.pkl'
-python_dump = 'dump_my_python_gradient_sum_'+snap+'.pkl'
+swift_dump = 'gizmo-debug-swift-data_'+snap+'.pkl'
+part_dump = 'gizmo-debug-swift-particle-data_'+snap+'.pkl'
+python_dump = 'gizmo-debug-python-gradient-data_'+snap+'.pkl'
 
 
 #----------------------
 # Behaviour params
 #----------------------
 
-tolerance = 1e-2    # relative tolerance threshold for relative float comparison: if (a - b)/a < tolerance, it's fine
+tolerance = 1e-3    # relative tolerance threshold for relative float comparison: if (a - b)/a < tolerance, it's fine
 NULL = 1e-6         # treat values below this as zeroes
-NULL_SUMS = 1e-6    # treat sums below this multiplied by max summand as zeroes
+NULL_SUMS = 1e-5    # treat sums below this multiplied by max summand as zeroes
 
 
-do_break = True    # break after you found a difference
-#  do_break = False    # don't break after you found a difference
+do_break = False    # break after you found a difference
 
 limit_q = True      # whether to ignore differences for high q = r/H; Seems to be stupid round off errors around
 q_limit = 0.99      # upper limit for q = r/H if difference is found;
@@ -72,10 +70,7 @@ def announce():
     print("---------------------------------------------------------")
     print()
 
-
-
-
-
+    return
 
 
 
@@ -90,19 +85,151 @@ def compute_gradients_my_way():
     Compute gradients using my python module, and dump results in a pickle
     """
 
+    if os.path.isfile(python_dump):
+        if not yesno("Dump file", python_dump, "already exists. Shall I overwrite it?"):
+            return
+
+    print("Computing Gradients")
+
+    part_filep = open(part_dump, 'rb')
+    data_part = pickle.load(part_filep)
+    ids, pos, h = data_part
+
+    x = pos[:,0]
+    y = pos[:,1]
+    z = pos[:,2]
+    npart = x.shape[0]
+
+    # get kernel support radius instead of smoothing length
+    H = ms.get_H(h)
+
+    # set up such that you don't need arguments in functions any more
+    h = H
+    fact = 1
+    L = 1
+    periodic = True
+    kernel = 'cubic_spline'
+
+    # first get neighbour data
+    neighbour_data = ms.get_neighbour_data_for_all(x, y, h, fact=fact, L=L, periodic=periodic)
+
+    maxneigh = neighbour_data.maxneigh
+    neighbours = neighbour_data.neighbours
+    nneigh = neighbour_data.nneigh
+    iinds = neighbour_data.iinds
+
+    # compute all psi_j(x_i) for all i, j
+    # first index: index j of psi: psi_j(x)
+    # second index: index of x_i: psi(x_i)
+
+    psi_j_at_i = np.zeros((npart, maxneigh), dtype=np.float)
+    omega = np.zeros(npart, dtype=np.float)
+
+    for j in range(npart):
+        for i, ind_n in enumerate(neighbours[j]):
+            # kernels are symmetric in x_i, x_j, but h can vary!!!!
+            psi_j_at_i[j, i] = ms.psi(x[ind_n], y[ind_n], x[j], y[j], h[ind_n], 
+                                    kernel=kernel, fact=fact, L=L, periodic=periodic)
+            omega[ind_n] += psi_j_at_i[j, i]
+
+        # add self-contribution
+        omega[j] += ms.psi(0.0, 0.0, 0.0, 0.0, H[j], kernel=kernel, fact=fact, L=L, periodic=periodic)
+
+
+
+    # compute gradients now
+
+    # gradient of psi_j at neighbour i's position
+    grad_psi_j_at_i = np.zeros((npart, maxneigh*2, 2), dtype=np.float)
+    # gradient of W_j at neighbour i's position
+    grad_W_j_at_i = np.zeros((npart, maxneigh*2, 2), dtype=np.float)
+    # gradient sum for the same h_i
+    sum_grad_W = np.zeros((npart, 2), dtype=np.float)
+
+    dwdr = np.zeros((npart, 2*maxneigh), dtype=np.float)
+    r_store = np.zeros((npart, 2*maxneigh), dtype=np.float)
+    dx_store = np.zeros((npart, 2*maxneigh, 2), dtype=np.float)
+
+    for i in range(npart):
+        for j, jind in enumerate(neighbours[i]):
+            dx, dy = ms.get_dx( x[i], x[jind], y[i], y[jind], L=L, periodic=periodic)
+            r = np.sqrt(dx**2 + dy**2)
+
+            iind = iinds[i, j]
+            dw = ms.dWdr(r/H[i], H[i], kernel)
+
+            grad_W_j_at_i[jind, iind, 0] = dw * dx / r
+            grad_W_j_at_i[jind, iind, 1] = dw * dy / r
+
+            sum_grad_W[i] += grad_W_j_at_i[jind, iind]
+
+            # store other stuff
+            #  dwdr[jind, iind] = dw
+            #  r_store[jind, iind] = r
+            #  dx_store[jind, iind] = dx
+            #  dx_store[jind, iind] = dy
+            dwdr[i, j] = dw
+            r_store[i, j] = r
+            dx_store[i, j, 0] = dx
+            dx_store[i, j, 1] = dy
+
+
+
+
+    # finish computing the gradients: Need W(r, h), which is currently stored as psi
+    for j in range(npart):
+        for i, ind_n in enumerate(neighbours[j]):
+            grad_psi_j_at_i[j, i, 0] = grad_W_j_at_i[j, i, 0]/omega[ind_n] - psi_j_at_i[j, i] * sum_grad_W[ind_n, 0]/omega[ind_n]**2
+            grad_psi_j_at_i[j, i, 1] = grad_W_j_at_i[j, i, 1]/omega[ind_n] - psi_j_at_i[j, i] * sum_grad_W[ind_n, 1]/omega[ind_n]**2
+                #  grad_psi_j_at_i[j, iind, :] = grad_W_j_at_i[j, iind, :]/omega[iind] - psi_j_at_i[j, iind] * sum_grad_W[iind, :]/omega[iind]**2
+
+
+
+
+
+
+    nneighs = np.array([len(n) for n in neighbours], dtype=np.int)
+    maxlen = np.max(nneighs)
+    nids = np.zeros((npart, maxlen), dtype=np.int)
+
+    for nb in range(npart):
+        nids[nb, :nneighs[nb]] = ids[neighbours[nb]]
+
+
+
+
+    data_dump = [sum_grad_W, grad_W_j_at_i, dwdr, nids, nneighs, omega, r_store, dx_store, iinds]
+    dumpfile = open(python_dump, 'wb')
+    pickle.dump(data_dump, dumpfile)
+    dumpfile.close()
+    print("Dumped python data")
+
+    return
+
+
+
+
+
+
+
+
+
+
+#========================================
+def compute_gradients_my_way_old():
+#========================================
+    """
+    Compute gradients using my python module, and dump results in a pickle
+    """
+
 
     if os.path.isfile(python_dump):
         if not yesno("Dump file", python_dump, "already exists. Shall I overwrite it?"):
             return
 
-    # read data from snapshot
-    #  x, y, h, rho, m, ids, npart = ms.read_file(srcfile, 'PartType0')
-    # sort now so you don't have to care for it later
-    #  x, y, h, rho, m, ids, npart = ms.read_file(srcfile, 'PartType0', sort=True)
-
-    swift_filep = open(swift_dump, 'rb')
-    data_swift = pickle.load(swift_filep)
-    grads_s, sum_grad_s, dwdr_s, nids_s, nneigh_s, omega_s, vol_s, pos, h, ids, dx_s, r_s, nneigh_Aij_s, nids_Aij_s, Aij_s = data_swift
+    part_filep = open(part_dump, 'rb')
+    data_part = pickle.load(part_filep)
+    ids, pos, h = data_part
 
     x = pos[:,0]
     y = pos[:,1]
@@ -227,18 +354,33 @@ def compare_grads():
     compare the gradients you got
     """
 
+    # NOTE: THE INDEX CALLING FOR PYTHON AND SWIFT DATA ONLY WORKS
+    # BECAUSE THE PARTICLE DATA ARE READ IN FROM SWIFT DUMPS, WHICH ARE ALREADY SORTED
+
     swift_filep = open(swift_dump, 'rb')
     python_filep = open(python_dump, 'rb')
+    part_filep = open(part_dump, 'rb')
 
     data_swift = pickle.load(swift_filep)
-    grads_s, sum_grad_s, dwdr_s, nids_s, nneigh_s, omega_s, vol_s, pos, h, ids, dx_s, r_s, nneigh_Aij_s, nids_Aij_s, Aij_s = data_swift
+    grads_s, sum_grad_s, dwdr_s, nids_s, nneigh_s, omega_s, vol_s, dx_s, r_s, nneigh_Aij_s, nids_Aij_s, Aij_s = data_swift
+
+    data_part = pickle.load(part_filep)
+    ids, pos, h = data_part
     H = ms.get_H(h)
 
     data_python = pickle.load(python_filep)
-    sum_grad_p, all_grads_p, dwdr_p, nids_p, nneigh_p, omega_p, r_p, dx_p = data_python
+    sum_grad_p, all_grads_p, dwdr_p, nids_p, nneigh_p, omega_p, r_p, dx_p, iinds = data_python
+
+    #  iinds:         iinds[i, j] = which index does particle i have in the neighbour
+    #                      list of particle j, where j is the j-th neighbour of i
+    #                      Due to different smoothing lengths, particle j can be the
+    #                      neighbour of i, but i not the neighbour of j.
+    #                      In that case, the particles will be assigned indices j > nneigh[i]
+
 
     swift_filep.close()
     python_filep.close()
+    part_filep.close()
 
 
     npart = ids.shape[0]
@@ -247,11 +389,12 @@ def compare_grads():
 
 
 
+    #----------------------------------------------
     def check_number_of_neighbours():
+    #----------------------------------------------
 
-        #----------------------------------------------
         print("Checking number of neighbours")
-        #----------------------------------------------
+
         found_difference = False
         for p in range(npart):
             py = nneigh_p[p]
@@ -271,14 +414,15 @@ def compare_grads():
 
 
 
+    #----------------------------------------------
     def check_neighbour_IDs():
+    #----------------------------------------------
 
-        #----------------------------------------------
         print("Checking neighbour IDs")
-        #----------------------------------------------
+
         found_difference = False
         for p in range(npart):
-            pyarr = nids_p[p]
+            pyarr = nids_p[p][:nneigh_p[p]]
             swarr = nids_s[p][:nneigh_s[p]]
             for n in range(nneigh_s[p]):
                 py = pyarr[n]
@@ -297,20 +441,16 @@ def compare_grads():
 
 
 
+    #------------------------------------------------------
     def check_dwdr():
+    #------------------------------------------------------
 
-        #------------------------------------------------------
         print("Checking radial gradients")
-        #------------------------------------------------------
 
         found_difference = False
         for p in range(npart):
             for n in range(nneigh_p[p]):
-                # dwdr_p has dimensions npart x npart;
-                # nids_p[n]-1 is the index we're looking for
-                # remember that dwdr_p[j,i] = dw_j(x_i)/dr and dwdr_s[i, j] = dw_j(x_i)
-                nind = nids_p[p,n]-1
-                py = dwdr_p[nind, p]
+                py = dwdr_p[p, n]
                 sw = dwdr_s[p, n]
 
                 if abs(py) > NULL:
@@ -322,6 +462,7 @@ def compare_grads():
 
                 if diff > tolerance:
 
+                    nind = nids_p[p, n]-1
                     dx, dy = ms.get_dx(pos[p,0], pos[nind,0], pos[p,1], pos[nind,1])
                     r = np.sqrt(dx**2 + dy**2)
 
@@ -343,7 +484,7 @@ def compare_grads():
                     print("dwdr py = {0:14.7e}, dwdr swift = {1:14.7e}, diff = {2:12.6f}".format(
                             py, sw, diff ))
                     dw = ms.dWdr(r/H[p], H[p])
-                    dw2 = ms.dWdr(r/H[nind], H[nind])
+                    dw2 = ms.dWdr(r/H[n], H[n])
                     found_difference = True
 
             if do_break and found_difference:
@@ -358,20 +499,16 @@ def compare_grads():
 
 
 
+    #------------------------------------------------------
     def check_r():
+    #------------------------------------------------------
 
-        #------------------------------------------------------
         print("Checking r")
-        #------------------------------------------------------
 
         found_difference = False
         for p in range(npart):
             for n in range(nneigh_p[p]):
-                # dwdr_p has dimensions npart x npart;
-                # nids_p[n]-1 is the index we're looking for
-                # remember that dwdr_p[j,i] = dw_j(x_i)/dr and dwdr_s[i, j] = dw_j(x_i)
-                nind = nids_p[p,n]-1
-                py = r_p[p, nind]
+                py = r_p[p, n]
                 sw = r_s[p, n]
 
                 if abs(py) > NULL:
@@ -384,6 +521,7 @@ def compare_grads():
 
                 if diff > tolerance:
 
+                    nind = nids_p[p, n]-1
                     dx, dy = ms.get_dx(pos[p,0], pos[nind,0], pos[p,1], pos[nind,1])
                     r = np.sqrt(dx**2 + dy**2)
 
@@ -419,20 +557,17 @@ def compare_grads():
 
 
 
+    #------------------------------------------------------
     def check_dx():
+    #------------------------------------------------------
 
-        #------------------------------------------------------
         print("Checking dx")
-        #------------------------------------------------------
 
         found_difference = False
         for p in range(npart):
             for n in range(nneigh_p[p]):
-                # all_grads_p has dimensions npart x npart; it is grad_W_j_at_i
-                # nids_p[n]-1 is the index we're looking for
-                nind = nids_p[p, n]-1
-                pyx = dx_p[p, nind, 0]
-                pyy = dx_p[p, nind, 1]
+                pyx = dx_p[p, n, 0]
+                pyy = dx_p[p, n, 1]
                 swx = dx_s[p, 2*n]
                 swy = dx_s[p, 2*n+1]
 
@@ -446,6 +581,7 @@ def compare_grads():
 
                     if diff > tolerance:
 
+                        nind = nids_p[p, n]-1
                         dx, dy = ms.get_dx(pos[p,0], pos[nind,0], pos[p,1], pos[nind,1])
                         r = np.sqrt(dx**2 + dy**2)
 
@@ -462,12 +598,16 @@ def compare_grads():
                                #  "                  hi: {8:14.7e}     hj: {9:14.7e}    1 - |hi/hj|: {10:14.7e}     1 - |hj/hi|:  {11:14.7e}\n").format(
                                     #  ids[p], nids_p[p,n], diff, r/H[p], pyx, swx, pyy, swy, h[p], h[n], 1 - abs(h[p]/h[n]), 1 - abs(h[n]/h[p]))
                             )
-                        print(pos[p][:2], pos[nind][:2], pos[nind][:2]-pos[p][:2])
+
+                        print("x pos:", pos[p][0], pos[nind][0])
+                        print("y pos:", pos[p][1], pos[nind][1])
+                        print("index:", p, n)
+
                         found_difference = True
                         if do_break:
                             break
-                #  if do_break and found_difference:
-                #      break
+                if do_break and found_difference:
+                    break
             if do_break and found_difference:
                 break
 
@@ -482,20 +622,21 @@ def compare_grads():
 
 
 
+    #------------------------------------------------------
     def check_individual_contributions():
+    #------------------------------------------------------
 
-        #------------------------------------------------------
         print("Checking individual gradient contributions")
-        #------------------------------------------------------
 
         found_difference = False
         for p in range(npart):
             for n in range(nneigh_p[p]):
-                # all_grads_p has dimensions npart x npart; it is grad_W_j_at_i
-                # nids_p[n]-1 is the index we're looking for
-                nind = nids_p[p, n]-1
-                pyx = all_grads_p[nind, p, 0]
-                pyy = all_grads_p[nind, p, 1]
+                nind = nids_p[p,n]-1
+                iind = iinds[p,n]
+                pyx = all_grads_p[nind, iind, 0]
+                pyy = all_grads_p[nind, iind, 1]
+                #  pyx = all_grads_p[p, n, 0]
+                #  pyy = all_grads_p[p, n, 1]
                 swx = grads_s[p, 2*n]
                 swy = grads_s[p, 2*n+1]
 
@@ -509,6 +650,7 @@ def compare_grads():
 
                     if diff > tolerance:
 
+                        nind = nids_p[p, n]-1
                         dx, dy = ms.get_dx(pos[p,0], pos[nind,0], pos[p,1], pos[nind,1])
                         r = np.sqrt(dx**2 + dy**2)
 
@@ -523,22 +665,22 @@ def compare_grads():
                                "                   y: {6:14.7e}           {7:14.7e}").format(
                                     ids[p], nids_p[p,n], diff, r/H[p], pyx, swx, pyy, swy)) 
 
-                        P = dwdr_p[nind,p]; S = dwdr_s[p, n];
+                        P = dwdr_p[p, n]; S = dwdr_s[p, n];
                         print("dwdr: {0:14.7e}      {1:14.7e}      {2:14.7e}".format(P, S, P/S))
-                        P = r_p[p, nind]; S = r_s[p, n];
+                        P = r_p[p, n]; S = r_s[p, n];
                         print("r:    {0:14.7e}      {1:14.7e}      {2:14.7e}".format(P, S, P/S))
-                        P = dx_p[p, nind, 0]; S = dx_s[p, 2*n];
+                        P = dx_p[p, n, 0]; S = dx_s[p, 2*n];
                         print("dx:   {0:14.7e}      {1:14.7e}      {2:14.7e}".format(P, S, P/S))
-                        P = dx_p[p, nind, 1]; S = dx_s[p, 2*n+1];
+                        P = dx_p[p, n, 1]; S = dx_s[p, 2*n+1];
                         print("dy:   {0:14.7e}      {1:14.7e}      {2:14.7e}".format(P, S, P/S))
                         print()
                         found_difference = True
-                        #  if do_break:
-                        #      break
-                #  if do_break and found_difference:
-                #      break
-            #  if do_break and found_difference:
-            #      break
+                        if do_break:
+                            break
+                if do_break and found_difference:
+                    break
+            if do_break and found_difference:
+                break
 
         if not found_difference:
             print("Finished, all the same.")
@@ -551,13 +693,11 @@ def compare_grads():
 
 
 
+    #------------------------------------------------------
     def check_grad_sums():
+    #------------------------------------------------------
 
-        #------------------------------------------------------
         print("Checking gradient sums")
-        #------------------------------------------------------
-
-
 
         found_difference = False
         for p in range(npart):
@@ -571,7 +711,7 @@ def compare_grads():
             # find maximal contribution so you can estimate relative 
             # tolerance
 
-            pymax = np.absolute(all_grads_p[nids_p[p,:nneigh_p[p]]-1, p, :]).max()
+            pymax = np.absolute(all_grads_p[p, :nneigh_p[p]]).max()
             swmax = np.absolute(grads_s[:2*nneigh_p[p]+1]).max()
 
             allmax = max(pymax, swmax)
@@ -612,12 +752,12 @@ def compare_grads():
 
 
 
+    #------------------------------------------------------
     def check_vol():
+    #------------------------------------------------------
 
 
-        #------------------------------------------------------
         print("Checking volumes and normalizations")
-        #------------------------------------------------------
 
         found_difference = False
         for p in range(npart):
@@ -659,7 +799,7 @@ def compare_grads():
     check_neighbour_IDs()
     check_dwdr()
     check_r()
-    #  check_dx()
+    check_dx()
     check_individual_contributions()
     check_grad_sums()
     check_vol()
@@ -676,7 +816,7 @@ def main():
 #==========================
 
     announce()
-    extract_dump_data(srcfile, swift_dump)
+    extract_dump_data(srcfile, swift_dump, part_dump)
     compute_gradients_my_way()
     compare_grads()
     return

@@ -10,9 +10,9 @@ import os
 from my_utils import yesno, one_arg_present
 
 
-#==========================================
-def extract_dump_data(srcfile, dumpfile):
-#==========================================
+#====================================================
+def extract_dump_data(srcfile, dumpfile, part_dump):
+#====================================================
     """
     Reads in, sorts out and pickle dumps from swift output
     """
@@ -20,6 +20,8 @@ def extract_dump_data(srcfile, dumpfile):
     if os.path.isfile(dumpfile):
         if not yesno("Dump file", dumpfile, "already exists. Shall I overwrite it?"):
             return
+
+    print("Extracting Swift Data")
 
 
     #------------------
@@ -146,12 +148,123 @@ def extract_dump_data(srcfile, dumpfile):
     # dump
     #------------------
 
-    data_dump = [grads, gradsum, dwdr, nids, nneigh, omega, vol, pos, h, ids, dx, r, nneigh_Aij, nids_Aij, Aij]
+    data_dump = [grads, gradsum, dwdr, nids, nneigh, omega, vol, dx, r, nneigh_Aij, nids_Aij, Aij]
     dumpf= open(dumpfile, 'wb')
     pickle.dump(data_dump, dumpf)
     dumpf.close()
     print("Dumped swift data")
 
+    data_part = [ids, pos, h]
+    dumpf= open(part_dump, 'wb')
+    pickle.dump(data_part, dumpf)
+    dumpf.close()
+    print("Dumped particle data")
+
+
+
+    return
+
+
+
+
+
+
+#==========================================
+def extract_Aij_from_snapshot_old():
+#==========================================
+    """
+    Reads in, sorts out and pickle dumps from swift output
+    """
+
+    if os.path.isfile(swift_dump):
+        if not yesno("Dump file", swift_dump, "already exists. Shall I overwrite it?"):
+            return
+
+
+    #------------------
+    # read in data
+    #------------------
+
+    f = h5py.File(srcfile, 'r')
+    parts = f['PartType0']
+    ids = parts['ParticleIDs'][:]
+    pos = parts['Coordinates'][:]
+    h = parts['SmoothingLengths'][:]
+
+
+    Aijs = parts['Aij'][:]
+    nneighs = parts['nneigh'][:] + 1 # it was used in the code as the current free index - 1, so add 1
+    neighbour_ids = parts['NeighbourIDs'][:]
+
+    f.close()
+
+
+
+    #------------------
+    # sort
+    #------------------
+
+    inds = np.argsort(ids)
+
+    Aijs = Aijs[inds]
+    nneighs = nneighs[inds]
+    neighbour_ids = neighbour_ids[inds]
+    for n in range(neighbour_ids.shape[0]):
+        nb = nneighs[n]
+        ninds = np.argsort(neighbour_ids[n][:nb])
+        neighbour_ids[n][:nb] = neighbour_ids[n][:nb][ninds]
+        #  neighbour_ids[n][:nb] = np.sort(neighbour_ids[n][:nb])
+        temp = np.empty((2*nb), dtype=np.float)
+        for i, nn in enumerate(ninds):
+
+            temp[2*i:2*i+2] = Aijs[n,2*nn:2*nn+2]
+            #  temp[2*i] = Aijs[n, 2*nn]
+
+        Aijs[n][:2*nb] = temp
+
+
+    ids = ids[inds]
+    pos = pos[inds]
+    h = h[inds]
+
+
+
+
+    #------------------
+    # dump
+    #------------------
+
+    data_dump = [Aijs, nneighs, neighbour_ids]
+    dumpfile = open(swift_dump, 'wb')
+    pickle.dump(data_dump, dumpfile)
+    dumpfile.close()
+    print("Dumped swift data")
+
+    data_dump = [pos, ids, h]
+    dumpfile = open(extra_dump, 'wb')
+    pickle.dump(data_dump, dumpfile)
+    dumpfile.close()
+    print("Dumped extra particle data")
+
+
+
+
+    # note that the arrays are already sorted at this point!
+    #  for i in range(5):
+    #
+    #      print("ID: {0:8d} {1:8d} ||".format(ids[i], nneighs[i]), end='')
+    #
+    #      ninds = np.argsort(neighbour_ids[i])
+    #      print(ninds)
+    #      print(neighbour_ids[i])
+    #      for n in range(nneighs[i]):
+    #
+    #          # there are probably a lot of zeros coming in first, so start from behind, since you know how many there are
+    #          nn = ninds[-nneighs[i]+n]
+    #          print(" {0:8d} |".format(neighbour_ids[i,nn]), end='')
+    #          #  print("nb: {0:8d}  Aij: {1:14.8f} {2:14.8f} ||".format(neighbour_ids[i,nn], Aijs[i,2*nn], Aijs[i,2*nn+1]), end='')
+    #      print()
+    #
 
 
     return
