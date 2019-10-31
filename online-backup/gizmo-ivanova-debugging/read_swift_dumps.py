@@ -40,13 +40,14 @@ def extract_dump_data(srcfile, dumpfile, part_dump):
     h       = np.empty(npart, dtype=np.float32)
     nids    = np.empty((npart, nguess), dtype=np.int64)
     nneigh  = np.empty((npart), dtype=np.int32)
-    gradsum = np.empty((npart, 3), dtype=np.float32)   # sum of all gradient contributions
+    gradsum = np.empty((npart, 3), dtype=np.float32)                 # sum of all gradient contributions
     dwdr    = np.empty((npart, nguess), dtype=np.float32)
     dx      = np.empty((npart, 2*nguess), dtype=np.float32)
     vol     = np.empty((npart), dtype=np.float32)
     omega   = np.empty((npart), dtype=np.float32)
     r       = np.empty((npart, nguess), dtype=np.float32)
-    grads   = np.empty((npart, 2*nguess), dtype=np.float32)          # del psi/del x 
+    grads_contrib = np.empty((npart, 2*nguess), dtype=np.float32)          # individual contributions for the gradient sum
+    grads = np.empty((npart, 2*nguess), dtype=np.float32)          # del psi/del x 
 
     nneigh_Aij = np.empty((npart), dtype=np.int32)
     nids_Aij = np.empty((npart, nguess), dtype=np.int64)
@@ -62,7 +63,7 @@ def extract_dump_data(srcfile, dumpfile, part_dump):
 
         nneigh[p]   = np.asscalar(np.fromfile(f, dtype=np.int32, count=1))
         nids[p]     = np.fromfile(f, dtype=np.int64, count=nguess)
-        grads[p]    = np.fromfile(f, dtype=np.float32, count=2*nguess)
+        grads_contrib[p]    = np.fromfile(f, dtype=np.float32, count=2*nguess)
         dwdr[p]     = np.fromfile(f, dtype=np.float32, count=nguess)
         dx[p]       = np.fromfile(f, dtype=np.float32, count=2*nguess)
         r[p]        = np.fromfile(f, dtype=np.float32, count=nguess)
@@ -70,11 +71,11 @@ def extract_dump_data(srcfile, dumpfile, part_dump):
         nneigh_Aij[p] = np.asscalar(np.fromfile(f, dtype=np.int32, count=1))
         nids_Aij[p] = np.fromfile(f, dtype=np.int64, count=nguess)
         Aij[p] = np.fromfile(f, dtype=np.float32, count=2*nguess)
+        grads[p]    = np.fromfile(f, dtype=np.float32, count=2*nguess)
 
         #  t = np.fromfile(f, dtype=np.int8, count=11)
         #  teststring = "".join([chr(item) for item in t])
         #  print("TESTSTRING:", teststring)
-
 
 
 
@@ -92,15 +93,16 @@ def extract_dump_data(srcfile, dumpfile, part_dump):
     h = h[inds]
     nids = nids[inds]
     nneigh = nneigh[inds] + 1 # internally initialized as -1
-    grads = grads[inds]
+    grads_contrib = grads_contrib[inds]
     omega = omega[inds]
     vol = vol[inds]
     dwdr = dwdr[inds]
     dx = dx[inds]
     r = r[inds]
-    nneigh_Aij = nneigh_Aij[inds]
+    nneigh_Aij = nneigh_Aij[inds] + 1
     nids_Aij = nids_Aij[inds]
     Aij = Aij[inds]
+    grads = grads[inds]
 
 
     # sort neighbour dependent data by neighbour IDs
@@ -115,15 +117,19 @@ def extract_dump_data(srcfile, dumpfile, part_dump):
         # sort r
         r[n][:nb] = r[n][:nb][ninds]
         # sort individual gradient contributions
-        temp = np.empty((2*nb), dtype=np.float)
+        try:
+            temp = np.empty((2*nb), dtype=np.float)
+        except ValueError:
+            print("CAUGHT ERROR")
+            print(nb)
+            quit()
         temp_dx = np.empty((2*nb), dtype=np.float)
         for i, nn in enumerate(ninds):
 
-            temp[2*i:2*i+2] = grads[n,2*nn:2*nn+2]
-            #  temp[2*i] = Aijs[n, 2*nn]
+            temp[2*i:2*i+2] = grads_contrib[n,2*nn:2*nn+2]
             temp_dx[2*i:2*i+2] = dx[n,2*nn:2*nn+2]
-            #  temp[2*i] = Aijs[n, 2*nn] 
-        grads[n][:2*nb] = temp
+
+        grads_contrib[n][:2*nb] = temp
         dx[n][:2*nb] = temp_dx
 
 
@@ -134,12 +140,20 @@ def extract_dump_data(srcfile, dumpfile, part_dump):
         # sort neighbour IDs
         nids_Aij[n][:nb] = nids_Aij[n][:nb][ninds]
         # sort individual gradient contributions
+        try:
+            temp = np.empty((2*nb), dtype=np.float)
+        except ValueError:
+            print("CAUGHT ERROR")
+            print(nb)
         temp = np.empty((2*nb), dtype=np.float)
+        temp_grads = np.empty((2*nb), dtype=np.float)
         for i, nn in enumerate(ninds):
 
             temp[2*i:2*i+2] = Aij[n,2*nn:2*nn+2]
+            temp_grads[2*i:2*i+2] = grads[n, 2*nn:2*nn+2]
 
         Aij[n][:2*nb] = temp
+        grads[n][:2*nb] = temp_grads
 
 
 
@@ -148,7 +162,7 @@ def extract_dump_data(srcfile, dumpfile, part_dump):
     # dump
     #------------------
 
-    data_dump = [grads, gradsum, dwdr, nids, nneigh, omega, vol, dx, r, nneigh_Aij, nids_Aij, Aij]
+    data_dump = [grads, grads_contrib, gradsum, dwdr, nids, nneigh, omega, vol, dx, r, nneigh_Aij, nids_Aij, Aij]
     dumpf= open(dumpfile, 'wb')
     pickle.dump(data_dump, dumpf)
     dumpf.close()

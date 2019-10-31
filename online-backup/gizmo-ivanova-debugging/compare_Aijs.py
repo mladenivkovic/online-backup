@@ -3,9 +3,12 @@
 #========================================================
 # compare results 1:1 from swift and python outputs
 # intended to compare Ivanova effective surfaces
-# you should have written them in hdf5 files from SWIFT
-# as extra debug output
-# currently hardcoded: up to 200 neighbours
+#
+# CALL check_gradients.py FIRST!!!! THIS SCRIPT NEEDS
+# THE OUTPUT THAT check_gradients.py PRODUCES!
+# usage: ./compare_Aijs.py <dump-number>
+#   dump number is optional, is binary dump that 
+#   I handwrote for this and implemented into swift
 #========================================================
 
 
@@ -32,13 +35,14 @@ srcfile = fname_prefix+snap+'.dat'
 swift_dump = 'gizmo-debug-swift-data_'+snap+'.pkl'
 part_dump = 'gizmo-debug-swift-particle-data_'+snap+'.pkl'
 python_dump = 'gizmo-debug-python-surface-data_'+snap+'.pkl'
+python_grad_dump = 'gizmo-debug-python-gradient-data_'+snap+'.pkl'
 
 
 #----------------------
 # Behaviour params
 #----------------------
 
-tolerance = 1e-3    # relative tolerance threshold for relative float comparison: if (a - b)/a < tolerance, it's fine
+tolerance = 1e-2    # relative tolerance threshold for relative float comparison: if (a - b)/a < tolerance, it's fine
 NULL = 1e-3         # max(Aij) of this particle * NULL = lower limit for values to be treated as zero
 
 
@@ -157,14 +161,19 @@ def compare_Aij():
 
     swift_filep = open(swift_dump, 'rb')
     python_filep = open(python_dump, 'rb')
+    python_grad_filep = open(python_grad_dump, 'rb')
     part_filep = open(part_dump, 'rb')
 
     data_swift = pickle.load(swift_filep)
-    grads_s, sum_grad_s, dwdr_s, nid_s, nneigh_s, omega_s, vol_s, dx_s, r_s, nneigh_Aij_s, nids_Aij_s, Aij_s = data_swift
+    grads_s, grads_contrib_s, sum_grad_s, dwdr_s, nid_s, nneigh_s, omega_s, vol_s, dx_s, r_s, nneigh_Aij_s, nids_Aij_s, Aij_s = data_swift
 
     python_filep = open(python_dump, 'rb')
     data_python = pickle.load(python_filep)
     Aij_p, nneigh_p, nid_p = data_python
+
+
+    data_python_grad = pickle.load(python_grad_filep)
+    grads_p, sum_grad_p, grads_contrib_p, dwdr_p, nids_p, nneigh_p, omega_p, r_p, dx_p, iinds = data_python_grad
 
     data_part = pickle.load(part_filep)
     ids, pos, h = data_part
@@ -172,7 +181,9 @@ def compare_Aij():
 
     swift_filep.close()
     python_filep.close()
+    python_grad_filep.close()
     part_filep.close()
+
 
 
     npart = nneigh_s.shape[0]
@@ -295,6 +306,7 @@ def compare_Aij():
         for p in range(npart):
             nb = nneigh_p[p]
             maxA = Aij_p[p, :nb].max()
+            maxAtot = Aij_p.max()
             null = NULL*maxA
             for n in range(nb):
                 nbp = nid_p[p, n]
@@ -309,13 +321,51 @@ def compare_Aij():
                 if swn > null and pyn > null:
                     diff = 1 - pyn/swn
                     if diff > tolerance:
+                        print("=========================================================================================")
                         print("Particle ID", ids[p], "neighbour id:", nbp)
-                        print("              Python         Swift          py/swift")
-                        print("Aij x:       {0:14.7e} {1:14.7e} {2:14.7f}".format(pyx, swx, pyx/swx))
-                        print("Aij y:       {0:14.7e} {1:14.7e} {2:14.7f}".format(pyy, swy, pyy/swy))
-                        print("|Aij|:       {0:14.7e} {1:14.7e} {2:14.7f}".format(pyn, swn, pyn/swn))
-                        print("diff:", diff, "; lower threshold for zero is {0:14.7e}".format(null))
-                        print('{0:14.7e}'.format(maxA))
+                        print("Max |Aij| of this particle: {0:14.7e}, max |Aij| globally: {1:14.7e}".format(maxA, maxAtot))
+                        print("lower threshold for 'zero' is: {0:14.7e}".format(null))
+                        print()
+                        print("              Python          Swift               |1 - py/swift|")
+                        print("-----------------------------------------------------------------------------------------")
+                        print("Aij x:       {0:14.7e}  {1:14.7e}  {2:14.7f}".format(pyx, swx, abs(1-pyx/swx)))
+                        print("Aij y:       {0:14.7e}  {1:14.7e}  {2:14.7f}".format(pyy, swy, abs(1-pyy/swy)))
+                        print("|Aij|:       {0:14.7e}  {1:14.7e}  {2:14.7f}".format(pyn, swn, abs(1-pyn/swn)))
+                        print()
+
+
+                        py = dwdr_p[p, n]
+                        sw = dwdr_s[p, n]
+                        print("dwdr:        {0:14.7e}  {1:14.7e}  {2:14.7f}".format(py, sw, abs(1-py/sw)))
+
+                        py = r_p[p, n]
+                        sw = r_s[p, n]
+                        print("r:           {0:14.7e}  {1:14.7e}  {2:14.7f}".format(py, sw, abs(1-py/sw)))
+
+
+
+                        py = dx_p[p, n, 0]
+                        sw = dx_s[p, 2*n]
+                        print("dx[0]:       {0:14.7e}  {1:14.7e}  {2:14.7f}".format(py, sw, abs(1-py/sw)))
+
+                        py = dx_p[p, n, 1]
+                        sw = dx_s[p, 2*n+1]
+                        print("dx[1]:       {0:14.7e}  {1:14.7e}  {2:14.7f}".format(py, sw, abs(1-py/sw)))
+
+                        py = sum_grad_p[p,0]
+                        sw = sum_grad_s[p,0]
+                        print("sum_grad[0]: {0:14.7e}  {1:14.7e}  {2:14.7f}".format(py, sw, abs(1-py/sw)))
+
+                        py = sum_grad_p[p,1]
+                        sw = sum_grad_s[p,1]
+                        print("sum_grad[1]: {0:14.7e}  {1:14.7e}  {2:14.7f}".format(py, sw, abs(1-py/sw)))
+
+                        py = 1/omega_p[p]
+                        sw = vol_s[p]
+                        print("volume:      {0:14.7e}  {1:14.7e}  {2:14.7f}".format(py, sw, abs(1-py/sw)))
+
+
+                        #  print("Diff: {0:14.7f}".format(diff))
                         print()
                         found_difference = True
 
@@ -344,7 +394,7 @@ def main():
     
     announce()
     extract_dump_data(srcfile, swift_dump, part_dump)
-    compute_Aij_my_way()
+    #  compute_Aij_my_way()
     compare_Aij()
     return
 

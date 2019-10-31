@@ -36,11 +36,11 @@ DEBUGFLAGS_IF_IN_USE="  --enable-debug
                         --enable-sanitizer
                         --enable-optimization=no
                         --enable-undefined-sanitizer
-                        --enable-debugging-checks" 
+                        --enable-debugging-checks 
+                        --enable-task-debugging"
                         # if debug is selected, these debugging flags will be used.
 DEFAULTFLAGS='          --enable-mpi=no 
-                        --disable-doxygen-doc
-                        --enable-task-debugging'
+                        --disable-doxygen-doc'
 DIMFLAGS=''             # default 3D
 # without Ivanova
 # GIZMOFLAGS="            --with-hydro=gizmo-mfv
