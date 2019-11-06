@@ -42,9 +42,9 @@ python_dump = 'gizmo-debug-python-gradient-data_'+snap+'.pkl'
 # Behaviour params
 #----------------------
 
-tolerance = 1e-2    # relative tolerance threshold for relative float comparison: if (a - b)/a < tolerance, it's fine
+tolerance = 1e-3    # relative tolerance threshold for relative float comparison: if (a - b)/a < tolerance, it's fine
 NULL = 1e-7         # treat values below this as zeroes
-NULL_RELATIVE = 5e-3    # ignore relative values below this threshold
+NULL_RELATIVE = 1e-3    # ignore relative values below this threshold
 
 
 do_break = False    # break after you found a difference
@@ -180,6 +180,8 @@ def compute_gradients_my_way():
             dx_store[i, j, 1] = dy
 
 
+
+    print("While computing gradients:")
 
 
     # finish computing the gradients: Need W(r, h), which is currently stored as psi
@@ -894,9 +896,61 @@ def compare_grads():
                         print("       positions:   x:  {0:14.4f}  {1:14.4f}".format(pos[p][0], pos[nind][0]))
                         print("       positions:   y:  {0:14.4f}  {1:14.4f}".format(pos[p][1], pos[nind][1]))
                         print("       del psi/del x:  python:                  swift:                    python/swift:")
-                        print("                   x: {0:14.7e}           {1:14.7e}            {2:14.7e}".format(pyx, swx, pyx/swx))
-                        print("                   y: {0:14.7e}           {1:14.7e}            {2:14.7e}".format(pyy, swy, pyy/swy))
+                        print("                   x: {0:14.7e}           {1:14.7e}            {2:14.7f}".format(pyx, swx, pyx/swx))
+                        print("                   y: {0:14.7e}           {1:14.7e}            {2:14.7f}".format(pyy, swy, pyy/swy))
                         print()
+
+                        py = dwdr_p[p, n]
+                        sw = dwdr_s[p, n]
+                        print("   dwdr:        {0:14.7e}  {1:14.7e}  {2:14.7f}".format(py, sw, abs(1-py/sw)))
+
+                        py = r_p[p, n]
+                        sw = r_s[p, n]
+                        print("   r:           {0:14.7e}  {1:14.7e}  {2:14.7f}".format(py, sw, abs(1-py/sw)))
+
+                        py = dx_p[p, n, 0]
+                        sw = dx_s[p, 2*n]
+                        print("   dx[0]:       {0:14.7e}  {1:14.7e}  {2:14.7f}".format(py, sw, abs(1-py/sw)))
+
+                        py = dx_p[p, n, 1]
+                        sw = dx_s[p, 2*n+1]
+                        print("   dx[1]:       {0:14.7e}  {1:14.7e}  {2:14.7f}".format(py, sw, abs(1-py/sw)))
+
+                        nind = nids_p[p, n]-1
+                        py = sum_grad_p[nind,0]
+                        sw = sum_grad_s[nind,0]
+                        print("   sum_grad[0]: {0:14.7e}  {1:14.7e}  {2:14.7f}".format(py, sw, abs(1-py/sw)))
+
+                        py = sum_grad_p[nind,1]
+                        sw = sum_grad_s[nind,1]
+                        print("   sum_grad[1]: {0:14.7e}  {1:14.7e}  {2:14.7f}".format(py, sw, abs(1-py/sw)))
+                        print()
+
+                        #  Vp = 1/omega_p[p]
+                        #  nind = nids_p[p,n]-1
+                        #  xi = pos[p,0]
+                        #  yi = pos[p,1]
+                        #  xj = pos[nind, 0]
+                        #  yj = pos[nind, 1]
+                        #  psi_j_at_i = ms.psi(xi, yi, xj, yj, H[nind])
+                        #
+                        #  first = 1/omega_p[p] * dwdr_p[p,n] * dx_p[p,n,0] / r
+                        #  second = psi_j_at_i * sum_grad_p[nind, 0] / omega_p[nind]**2
+                        #
+                        #
+                        #  #  i = iinds[p, n]
+                        #  #  j = nids_p[p, n]-1
+                        #  i = n
+                        #  j = p
+                        #  pyx = grads_p[j, i, 0]
+                        #  swx = grads_s[p, 2*ns]
+                        #  print(" testing x: {0:14.7f}  {1:14.7f}".format(first+second, first-second ))
+                        #  print(" testing x: {0:14.7f}  {1:14.7f}".format(-first+second, -first-second ))
+                        #  print(" compare x: {0:14.7f}  {1:14.7f}".format(pyx, swx))
+                        #  print("Indices used:",p, n, nids_p[p,n]-1, iinds[p,n])
+                        #  print("?? {0:14.7f}".format(sum_grad_p[nids_p[p,n]-1, 0]))
+
+ 
 
                         found_difference = True
                         if do_break:

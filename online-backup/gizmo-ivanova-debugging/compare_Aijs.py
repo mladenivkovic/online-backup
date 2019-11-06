@@ -304,18 +304,45 @@ def compare_Aij():
 
         found_difference = False
         for p in range(npart):
+
             nb = nneigh_p[p]
             maxA = Aij_p[p, :nb].max()
             maxAtot = Aij_p.max()
             null = NULL*maxA
+
+            add = 0
+
             for n in range(nb):
+
+                ns = n + add
+                nID_p = nids_p[p][n]
+                nID_s = nids_Aij_s[p][ns]
+
+                while nID_p > nID_s:
+                    # From the SWIFT output, there may be more neighbours than from python
+                    # if rij < H_j but r_ij > H_i, particle j has i as neighbour, but
+                    # i hasn't got j as neighbour. Both neighbours will be written down though
+                    add += 1
+                    try:
+                        nID_s = nids_Aij_s[p][n+add]
+                    except IndexError:
+                        print("Something fucky going on")
+                        print("particle:", ids[p], "neighbour swift:", nID_s, "neighbour py:", nID_p, "p:", p, "n:", n)
+                        print("nneigh py:", nneigh_p[p], "nneigh sw:", nneigh_Aij_s[p])
+                        quit()
+
+                ns = n+add
+
+
+
+
                 nbp = nid_p[p, n]
-                nbs = nid_s[p, n]
+                nbs = nids_Aij_s[p, ns]
                 pyx = Aij_p[p,n,0]
                 pyy = Aij_p[p,n,1]
                 pyn = np.sqrt(pyx**2 + pyy**2)
-                swx = Aij_s[p][2*n]
-                swy = Aij_s[p][2*n+1]
+                swx = Aij_s[p][2*ns]
+                swy = Aij_s[p][2*ns+1]
                 swn = np.sqrt(swx**2 + swy**2)
 
                 if swn > null and pyn > null:
@@ -360,9 +387,49 @@ def compare_Aij():
                         sw = sum_grad_s[p,1]
                         print("sum_grad[1]: {0:14.7e}  {1:14.7e}  {2:14.7f}".format(py, sw, abs(1-py/sw)))
 
-                        py = 1/omega_p[p]
-                        sw = vol_s[p]
-                        print("volume:      {0:14.7e}  {1:14.7e}  {2:14.7f}".format(py, sw, abs(1-py/sw)))
+                        vip = 1/omega_p[p]
+                        vis = vol_s[p]
+                        print("volume i:    {0:14.7e}  {1:14.7e}  {2:14.7f}".format(vip, vis, abs(1-vip/vis)))
+
+                        nind = nids_p[p,n]-1
+                        vjp = 1/omega_p[nind]
+                        vjs = vol_s[nind]
+                        print("volume j:    {0:14.7e}  {1:14.7e}  {2:14.7f}".format(vjp, vjs, abs(1-vjp/vjs)))
+
+
+                        i = iinds[p, n]
+                        j = nind
+                        gpix = grads_p[j, i, 0]
+                        gpiy = grads_p[j, i, 1]
+                        gsix = grads_s[p, 2*ns]
+                        gsiy = grads_s[p, 2*ns+1]
+
+                        print("grad fin x:  {0:14.7e}  {1:14.7e}  {2:14.7f}".format(gpix, gsix, abs(1-gpix/gsix)))
+                        print("grad fin y:  {0:14.7e}  {1:14.7e}  {2:14.7f}".format(gpiy, gsiy, abs(1-gpiy/gsiy)))
+
+                        # this is correct apparently?
+                        #  gpjx = grads_p[p, n, 0]
+                        #  gpjy = grads_p[p, n, 1]
+                        #  newns = np.asscalar(np.where(nids_Aij_s[nind]==ids[p])[0])
+                        #  gsjx = grads_s[nind, 2*newns]
+                        #  gsjy = grads_s[nind, 2*newns+1]
+                        gpjx = grads_p[p, n, 0]
+                        gpjy = grads_p[p, n, 1]
+                        newns = np.asscalar(np.where(nids_Aij_s[nind]==ids[p])[0])
+                        gsjx = grads_s[nind, 2*newns]
+                        gsjy = grads_s[nind, 2*newns+1]
+
+                        Apx = vjp * gpix - vip * gpjx
+                        Apy = vjp * gpiy - vip * gpjy
+                        Asx = vjs * gsix - vis * gsjx
+                        Asy = vjs * gsiy - vis * gsjy
+
+                        print("recomp Ax:   {0:14.7e}  {1:14.7e}  {2:14.7f}".format(Apx, Asx, abs(1-Apx/Asx)))
+                        print("recomp Ay:   {0:14.7e}  {1:14.7e}  {2:14.7f}".format(Apy, Asy, abs(1-Apy/Asy)))
+
+
+
+
 
 
                         #  print("Diff: {0:14.7f}".format(diff))
@@ -394,7 +461,7 @@ def main():
     
     announce()
     extract_dump_data(srcfile, swift_dump, part_dump)
-    #  compute_Aij_my_way()
+    compute_Aij_my_way()
     compare_Aij()
     return
 
