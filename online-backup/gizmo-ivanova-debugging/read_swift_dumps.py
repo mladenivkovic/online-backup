@@ -42,6 +42,7 @@ def extract_dump_data(srcfile, dumpfile, part_dump):
     nneigh  = np.empty((npart), dtype=np.int32)
     gradsum = np.empty((npart, 3), dtype=np.float32)                 # sum of all gradient contributions
     dwdr    = np.empty((npart, nguess), dtype=np.float32)
+    wjxi    = np.empty((npart, nguess), dtype=np.float32)
     dx      = np.empty((npart, 2*nguess), dtype=np.float32)
     vol     = np.empty((npart), dtype=np.float32)
     omega   = np.empty((npart), dtype=np.float32)
@@ -65,6 +66,7 @@ def extract_dump_data(srcfile, dumpfile, part_dump):
         nids[p]     = np.fromfile(f, dtype=np.int64, count=nguess)
         grads_contrib[p]    = np.fromfile(f, dtype=np.float32, count=2*nguess)
         dwdr[p]     = np.fromfile(f, dtype=np.float32, count=nguess)
+        wjxi[p]     = np.fromfile(f, dtype=np.float32, count=nguess)
         dx[p]       = np.fromfile(f, dtype=np.float32, count=2*nguess)
         r[p]        = np.fromfile(f, dtype=np.float32, count=nguess)
 
@@ -92,14 +94,15 @@ def extract_dump_data(srcfile, dumpfile, part_dump):
     pos = pos[inds]
     h = h[inds]
     nids = nids[inds]
-    nneigh = nneigh[inds] + 1 # internally initialized as -1
+    nneigh = nneigh[inds]
     grads_contrib = grads_contrib[inds]
     omega = omega[inds]
     vol = vol[inds]
     dwdr = dwdr[inds]
+    wjxi = wjxi[inds]
     dx = dx[inds]
     r = r[inds]
-    nneigh_Aij = nneigh_Aij[inds] + 1
+    nneigh_Aij = nneigh_Aij[inds]
     nids_Aij = nids_Aij[inds]
     Aij = Aij[inds]
     grads = grads[inds]
@@ -114,6 +117,8 @@ def extract_dump_data(srcfile, dumpfile, part_dump):
         nids[n][:nb] = nids[n][:nb][ninds]
         # sort dwdr
         dwdr[n][:nb] = dwdr[n][:nb][ninds]
+        # sort wjxi
+        wjxi[n][:nb] = wjxi[n][:nb][ninds]
         # sort r
         r[n][:nb] = r[n][:nb][ninds]
         # sort individual gradient contributions
@@ -162,7 +167,7 @@ def extract_dump_data(srcfile, dumpfile, part_dump):
     # dump
     #------------------
 
-    data_dump = [grads, grads_contrib, gradsum, dwdr, nids, nneigh, omega, vol, dx, r, nneigh_Aij, nids_Aij, Aij]
+    data_dump = [grads, grads_contrib, gradsum, dwdr, wjxi, nids, nneigh, omega, vol, dx, r, nneigh_Aij, nids_Aij, Aij]
     dumpf= open(dumpfile, 'wb')
     pickle.dump(data_dump, dumpf)
     dumpf.close()

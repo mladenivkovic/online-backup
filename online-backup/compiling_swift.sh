@@ -26,18 +26,18 @@ if [ -f $logfile ]; then rm $logfile; fi
 
 DEBUGFLAGS=''           # will be overwritten by $DEBUGFLAGS_IF_IN_USE if you select debug option
 # with optimization
+DEBUGFLAGS_IF_IN_USE="  --enable-debug
+                        --enable-sanitizer
+                        --enable-undefined-sanitizer
+                        --enable-debugging-checks"
+                        # if debug is selected, these debugging flags will be used.
+# without optimization
 # DEBUGFLAGS_IF_IN_USE="  --enable-debug
 #                         --enable-sanitizer
+#                         --enable-optimization=no
 #                         --enable-undefined-sanitizer
-#                         --enable-debugging-checks"
-#                         # if debug is selected, these debugging flags will be used.
-# without optimization
-DEBUGFLAGS_IF_IN_USE="  --enable-debug 
-                        --enable-sanitizer
-                        --enable-optimization=no
-                        --enable-undefined-sanitizer
-                        --enable-debugging-checks 
-                        --enable-task-debugging"
+#                         --enable-debugging-checks
+                        # --enable-task-debugging"
                         # if debug is selected, these debugging flags will be used.
 DEFAULTFLAGS='          --enable-mpi=no 
                         --disable-doxygen-doc'

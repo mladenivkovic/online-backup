@@ -15,7 +15,6 @@
 
 import numpy as np
 import pickle
-import h5py
 import os
 import meshless as ms
 from read_swift_dumps import extract_dump_data
@@ -44,16 +43,16 @@ python_dump = 'gizmo-debug-python-gradient-data_'+snap+'.pkl'
 
 tolerance = 1e-3    # relative tolerance threshold for relative float comparison: if (a - b)/a < tolerance, it's fine
 NULL = 1e-7         # treat values below this as zeroes
-NULL_RELATIVE = 1e-3    # ignore relative values below this threshold
+NULL_RELATIVE = 1e-5    # ignore relative values below this threshold
 
 
-do_break = False    # break after you found a difference
+do_break = True    # break after you found a difference
 
 limit_q = True      # whether to ignore differences for high q = r/H; Seems to be stupid round off errors around
 q_limit = 0.99      # upper limit for q = r/H if difference is found;
 
-single_particle = False # whether to print out results only for one particle, specified by ID below
-single_ID = 516     # ID for which to print out results
+single_particle = True # whether to print out results only for one particle, specified by ID below
+single_ID = 4463     # ID for which to print out results
 
 
 
@@ -117,6 +116,7 @@ def compute_gradients_my_way():
     kernel = 'cubic_spline'
 
     # first get neighbour data
+    print("Finding Neighbours")
     neighbour_data = ms.get_neighbour_data_for_all(x, y, h, fact=fact, L=L, periodic=periodic)
 
     maxneigh = neighbour_data.maxneigh
@@ -131,16 +131,27 @@ def compute_gradients_my_way():
     psi_j_at_i = np.zeros((npart, maxneigh), dtype=np.float)
     omega = np.zeros(npart, dtype=np.float)
 
+
+    print("Computing psi_j(x_i)")
+
     for j in range(npart):
+        if (j+1)%200 == 0:
+            print(j+1, '/', npart)
         for i, ind_n in enumerate(neighbours[j]):
             # kernels are symmetric in x_i, x_j, but h can vary!!!!
             psi_j_at_i[j, i] = ms.psi(x[ind_n], y[ind_n], x[j], y[j], h[ind_n], 
                                     kernel=kernel, fact=fact, L=L, periodic=periodic)
             omega[ind_n] += psi_j_at_i[j, i]
+            if j==4462:
+                print("N_ID:", ids[ind_n], "x:", x[ind_n], x[j], "y:", y[ind_n], y[j])
+                dx, dy = ms.get_dx(x[ind_n], x[j], y[ind_n], y[j])
+                r = np.sqrt(dx**2+dy**2)
+                print(psi_j_at_i[j,i], r, r/H[p])
 
         # add self-contribution
         omega[j] += ms.psi(0.0, 0.0, 0.0, 0.0, H[j], kernel=kernel, fact=fact, L=L, periodic=periodic)
 
+    print(psi_j_at_i[4462])
 
 
     # compute gradients now
@@ -156,7 +167,12 @@ def compute_gradients_my_way():
     r_store = np.zeros((npart, 2*maxneigh), dtype=np.float)
     dx_store = np.zeros((npart, 2*maxneigh, 2), dtype=np.float)
 
+
+    print("Computing radial gradients of psi_j(x_i)")
+
     for i in range(npart):
+        if (i+1)%200 == 0:
+            print(i+1, '/', npart)
         for j, jind in enumerate(neighbours[i]):
             dx, dy = ms.get_dx( x[i], x[jind], y[i], y[jind], L=L, periodic=periodic)
             r = np.sqrt(dx**2 + dy**2)
@@ -181,11 +197,12 @@ def compute_gradients_my_way():
 
 
 
-    print("While computing gradients:")
-
-
     # finish computing the gradients: Need W(r, h), which is currently stored as psi
+    print("Computing cartesian gradients of psi_j(x_i)")
+
     for j in range(npart):
+        if (j+1)%200 == 0:
+            print(j+1, '/', npart)
         for i, ind_n in enumerate(neighbours[j]):
             grad_psi_j_at_i[j, i, 0] = grad_W_j_at_i[j, i, 0]/omega[ind_n] - psi_j_at_i[j, i] * sum_grad_W[ind_n, 0]/omega[ind_n]**2
             grad_psi_j_at_i[j, i, 1] = grad_W_j_at_i[j, i, 1]/omega[ind_n] - psi_j_at_i[j, i] * sum_grad_W[ind_n, 1]/omega[ind_n]**2
@@ -206,7 +223,7 @@ def compute_gradients_my_way():
 
 
 
-    data_dump = [grad_psi_j_at_i, sum_grad_W, grad_W_j_at_i, dwdr, nids, nneighs, omega, r_store, dx_store, iinds]
+    data_dump = [grad_psi_j_at_i, sum_grad_W, grad_W_j_at_i, dwdr, psi_j_at_i,  nids, nneighs, omega, r_store, dx_store, iinds]
     dumpfile = open(python_dump, 'wb')
     pickle.dump(data_dump, dumpfile)
     dumpfile.close()
@@ -275,6 +292,7 @@ def compute_gradients_my_way_old():
 
         psi_j_at_i[j, j] = ms.psi(0.0, 0.0, 0.0, 0.0, h[j], kernel=kernel, fact=fact, L=L, periodic=periodic) 
 
+    
 
     omega = np.zeros(npart, dtype=np.float)
 
@@ -293,7 +311,7 @@ def compute_gradients_my_way_old():
     dx_store = np.zeros((npart, npart, 2), dtype=np.float)
 
 
-    GIZMO_ZERO = 1e-10
+    #  GIZMO_ZERO = 1e-10
     for i in range(npart):
         for j in neighbours[i]:
             # get kernel gradients
@@ -301,8 +319,8 @@ def compute_gradients_my_way_old():
             dx, dy = ms.get_dx(x[i], x[j], y[i], y[j], L=L, periodic=periodic)
 
             # set dx, dy explicitly to zero
-            if abs(dx) < GIZMO_ZERO : dx = 0.0
-            if abs(dy) < GIZMO_ZERO : dy = 0.0
+            #  if abs(dx) < GIZMO_ZERO : dx = 0.0
+            #  if abs(dy) < GIZMO_ZERO : dy = 0.0
 
             r = np.sqrt(dx**2 + dy**2)
             if r != 0:
@@ -344,6 +362,7 @@ def compute_gradients_my_way_old():
     dumpfile.close()
     print("Dumped python data")
 
+    # THIS IS THE OLD VERSION!!!!!!!!!!!!!!!!!!
     return
 
 
@@ -370,14 +389,14 @@ def compare_grads():
     part_filep = open(part_dump, 'rb')
 
     data_swift = pickle.load(swift_filep)
-    grads_s, grads_contrib_s, sum_grad_s, dwdr_s, nids_s, nneigh_s, omega_s, vol_s, dx_s, r_s, nneigh_Aij_s, nids_Aij_s, Aij_s = data_swift
+    grads_s, grads_contrib_s, sum_grad_s, dwdr_s, Wjxi_s, nids_s, nneigh_s, omega_s, vol_s, dx_s, r_s, nneigh_Aij_s, nids_Aij_s, Aij_s = data_swift
 
     data_part = pickle.load(part_filep)
     ids, pos, h = data_part
     H = ms.get_H(h)
 
     data_python = pickle.load(python_filep)
-    grads_p, sum_grad_p, grads_contrib_p, dwdr_p, nids_p, nneigh_p, omega_p, r_p, dx_p, iinds = data_python
+    grads_p, sum_grad_p, grads_contrib_p, dwdr_p, Wjxi_p, nids_p, nneigh_p, omega_p, r_p, dx_p, iinds = data_python
 
     #  iinds:         iinds[i, j] = which index does particle i have in the neighbour
     #                      list of particle j, where j is the j-th neighbour of i
@@ -450,6 +469,75 @@ def compare_grads():
 
 
 
+
+
+    #------------------------------------------------------
+    def check_wjxi():
+    #------------------------------------------------------
+
+        print("Checking Kernel Values")
+
+        found_difference = False
+        for p in range(npart):
+            for n in range(nneigh_p[p]):
+                py = Wjxi_p[p][n]
+                sw = Wjxi_s[p][n]
+
+                if abs(py) > NULL:
+                    diff = abs(1 - sw/py)
+                elif abs(sw) > NULL:
+                    diff = abs(1 - py/sw)
+                else:
+                    continue
+
+                if diff > tolerance:
+
+                    if single_particle and ids[p] != single_ID:
+                        continue
+
+                    nind = nids_p[p, n]-1
+                    dx, dy = ms.get_dx(pos[p,0], pos[nind,0], pos[p,1], pos[nind,1])
+                    r = np.sqrt(dx**2 + dy**2)
+
+                    if limit_q:
+                        if r/H[p] > q_limit:
+                            continue
+
+                    print("Found difference in kernel values:")
+                    print((" Particle ID {0:8d}, "+
+                            "position {1:14.7e} {2:14.7e}, h = {3:14.7e}, "+
+                            "H = {4:14.7e}, dist = {5:14.7e}, dist/H = {6:14.7e}").format(
+                                ids[p], pos[p,0], pos[p,1], h[p], H[p], r, r/H[p])
+                                )
+                    print(("Neighbour ID {0:8d}, "+
+                            "position {1:14.7e} {2:14.7e}, h = {3:14.7e}, "+
+                            "H = {4:14.7e}").format(
+                                ids[nind], pos[nind,0], pos[nind,1], h[nind], H[nind])
+                                )
+                    print("Wj(xi) py = {0:14.7e}, Wj(xi) swift = {1:14.7e}, diff = {2:12.6f}".format(
+                            py, sw, diff ))
+                    print("Wj(xi) py recomputed: {0:14.7e}".format(ms.W(r/H[p], H[p])))
+                    print()
+                    found_difference = True
+
+                    print(Wjxi_p[p])
+                    print(Wjxi_s[p])
+                    print("p is", p)
+
+                if do_break and found_difference:
+                    break
+
+        if not found_difference:
+            print("Finished, all the same.")
+        if do_break and found_difference:
+            quit()
+
+
+
+
+
+
+
     #------------------------------------------------------
     def check_vol():
     #------------------------------------------------------
@@ -458,12 +546,18 @@ def compare_grads():
         print("Checking volumes and normalizations")
 
         found_difference = False
+        counter = 0
         for p in range(npart):
 
             pyv = 1/omega_p[p]
             pyn = omega_p[p]
             swv = vol_s[p]
             swn = omega_s[p]
+
+            #  if swv < pyv:
+            #      if abs(1- swv/pyv) > 1e-4:
+            #          counter +=1
+            #          print("Got swift volume > python; ID", ids[p], pyv, swv, abs(1-swv/pyv))
 
             for P, S in [(pyv, swv), (pyn, swn)]:
                 if abs(P) > NULL:
@@ -476,16 +570,27 @@ def compare_grads():
                 if diff > tolerance:
                     if single_particle and ids[p] != single_ID:
                         continue
-                    print("Found difference: ID", ids[p], "v:", pyv, swv, "n:", pyn, swn)
-                    if do_break:
-                        break
+                    print("In Volumes and Normalizations:")
+                    print("Found difference: ID", ids[p])
+                    print("            python          swift               |1 - py/sw|")
+                    print("volume:    {0:14.7e}  {1:14.7e}  {2:14.7f}".format(pyv, swv, abs(1-pyv/swv)))
+                    print("norm:      {0:14.7e}  {1:14.7e}  {2:14.7f}".format(pyn, swn, abs(1-pyn/swn)))
+
+                    found_difference = True
+                    break
+
             if do_break and found_difference:
                 break
-
+        print("Volume sums:")
+        print("Python: {0:14.7f}".format(np.sum(1./omega_p)))
+        print("Swift:  {0:14.7f}".format(np.sum(vol_s)))
         if not found_difference:
             print("Finished, all the same.")
         if found_difference and do_break:
             quit()
+
+
+    
 
 
 
@@ -826,6 +931,9 @@ def compare_grads():
 
 
 
+
+
+
     #------------------------------------------------------
     def check_final_grads():
     #------------------------------------------------------
@@ -976,13 +1084,14 @@ def compare_grads():
 
     check_number_of_neighbours()
     check_neighbour_IDs()
-    check_vol()
-    check_dwdr()
-    check_r()
-    check_dx()
-    check_individual_contributions()
-    check_grad_sums()
-    check_final_grads()
+    check_wjxi()
+    #  check_vol()
+    #  check_dwdr()
+    #  check_r()
+    #  check_dx()
+    #  check_individual_contributions()
+    #  check_grad_sums()
+    #  check_final_grads()
 
     return
 

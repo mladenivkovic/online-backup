@@ -275,10 +275,36 @@ def compare_Aij():
         found_difference = False
         for p in range(npart):
             pyarr = nid_p[p]
-            swarr = nid_s[p][:nneigh_s[p]]
-            for n in range(nneigh_s[p]):
+            swarr = nids_Aij_s[p][:nneigh_s[p]]
+            add = 0
+            for n in range(nneigh_p[p]):
+
+                ns = n + add
                 py = pyarr[n]
-                sw = swarr[n]
+                try:
+                    sw = nids_Aij_s[p][ns]
+                except IndexError:
+                    print("Something fucky going on")
+                    print("particle:", ids[p], "neighbour swift:", sw, "neighbour py:", py, "p:", p, "n:", n)
+                    print("nneigh py:", nneigh_p[p], "nneigh sw:", nneigh_Aij_s[p])
+                    quit()
+
+                while py > sw:
+                    # From the SWIFT output, there may be more neighbours than from python
+                    # if rij < H_j but r_ij > H_i, particle j has i as neighbour, but
+                    # i hasn't got j as neighbour. Both neighbours will be written down though
+                    add += 1
+                    try:
+                        sw = nids_Aij_s[p][n+add]
+                    except IndexError:
+                        print("Something fucky going on")
+                        print("particle:", ids[p], "neighbour swift:", sw, "neighbour py:", py, "p:", p, "n:", n)
+                        print("nneigh py:", nneigh_p[p], "nneigh sw:", nneigh_Aij_s[p])
+                        quit()
+
+                ns = n+add
+                sw = nids_Aij_s[p][ns]
+
                 if py != sw:
                     found_difference = True
                     print("Difference: id:", ids[p], "py:", py, "sw:", sw)
