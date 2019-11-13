@@ -33,11 +33,11 @@ pcoord = [0.5, 0.5]                 # coordinates of particle to work for
 
 
 
-fullcolorlist=['red', 
-        'green', 
-        'blue', 
-        'gold', 
-        'magenta', 
+fullcolorlist=['red',
+        'green',
+        'blue',
+        'gold',
+        'magenta',
         'cyan',
         'lime',
         'saddlebrown',
@@ -63,7 +63,7 @@ ncolrs = len(fullcolorlist)
 #========================
 def main():
 #========================
-    
+
 
     x, y, h, rho, m, ids, npart = ms.read_file(srcfile, ptype)
 
@@ -83,29 +83,29 @@ def main():
 
     x_ij = ms.x_ij(pind, x, y, H, nbors=nbors)
 
-    print("Sum Hopkins:", np.sum(A_ij_Hopkins, axis=0)) 
-    print("Sum Ivanova:", np.sum(A_ij_Ivanova, axis=0)) 
+    #  print("Sum Hopkins:", np.sum(A_ij_Hopkins, axis=0))
+    #  print("Sum Ivanova:", np.sum(A_ij_Ivanova, axis=0))
     #  print("Sum Ivanova2:", np.sum(A_ij_Ivanova2, axis=0))
     #  print("Sum Ivanova3:", np.sum(A_ij_Ivanova3, axis=0))
 
 
-    print("")
-    print("Ratios Hopkins/Ivanova")
+    #  print("")
+    #  print("Ratios Hopkins/Ivanova")
 
 
-    print(r" Ratios Hopkins/Ivanova $|A_{ij}|$     & particle position \\")
+    #  print(r" Ratios Hopkins/Ivanova $|A_{ij}|$     & particle position \\")
     dist = np.zeros(len(nbors), dtype=np.float)
     for i,n in enumerate(nbors):
         dx, dy = ms.get_dx(x[pind], x[n], y[pind], y[n])
         dist[i] = np.sqrt(dx**2 + dy**2)
 
     inds = np.argsort(dist)
-        
-    for ind in range(len(nbors)):
-        i = inds[ind] 
-        AI = np.sqrt(A_ij_Ivanova[i][0]**2 + A_ij_Ivanova[i][1]**2)
-        AH = np.sqrt(A_ij_Hopkins[i][0]**2 + A_ij_Hopkins[i][1]**2)
-        print(r'{0:8.6f}    & ({1:6.3f}, {2:6.3f} )\\'.format(AH/AI, x[nbors[i]], y[nbors[i]]))
+
+    #  for ind in range(len(nbors)):
+    #      i = inds[ind]
+    #      AI = np.sqrt(A_ij_Ivanova[i][0]**2 + A_ij_Ivanova[i][1]**2)
+    #      AH = np.sqrt(A_ij_Hopkins[i][0]**2 + A_ij_Hopkins[i][1]**2)
+    #      print(r'{0:8.6f}    & ({1:6.3f}, {2:6.3f} )\\'.format(AH/AI, x[nbors[i]], y[nbors[i]]))
 
 
 
@@ -172,10 +172,10 @@ def main():
 
 
 
-        ax1.arrow(x_ij[ii][0], x_ij[ii][1], A_ij_Hopkins[ii][0], A_ij_Hopkins[ii][1], 
+        ax1.arrow(x_ij[ii][0], x_ij[ii][1], A_ij_Hopkins[ii][0], A_ij_Hopkins[ii][1],
                 color=col, lw=arrwidth, zorder=10+i)
 
-        ax2.arrow(x_ij[ii][0], x_ij[ii][1], A_ij_Ivanova[ii][0], A_ij_Ivanova[ii][1], 
+        ax2.arrow(x_ij[ii][0], x_ij[ii][1], A_ij_Ivanova[ii][0], A_ij_Ivanova[ii][1],
                 color=col, lw=arrwidth, zorder=10+i)
 
         #  ax3.arrow(x_ij[ii][0], x_ij[ii][1], A_ij_Ivanova2[ii][0], A_ij_Ivanova2[ii][1],

@@ -20,7 +20,7 @@ from mpl_toolkits.mplot3d import Axes3D
 
 nx = 100        # number of grid points in any direction for plots. For 3D, 20 barely works for me.
                 # also note that this is for 3D, so don't overdo it?
-boxlen = 1      # box size in every direction 
+boxlen = 1      # box size in every direction
 dx = boxlen/nx
 
 nslices = 5     # if plotting slices of the values along a direction, set how many slices to do
@@ -30,7 +30,7 @@ part1 = [0, 0, 0]
 part2 = [1, 1, 1]
 
 # kernel length
-h = 2 
+h = 2
 
 # associated particle volume V_i = integral over all space psi(x) dV
 V = 0.5
@@ -48,7 +48,7 @@ def W(q,h):
 #==================
     """
     cubic spline kernel
-    """ 
+    """
     sigma = 10./(7*np.pi*h**2)
     if q < 1:
         return 0.25*(2-q)**3 - (1-q)**3
@@ -148,7 +148,7 @@ def plot_3d(Ax, Ay, Az):
 
     cmin = A.min()
     cmax = A.max()
-    
+
 
     for i in range(nx):
         x = (i+0.5)*dx
@@ -197,7 +197,7 @@ def plot_2d_slices(Ax, Ay, Az):
             newax = []
             for c in range(nslices):
                 newax.append(fig.add_subplot(3, nslices, nslices*r+c+1))
-        
+
             axes.append(newax)
 
 
@@ -210,13 +210,13 @@ def plot_2d_slices(Ax, Ay, Az):
             ax2 = axes[1][s]
             ax3 = axes[2][s]
 
-            i1 = ax1.imshow(A[ind, :, :], cmap='YlGnBu_r', origin='lower', 
+            i1 = ax1.imshow(A[ind, :, :], cmap='YlGnBu_r', origin='lower',
                 extent=(0, boxlen, 0, boxlen), vmin=cmin, vmax=cmax)
             ax1.set_xlabel('y')
             ax1.set_ylabel('z')
             ax1.set_title('along x = {0:6.3f}'.format(sliceval))
             fig.colorbar(i1, ax=ax1)
-        
+
             i2 = ax2.imshow(A[:, ind, :], cmap='YlGnBu_r', origin='lower',
                 extent=(0, boxlen, 0, boxlen), vmin=cmin, vmax=cmax)
             ax2.set_xlabel('x')
@@ -234,7 +234,7 @@ def plot_2d_slices(Ax, Ay, Az):
         fig.suptitle('Slices for ' + direction +' component of A')
 
         #  plt.show()
-        fname ='meshless_surface_slices_'+direction+'.png' 
+        fname ='meshless_surface_slices_'+direction+'.png'
         plt.tight_layout()
         plt.savefig(fname, dpi=150)
         print('saved ', fname)
@@ -249,7 +249,7 @@ def plot_2d_sums(Ax, Ay, Az):
     Sums up values of every component of A along all 3 axes
     and plots them
     Meaning:
-        For the gradient in x-direction, plot the 
+        For the gradient in x-direction, plot the
         cumulative valuesi along x, y, z directions
 
     In the and, also plot |A| in different directions
@@ -268,13 +268,13 @@ def plot_2d_sums(Ax, Ay, Az):
         ax2 = fig.add_subplot(1, 3, 2)
         ax3 = fig.add_subplot(1, 3, 3)
 
-        i1 = ax1.imshow(np.sum(A,0), cmap='YlGnBu_r', origin='lower', 
+        i1 = ax1.imshow(np.sum(A,0), cmap='YlGnBu_r', origin='lower',
             extent=(0, boxlen, 0, boxlen))
         ax1.set_xlabel('y')
         ax1.set_ylabel('z')
         ax3.set_title('along x axis')
         fig.colorbar(i1, ax=ax1)
-    
+
         i2 = ax2.imshow(np.sum(A,1), cmap='YlGnBu_r', origin='lower',
             extent=(0, boxlen, 0, boxlen))
         ax2.set_xlabel('x')
@@ -294,7 +294,7 @@ def plot_2d_sums(Ax, Ay, Az):
 
 
         #  plt.show()
-        fname ='meshless_surface_cumulative_'+direction+'.png' 
+        fname ='meshless_surface_cumulative_'+direction+'.png'
         plt.tight_layout()
         plt.savefig(fname, dpi=150)
         print('saved ', fname)

@@ -47,10 +47,10 @@ ncols = 3
 #========================
 def main():
 #========================
-    
+
 
     nx, filenummax, fileskip =  ms.get_sample_size()
-    
+
 
     #-----------------------------
     # Part1 : compute all A
@@ -101,7 +101,7 @@ def main():
             jj += 1
         jj = 0
         ii += 1
-    
+
 
 
 
@@ -170,7 +170,7 @@ def main():
         axcols = [None for c in range(ncols)]
 
         axcols = ImageGrid(fig, (nrows, 1, row+1),
-                    nrows_ncols=(1, ncols), 
+                    nrows_ncols=(1, ncols),
                     axes_pad = 0.,
                     share_all = False,
                     label_mode = 'L',
@@ -182,8 +182,8 @@ def main():
 
 
         for col, ax in enumerate(axcols):
-        
-            im = ax.imshow(imgdata[row][col], origin='lower', 
+
+            im = ax.imshow(imgdata[row][col], origin='lower',
                 vmin=minval, vmax=maxval, cmap=cmap,
                 extent=(lowlim_plot, uplim_plot, lowlim_plot, uplim_plot),
                 #  norm=matplotlib.colors.SymLogNorm(1e-3),
@@ -197,13 +197,13 @@ def main():
             fc = 'white'
             ax.scatter(x[mask], y[mask], s=ps, lw=lw,
                     facecolor=fc, edgecolor=ec, zorder=2)
-      
+
             # plot the chosen one
             ps = 150
             fc = 'black'
             ax.scatter(x[cind], y[cind], s=ps, lw=lw,
                     facecolor=fc, edgecolor=ec, zorder=3)
-           
+
 
 
             ax.set_xlim((lowlim_plot,uplim_plot))

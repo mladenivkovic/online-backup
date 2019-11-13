@@ -10,7 +10,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1 import make_axes_locatable, axes_size 
+from mpl_toolkits.axes_grid1 import make_axes_locatable, axes_size
 import meshless as ms
 
 
@@ -32,7 +32,7 @@ def main():
 
 
     nx, filenummax, fileskip =  ms.get_sample_size()
-    
+
 
     #-----------------------------
     # Part1 : compute all A
@@ -70,7 +70,7 @@ def main():
             jj += 1
         jj = 0
         ii += 1
-    
+
 
 
 
@@ -110,13 +110,13 @@ def main():
 
     cmap = 'YlGnBu_r'
 
-    im1 = ax1.imshow(Ax, origin='lower', 
+    im1 = ax1.imshow(Ax, origin='lower',
             vmin=xmin, vmax=xmax, cmap=cmap,
             extent=(lowlim2, uplim2, lowlim2, uplim2))
-    im2 = ax2.imshow(Ay, origin='lower', 
+    im2 = ax2.imshow(Ay, origin='lower',
             vmin=ymin, vmax=ymax, cmap=cmap,
             extent=(lowlim2, uplim2, lowlim2, uplim2))
-    im3 = ax3.imshow(Anorm, origin='lower', 
+    im3 = ax3.imshow(Anorm, origin='lower',
             vmin=normmin, vmax=normmax, cmap=cmap,
             extent=(lowlim2, uplim2, lowlim2, uplim2))
 
@@ -142,7 +142,7 @@ def main():
 
     ax1.scatter(xp[mask], yp[mask], s=ps, lw=lw,
             facecolor=fc, edgecolor=ec)
-    ax2.scatter(xp[mask], yp[mask], s=ps, lw=lw, 
+    ax2.scatter(xp[mask], yp[mask], s=ps, lw=lw,
             facecolor=fc, edgecolor=ec)
     ax3.scatter(xp[mask], yp[mask], s=ps, lw=lw,
             facecolor=fc, edgecolor=ec)

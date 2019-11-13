@@ -37,7 +37,7 @@ L = 20
 #========================
 def main():
 #========================
-    
+
 
 
     # first get how many directories there are containing
@@ -65,7 +65,7 @@ def main():
     nrows = 2
     ncols = len(etas)
 
-    # assume that there are equally many files for every smoothing length 
+    # assume that there are equally many files for every smoothing length
     nx, filenummax, fileskip = ms.get_sample_size(dirs[0])
     #  fileskip = 100
     #  nx = 3
@@ -131,7 +131,7 @@ def main():
         Ax = Aij_Hopkins[e][:,:,0]
         Ay = Aij_Hopkins[e][:,:,1]
         Anorm_Hopkins[e] = np.sqrt(Ax**2 + Ay**2)
-        
+
         Ax = Aij_Ivanova[e][:,:,0]
         Ay = Aij_Ivanova[e][:,:,1]
         Anorm_Ivanova[e] = np.sqrt(Ax**2 + Ay**2)
@@ -166,7 +166,7 @@ def main():
         axcols = [None for c in range(ncols)]
 
         axcols = ImageGrid(fig, (nrows, 1, row+1),
-                    nrows_ncols=(1, ncols), 
+                    nrows_ncols=(1, ncols),
                     axes_pad = 0.5,
                     share_all = False,
                     label_mode = 'L',
@@ -178,8 +178,8 @@ def main():
 
 
         for col, ax in enumerate(axcols):
-        
-            im = ax.imshow(imgdata[row][col], origin='lower', 
+
+            im = ax.imshow(imgdata[row][col], origin='lower',
                 cmap=cmap,
                 #  vmin=minval, vmax=maxval, cmap=cmap,
                 extent=(lowlim_plot, uplim_plot, lowlim_plot, uplim_plot),
@@ -194,13 +194,13 @@ def main():
             fc = 'white'
             ax.scatter(x[mask], y[mask], s=ps, lw=lw,
                     facecolor=fc, edgecolor=ec, zorder=2)
-      
+
             # plot the chosen one
             ps = 150
             fc = 'black'
             ax.scatter(x[cind], y[cind], s=ps, lw=lw,
                     facecolor=fc, edgecolor=ec, zorder=3)
-           
+
 
 
             ax.set_xlim((lowlim_plot,uplim_plot))

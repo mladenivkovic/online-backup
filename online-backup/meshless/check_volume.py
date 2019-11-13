@@ -34,7 +34,7 @@ pcoord = [0.5, 0.5]                 # coordinates of particle to work for
 #========================
 def main():
 #========================
-    
+
 
     x, y, h, rho, m, ids, npart = ms.read_file(srcfile, ptype)
     pind = ms.find_index_by_id(ids, 70)
@@ -84,7 +84,7 @@ def main():
             # omega_i = sum_j W(x_i - x_j) = sum_j psi_j(x_i) as it is currently stored in memory
 
 
-        
+
         # compute volumes from swift data
         V_i = ms.V(pind, m, rho)
         V_tot_array = np.sum(m/rho)

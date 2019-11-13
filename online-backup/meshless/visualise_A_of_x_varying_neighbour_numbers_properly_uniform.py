@@ -52,7 +52,7 @@ def get_sample_size():
         junk, dash, rest = snap.partition("snapshot-")
         f, underzero, junk = rest.partition("_0000")
         eta_facts[i] = float(f)
-    
+
 
     return eta_facts, snaplist
 
@@ -63,7 +63,7 @@ def get_sample_size():
 #========================
 def main():
 #========================
-    
+
     #-----------------------------
     # Part1 : compute all A
     #-----------------------------
@@ -164,7 +164,7 @@ def main():
                     #  A[j,i] =  row + np.random.random()/10 # not a typo: need A[j,i] for imshow
 
 
-            Ax = A[:,:,0] 
+            Ax = A[:,:,0]
             Ay = A[:,:,1]
             Anorm = np.sqrt(Ax**2 + Ay**2)
 
@@ -182,7 +182,7 @@ def main():
     #          Ax_list[r][gauss] = Ax_list[0][gauss]
     #          Ay_list[r][gauss] = Ay_list[0][gauss]
     #          Anorm_list[r][gauss] = Anorm_list[0][gauss]
-        
+
 
 
 
@@ -193,7 +193,7 @@ def main():
     As = [Ax_list, Ay_list, Anorm_list]
     title_prefix = ['x-component', 'y-component', 'norm']
 
-    
+
     for f in range(len(title_prefix)):
 
         print('plotting', title_prefix[f])
@@ -207,7 +207,7 @@ def main():
             axcols = [None for c in range(ncols)]
 
             axcols = ImageGrid(fig, (nrows, 1, r+1),
-                        nrows_ncols=(1, ncols), 
+                        nrows_ncols=(1, ncols),
                         axes_pad = 0.0,
                         share_all = True,
                         label_mode = 'L',
@@ -239,8 +239,8 @@ def main():
 
 
             for col, ax in enumerate(axcols):
-            
-                im = ax.imshow(A[row][col], origin='lower', 
+
+                im = ax.imshow(A[row][col], origin='lower',
                     vmin=minval, vmax=maxval, cmap=cmap,
                     extent=(lowlim, uplim, lowlim, uplim),
                     #  norm=matplotlib.colors.SymLogNorm(1e-3),
@@ -254,13 +254,13 @@ def main():
                 fc = 'grey'
                 ax.scatter(x[mask], y[mask], s=ps, lw=lw,
                         facecolor=fc, edgecolor=ec, zorder=2)
-          
+
                 # plot the chosen one
                 ps = 100
                 fc = 'white'
                 ax.scatter(x[iind], y[iind], s=ps, lw=lw,
                         facecolor=fc, edgecolor=ec, zorder=3)
-               
+
                 # plot central (and the ones you drew anyway)
                 fc = 'black'
                 ax.scatter(x[jind], y[jind], s=ps, lw=lw,
@@ -293,7 +293,7 @@ def main():
                     labeltop=False,     # labels along the bottom edge are off
                     labelleft=left,     # labels along the bottom edge are off
                     labelright=False)   # labels along the bottom edge are off
-                    
+
 
 
                 if row==0:

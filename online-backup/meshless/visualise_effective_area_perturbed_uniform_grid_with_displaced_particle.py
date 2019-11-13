@@ -10,7 +10,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1 import make_axes_locatable, axes_size 
+from mpl_toolkits.axes_grid1 import make_axes_locatable, axes_size
 import h5py
 import meshless as ms
 
@@ -40,7 +40,7 @@ cheatfact = 1.5 # enlarge H with this cheat to skip singular matrices
 #========================
 def main():
 #========================
-    
+
 
     #-----------------------------
     # Part1 : compute all A
@@ -80,12 +80,12 @@ def main():
                 print(cind, x[cind], y[cind])
                 print(pind, x[pind], y[pind], 2*h[pind])
             A[jj, ii] = Aij[ind]
-            
+
             jj += 1
 
         ii += 1
         jj = 0
-    
+
 
 
 
@@ -124,13 +124,13 @@ def main():
 
     cmap = 'YlGnBu_r'
 
-    im1 = ax1.imshow(Ax, origin='lower', 
+    im1 = ax1.imshow(Ax, origin='lower',
             vmin=xmin, vmax=xmax, cmap=cmap,
             extent=(lowlim2, uplim2, lowlim2, uplim2))
-    im2 = ax2.imshow(Ay, origin='lower', 
+    im2 = ax2.imshow(Ay, origin='lower',
             vmin=ymin, vmax=ymax, cmap=cmap,
             extent=(lowlim2, uplim2, lowlim2, uplim2))
-    im3 = ax3.imshow(Anorm, origin='lower', 
+    im3 = ax3.imshow(Anorm, origin='lower',
             vmin=normmin, vmax=normmax, cmap=cmap,
             extent=(lowlim2, uplim2, lowlim2, uplim2))
 
@@ -157,7 +157,7 @@ def main():
     # scatter neighbours
     ax1.scatter(xp[mask], yp[mask], s=ps, lw=lw,
             facecolor=fc, edgecolor=ec)
-    ax2.scatter(xp[mask], yp[mask], s=ps, lw=lw, 
+    ax2.scatter(xp[mask], yp[mask], s=ps, lw=lw,
             facecolor=fc, edgecolor=ec)
     ax3.scatter(xp[mask], yp[mask], s=ps, lw=lw,
             facecolor=fc, edgecolor=ec)
@@ -166,7 +166,7 @@ def main():
     # scatter central
     ax1.scatter(x[cind], y[cind], s=ps, lw=lw,
             facecolor=ec, edgecolor=ec)
-    ax2.scatter(x[cind], y[cind], s=ps, lw=lw, 
+    ax2.scatter(x[cind], y[cind], s=ps, lw=lw,
             facecolor=ec, edgecolor=ec)
     ax3.scatter(x[cind], y[cind], s=ps, lw=lw,
             facecolor=ec, edgecolor=ec)

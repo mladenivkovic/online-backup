@@ -8,7 +8,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1 import make_axes_locatable, axes_size 
+from mpl_toolkits.axes_grid1 import make_axes_locatable, axes_size
 
 import meshless as ms
 
@@ -33,7 +33,7 @@ tol = 5e-2 # tolerance for particle finding
 #========================
 def main():
 #========================
-    
+
 
     #-----------------------------
     # Part1 : compute all A
@@ -93,7 +93,7 @@ def main():
     ax3 = fig.add_subplot(133, aspect='equal')
 
 
-    Ax = A[:,:,0] 
+    Ax = A[:,:,0]
     Ay = A[:,:,1]
     Anorm = np.sqrt(Ax**2 + Ay**2)
     xmin = Ax.min()
@@ -117,13 +117,13 @@ def main():
 
 
 
-    im1 = ax1.imshow(Ax, origin='lower', 
+    im1 = ax1.imshow(Ax, origin='lower',
             vmin=xmin, vmax=xmax, cmap=cmap,
             extent=(lowlim2, uplim2, lowlim2, uplim2))
-    im2 = ax2.imshow(Ay, origin='lower', 
+    im2 = ax2.imshow(Ay, origin='lower',
             vmin=ymin, vmax=ymax, cmap=cmap,
             extent=(lowlim2, uplim2, lowlim2, uplim2))
-    im3 = ax3.imshow(Anorm, origin='lower', 
+    im3 = ax3.imshow(Anorm, origin='lower',
             vmin=normmin, vmax=normmax, cmap=cmap,
             extent=(lowlim2, uplim2, lowlim2, uplim2))
 
@@ -148,7 +148,7 @@ def main():
     # plot neighbours (and the ones you drew anyway)
     ax1.scatter(x[mask], y[mask], s=ps, lw=lw,
             facecolor=fc, edgecolor=ec)
-    ax2.scatter(x[mask], y[mask], s=ps, lw=lw, 
+    ax2.scatter(x[mask], y[mask], s=ps, lw=lw,
             facecolor=fc, edgecolor=ec)
     ax3.scatter(x[mask], y[mask], s=ps, lw=lw,
             facecolor=fc, edgecolor=ec)
@@ -158,7 +158,7 @@ def main():
     fc = 'white'
     ax1.scatter(x[iind], y[iind], s=ps, lw=lw,
             facecolor=fc, edgecolor=ec)
-    ax2.scatter(x[iind], y[iind], s=ps, lw=lw, 
+    ax2.scatter(x[iind], y[iind], s=ps, lw=lw,
             facecolor=fc, edgecolor=ec)
     ax3.scatter(x[iind], y[iind], s=ps, lw=lw,
             facecolor=fc, edgecolor=ec)
@@ -168,7 +168,7 @@ def main():
     fc = 'black'
     ax1.scatter(x[jind], y[jind], s=ps, lw=lw,
             facecolor=fc, edgecolor=ec)
-    ax2.scatter(x[jind], y[jind], s=ps, lw=lw, 
+    ax2.scatter(x[jind], y[jind], s=ps, lw=lw,
             facecolor=fc, edgecolor=ec)
     ax3.scatter(x[jind], y[jind], s=ps, lw=lw,
             facecolor=fc, edgecolor=ec)

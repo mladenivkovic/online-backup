@@ -29,11 +29,11 @@ verbose = True                     # how talkative the code is
 print_by_particle = False           # whether to print differences for each particle separately
 
 
-fullcolorlist=['red', 
-        'green', 
-        'blue', 
-        'gold', 
-        'magenta', 
+fullcolorlist=['red',
+        'green',
+        'blue',
+        'gold',
+        'magenta',
         'cyan',
         'lime',
         'saddlebrown',
@@ -64,7 +64,7 @@ def extrapolate(x, y, pind, n):
     """
     Extrapolate coordinates for particle-particle line
     """
-    
+
     dx = x[pind] - x[n]
     dy = y[pind] - y[n]
 
@@ -94,7 +94,7 @@ def extrapolate(x, y, pind, n):
 #========================
 def main():
 #========================
-    
+
 
     x, y, h, rho, m, ids, npart = ms.read_file(srcfile, ptype)
 
@@ -110,7 +110,7 @@ def main():
 
     count = 0
     for row, pcoord in enumerate(pcoords):
-        
+
         print("Working for particle at", pcoord)
 
         pind = ms.find_index(x, y, pcoord, tolerance=0.05)
@@ -149,8 +149,8 @@ def main():
 
 
         if verbose:
-            print("Sum Hopkins:   ", np.sum(A_ij_Hopkins, axis=0)) 
-            print("Sum Hopkins_v2:", np.sum(A_ij_Hopkins_v2, axis=0)) 
+            print("Sum Hopkins:   ", np.sum(A_ij_Hopkins, axis=0))
+            print("Sum Hopkins_v2:", np.sum(A_ij_Hopkins_v2, axis=0))
 
             abs1   = np.sqrt(A_ij_Hopkins[:,0]**2 + A_ij_Hopkins[:,1]**2)
             abs2   = np.sqrt(A_ij_Hopkins_v2[:,0]**2 + A_ij_Hopkins_v2[:,1]**2)
@@ -227,10 +227,10 @@ def main():
 
             arrwidth = 2
 
-            ax1.arrow(  x_ij[ii][0], x_ij[ii][1], A_ij_Hopkins[ii][0], A_ij_Hopkins[ii][1], 
+            ax1.arrow(  x_ij[ii][0], x_ij[ii][1], A_ij_Hopkins[ii][0], A_ij_Hopkins[ii][1],
                         color=col, lw=arrwidth, zorder=10+i)
 
-            ax2.arrow(  x_ij[ii][0], x_ij[ii][1], A_ij_Hopkins_v2[ii][0], A_ij_Hopkins_v2[ii][1], 
+            ax2.arrow(  x_ij[ii][0], x_ij[ii][1], A_ij_Hopkins_v2[ii][0], A_ij_Hopkins_v2[ii][1],
                         color=col, lw=arrwidth, zorder=10+i)
 
 

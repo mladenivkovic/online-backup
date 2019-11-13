@@ -39,7 +39,7 @@ uplim = 0.7
 #========================
 def main():
 #========================
-    
+
 
     x, y, h, rho, m, ids, npart = ms.read_file(srcfile, ptype)
 
@@ -80,7 +80,7 @@ def main():
     # set up figure
 
     fig = plt.figure(figsize=(10, 5.5))
-    axes = ImageGrid(fig, (1, 1, 1), 
+    axes = ImageGrid(fig, (1, 1, 1),
                 nrows_ncols=(1, 2),
                 axes_pad=0.85,
                 share_all=True,

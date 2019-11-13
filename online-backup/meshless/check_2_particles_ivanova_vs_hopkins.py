@@ -21,11 +21,11 @@ my_utils.setplotparams_multiple_plots()
 # initialize variables
 #---------------------------
 
-fullcolorlist=['red', 
-        'green', 
-        'blue', 
-        'gold', 
-        'magenta', 
+fullcolorlist=['red',
+        'green',
+        'blue',
+        'gold',
+        'magenta',
         'cyan',
         'lime',
         'saddlebrown',
@@ -52,7 +52,7 @@ ncolrs = len(fullcolorlist)
 #========================
 def main():
 #========================
-    
+
 
     #  x = np.array([0.25, 0.25, 0.75, 0.75])
     #  y = np.array([0.25, 0.75, 0.25, 0.75])
@@ -117,11 +117,11 @@ def main():
         arrwidth = 2
 
         ax1.scatter(x[n], y[n], c=col, s=pointsize, zorder=0, lw=1, edgecolor='k')
-        ax1.arrow(x_ij[ii][0], x_ij[ii][1], A_ij_H[ii][0], A_ij_H[ii][1], 
+        ax1.arrow(x_ij[ii][0], x_ij[ii][1], A_ij_H[ii][0], A_ij_H[ii][1],
             color=col, lw=arrwidth, zorder=10+i)
 
         ax2.scatter(x[n], y[n], c=col, s=pointsize, zorder=0, lw=1, edgecolor='k')
-        ax2.arrow(x_ij[ii][0], x_ij[ii][1], A_ij_I[ii][0], A_ij_I[ii][1], 
+        ax2.arrow(x_ij[ii][0], x_ij[ii][1], A_ij_I[ii][0], A_ij_I[ii][1],
             color=col, lw=arrwidth, zorder=10+i)
 
 
@@ -140,7 +140,7 @@ def main():
 
 
     plt.savefig('2_particle_situation.png')
- 
+
 
 
 if __name__ == '__main__':

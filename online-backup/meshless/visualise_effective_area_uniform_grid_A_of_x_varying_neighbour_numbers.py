@@ -9,7 +9,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1 import make_axes_locatable, axes_size 
+from mpl_toolkits.axes_grid1 import make_axes_locatable, axes_size
 import meshless as ms
 
 import h5py
@@ -35,7 +35,7 @@ tol = 1e-5 # tolerance for float comparison
 #========================
 def main():
 #========================
-    
+
 
     #-----------------------------
     # Part1 : compute all A
@@ -110,7 +110,7 @@ def main():
         for i in range(nrows):
             axcols = [None for i in range(ncols)]
             for j in range(ncols):
-                axcols[j] = fig.add_subplot(nrows, ncols, i*ncols+j+1, aspect='equal') 
+                axcols[j] = fig.add_subplot(nrows, ncols, i*ncols+j+1, aspect='equal')
             axrows[i] = axcols
 
 
@@ -149,7 +149,7 @@ def main():
             print("Plotting hfact=", hf)
 
 
-            Ax = A[:,:,0] 
+            Ax = A[:,:,0]
             Ay = A[:,:,1]
             Anorm = np.sqrt(Ax**2 + Ay**2)
             xmin = Ax.min()
@@ -169,13 +169,13 @@ def main():
             ax3 = axrows[row][2]
 
 
-            im1 = ax1.imshow(Ax, origin='lower', 
+            im1 = ax1.imshow(Ax, origin='lower',
                     vmin=xmin, vmax=xmax, cmap=cmap,
                     extent=(lowlimx, uplimx, lowlimy, uplimy))
-            im2 = ax2.imshow(Ay, origin='lower', 
+            im2 = ax2.imshow(Ay, origin='lower',
                     vmin=ymin, vmax=ymax, cmap=cmap,
                     extent=(lowlimx, uplimx, lowlimy, uplimy))
-            im3 = ax3.imshow(Anorm, origin='lower', 
+            im3 = ax3.imshow(Anorm, origin='lower',
                     vmin=normmin, vmax=normmax, cmap=cmap,
                     extent=(lowlimx, uplimx, lowlimy, uplimy))
 
@@ -200,7 +200,7 @@ def main():
             # plot neighbours (and the ones you drew anyway)
             ax1.scatter(x[mask], y[mask], s=ps, lw=lw,
                     facecolor=fc, edgecolor=ec)
-            ax2.scatter(x[mask], y[mask], s=ps, lw=lw, 
+            ax2.scatter(x[mask], y[mask], s=ps, lw=lw,
                     facecolor=fc, edgecolor=ec)
             ax3.scatter(x[mask], y[mask], s=ps, lw=lw,
                     facecolor=fc, edgecolor=ec)
@@ -210,7 +210,7 @@ def main():
             fc = 'white'
             ax1.scatter(x[iind], y[iind], s=ps, lw=lw,
                     facecolor=fc, edgecolor=ec)
-            ax2.scatter(x[iind], y[iind], s=ps, lw=lw, 
+            ax2.scatter(x[iind], y[iind], s=ps, lw=lw,
                     facecolor=fc, edgecolor=ec)
             ax3.scatter(x[iind], y[iind], s=ps, lw=lw,
                     facecolor=fc, edgecolor=ec)
@@ -220,7 +220,7 @@ def main():
             fc = 'black'
             ax1.scatter(x[jind], y[jind], s=ps, lw=lw,
                     facecolor=fc, edgecolor=ec)
-            ax2.scatter(x[jind], y[jind], s=ps, lw=lw, 
+            ax2.scatter(x[jind], y[jind], s=ps, lw=lw,
                     facecolor=fc, edgecolor=ec)
             ax3.scatter(x[jind], y[jind], s=ps, lw=lw,
                     facecolor=fc, edgecolor=ec)

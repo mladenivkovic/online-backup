@@ -102,7 +102,7 @@ if __name__ == '__main__':
         for i, h in enumerate(smoothing_lengths):
             print("Working for h=", h)
             image = compute_image(h, kernel)
-            axes[i].imshow(image, 
+            axes[i].imshow(image,
                     origin='lower',
                     extent=(0,1,0,1))
 
