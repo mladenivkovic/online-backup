@@ -22,7 +22,7 @@
 /home/mivkov/EPFL/Meshless_Methods/visualise_effective_area/hopkins_vs_ivanova_smoothing_lengths/hopkins_vs_ivanova_smoothing_lengths.py:/home/mivkov/coding/projekte/online-backup/meshless/hopkins_vs_ivanova_smoothing_lengths.py
 /home/mivkov/local/swiftsim/myinstall.sh:/home/mivkov/coding/projekte/online-backup/compiling_swift.sh
 /home/mivkov/EPFL/Meshless_Methods/runs/scripts/check_gradients.py:/home/mivkov/coding/projekte/online-backup/gizmo-ivanova-debugging/check_gradients.py
-/home/mivkov/EPFL/Meshless_Methods/runs/scripts/compare_Aijs.py:/home/mivkov/coding/projekte/online-backup/gizmo-ivanova-debugging/compare_Aijs.py
+/home/mivkov/EPFL/Meshless_Methods/runs/scripts/check_Aijs.py:/home/mivkov/coding/projekte/online-backup/gizmo-ivanova-debugging/check_Aijs.py
 /home/mivkov/EPFL/Meshless_Methods/runs/scripts/extract_Aij_from_snapshot.py:/home/mivkov/coding/projekte/online-backup/gizmo-ivanova-debugging/extract_Aij_from_snapshot.py
 /home/mivkov/EPFL/Meshless_Methods/runs/scripts/get_Aij_my_way.py:/home/mivkov/coding/projekte/online-backup/gizmo-ivanova-debugging/get_Aij_my_way.py
 /home/mivkov/EPFL/Meshless_Methods/runs/scripts/sporadical_check_Aij.py:/home/mivkov/coding/projekte/online-backup/gizmo-ivanova-debugging/sporadical_check_Aij.py
@@ -30,3 +30,5 @@
 /home/mivkov/EPFL/Meshless_Methods/visualise_effective_area/psi_perturbed/psi_of_x_perturbed.png:/home/mivkov/coding/projekte/online-backup/meshless/visualise_psi_of_x_perturbed.py
 /home/mivkov/EPFL/Meshless_Methods/runs/scripts/read_swift_dumps.py:/home/mivkov/coding/projekte/online-backup/gizmo-ivanova-debugging/read_swift_dumps.py
 /home/mivkov/EPFL/Meshless_Methods/visualise_effective_area/check_multiple_versions/check_versions.py:/home/mivkov/coding/projekte/online-backup/meshless/check_versions.py
+/home/mivkov/EPFL/Meshless_Methods/runs/scripts/compute_gradients.py:/home/mivkov/coding/projekte/online-backup/gizmo-ivanova-debugging/compute_gradients.py
+/home/mivkov/EPFL/Meshless_Methods/runs/scripts/filenames.py:/home/mivkov/coding/projekte/online-backup/gizmo-ivanova-debugging//filenames.py
