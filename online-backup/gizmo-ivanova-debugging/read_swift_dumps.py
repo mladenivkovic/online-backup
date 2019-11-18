@@ -9,16 +9,23 @@ import pickle
 import os
 from my_utils import yesno, one_arg_present
 
+from filenames import get_srcfile, get_dumpfiles
+
+srcfile = get_srcfile()
+swift_dump, part_dump, python_surface_dump, python_grad_dump = get_dumpfiles()
+
+
+
 
 #====================================================
-def extract_dump_data(srcfile, dumpfile, part_dump):
+def extract_dump_data():
 #====================================================
     """
     Reads in, sorts out and pickle dumps from swift output
     """
 
-    if os.path.isfile(dumpfile):
-        if not yesno("Dump file", dumpfile, "already exists. Shall I overwrite it?"):
+    if os.path.isfile(swift_dump):
+        if not yesno("Dump file", swift_dump, "already exists. Shall I overwrite it?"):
             return
 
     print("Extracting Swift Data")
@@ -167,15 +174,28 @@ def extract_dump_data(srcfile, dumpfile, part_dump):
     # dump
     #------------------
 
-    data_dump = [grads, grads_contrib, gradsum, dwdr, wjxi, nids, nneigh, omega, vol, dx, r, nneigh_Aij, nids_Aij, Aij]
-    dumpf= open(dumpfile, 'wb')
-    pickle.dump(data_dump, dumpf)
+    dumpf= open(swift_dump, 'wb')
+    pickle.dump(grads, dumpf)
+    pickle.dump(grads_contrib, dumpf)
+    pickle.dump(gradsum, dumpf)
+    pickle.dump(dwdr, dumpf)
+    pickle.dump(wjxi, dumpf)
+    pickle.dump(nids, dumpf)
+    pickle.dump(nneigh, dumpf)
+    pickle.dump(omega, dumpf)
+    pickle.dump(vol, dumpf)
+    pickle.dump(dx, dumpf)
+    pickle.dump(r, dumpf)
+    pickle.dump(nneigh_Aij, dumpf)
+    pickle.dump(nids_Aij, dumpf)
+    pickle.dump(Aij, dumpf)
     dumpf.close()
     print("Dumped swift data")
 
-    data_part = [ids, pos, h]
     dumpf= open(part_dump, 'wb')
-    pickle.dump(data_part, dumpf)
+    pickle.dump(ids, dumpf)
+    pickle.dump(pos, dumpf)
+    pickle.dump(h, dumpf)
     dumpf.close()
     print("Dumped particle data")
 
@@ -254,15 +274,15 @@ def extract_Aij_from_snapshot_old():
     #------------------
 
     data_dump = [Aijs, nneighs, neighbour_ids]
-    dumpfile = open(swift_dump, 'wb')
-    pickle.dump(data_dump, dumpfile)
-    dumpfile.close()
+    swift_dump = open(swift_dump, 'wb')
+    pickle.dump(data_dump, swift_dump)
+    swift_dump.close()
     print("Dumped swift data")
 
     data_dump = [pos, ids, h]
-    dumpfile = open(extra_dump, 'wb')
-    pickle.dump(data_dump, dumpfile)
-    dumpfile.close()
+    swift_dump = open(extra_dump, 'wb')
+    pickle.dump(data_dump, swift_dump)
+    swift_dump.close()
     print("Dumped extra particle data")
 
 
@@ -302,6 +322,7 @@ def extract_gradients_from_snapshot_hdf5():
 #==========================================
     """
     Reads in, sorts out and pickle dumps from swift output
+    !!! DEPRECATED !!!!!!!!!!!!
     """
 
     if os.path.isfile(swift_dump):

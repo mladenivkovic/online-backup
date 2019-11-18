@@ -16,34 +16,28 @@ import numpy as np
 import pickle
 import h5py
 import os
+
 import meshless as ms
 from my_utils import yesno, one_arg_present
+
+from filenames import get_srcfile, get_dumpfiles
 from read_swift_dumps import extract_dump_data
 
-#------------------------
-# Filenames
-#------------------------
+#-------------------------------
+# Filenames and global stuff
+#-------------------------------
 
-snap = '0001'                   # which snap to use
-fname_prefix = 'swift-gizmo-debug-dump_'
-
-# read in cmd line arg snapshot number if present and convert it to formatted string
-snap = ms.snapstr(one_arg_present(snap))
-
-srcfile = fname_prefix+snap+'.dat'
-
-swift_dump = 'gizmo-debug-swift-data_'+snap+'.pkl'
-part_dump = 'gizmo-debug-swift-particle-data_'+snap+'.pkl'
-python_dump = 'gizmo-debug-python-surface-data_'+snap+'.pkl'
-python_grad_dump = 'gizmo-debug-python-gradient-data_'+snap+'.pkl'
+periodic=True
+srcfile = get_srcfile()
+swift_dump, part_dump, python_surface_dump, python_grad_dump = get_dumpfiles()
 
 
 #----------------------
 # Behaviour params
 #----------------------
 
-tolerance = 1e-2    # relative tolerance threshold for relative float comparison: if (a - b)/a < tolerance, it's fine
-NULL = 1e-3         # max(Aij) of this particle * NULL = lower limit for values to be treated as zero
+tolerance = 1e-1    # relative tolerance threshold for relative float comparison: if (a - b)/a < tolerance, it's fine
+NULL_RELATIVE = 1e-5 # relative tolerance for values to ignore below this value
 
 
 
@@ -56,7 +50,7 @@ def announce():
 
     print("CHECKING SURFACES.")
     print("tolerance is set to:", tolerance)
-    print("NULL is set to:", NULL)
+    print("NULL_RELATIVE is set to:", NULL_RELATIVE)
     print("---------------------------------------------------------")
     print()
 
@@ -80,16 +74,19 @@ def compute_Aij_my_way():
     """
 
 
-    if os.path.isfile(python_dump):
-        if not yesno("Dump file", python_dump, "already exists. Shall I overwrite it?"):
+    if os.path.isfile(python_surface_dump):
+        if not yesno("Dump file", python_surface_dump, "already exists. Shall I overwrite it?"):
             return
 
 
     print("Computing Aij")
 
     part_filep = open(part_dump, 'rb')
-    data_part = pickle.load(part_filep)
-    ids, pos, h = data_part
+    ids     = pickle.load(part_filep)
+    pos     = pickle.load(part_filep)
+    h       = pickle.load(part_filep)
+    part_filep.close()
+    H = ms.get_H(h)
 
     x = pos[:,0]
     y = pos[:,1]
@@ -100,8 +97,9 @@ def compute_Aij_my_way():
     H = ms.get_H(h)
     m = 1
     rho = 1
+    L = ms.read_boxsize()
 
-    A_ij_all, neighbours_all = ms.Aij_Ivanova_all(x, y, H, m, rho)
+    A_ij_all, neighbours_all = ms.Aij_Ivanova_all(x, y, H, m, rho, L=L)
    
     Aijs = np.zeros((npart, 200, 2), dtype=np.float)
     nneighs = np.zeros((npart), dtype=np.int)
@@ -139,9 +137,10 @@ def compute_Aij_my_way():
 
 
 
-    data_dump = [Aijs, nneighs, neighbour_ids]
-    dumpfile = open(python_dump, 'wb')
-    pickle.dump(data_dump, dumpfile)
+    dumpfile = open(python_surface_dump, 'wb')
+    pickle.dump(Aijs, dumpfile)
+    pickle.dump(nneighs, dumpfile)
+    pickle.dump(neighbour_ids, dumpfile)
     dumpfile.close()
     print("Dumped python data")
 
@@ -158,31 +157,57 @@ def compare_Aij():
     compare the Aijs you got
     """
 
-
+    # Read in data
     swift_filep = open(swift_dump, 'rb')
-    python_filep = open(python_dump, 'rb')
-    python_grad_filep = open(python_grad_dump, 'rb')
+    grads_s         = pickle.load(swift_filep)
+    grads_contrib_s = pickle.load(swift_filep)
+    sum_grad_s      = pickle.load(swift_filep)
+    dwdr_s          = pickle.load(swift_filep)
+    Wjxi_s          = pickle.load(swift_filep)
+    nids_s          = pickle.load(swift_filep)
+    nneigh_s        = pickle.load(swift_filep)
+    omega_s         = pickle.load(swift_filep)
+    vol_s           = pickle.load(swift_filep)
+    dx_s            = pickle.load(swift_filep)
+    r_s             = pickle.load(swift_filep)
+    nneigh_Aij_s    = pickle.load(swift_filep)
+    nids_Aij_s      = pickle.load(swift_filep)
+    Aij_s           = pickle.load(swift_filep)
+    swift_filep.close()
+
     part_filep = open(part_dump, 'rb')
-
-    data_swift = pickle.load(swift_filep)
-    grads_s, grads_contrib_s, sum_grad_s, dwdr_s, nid_s, nneigh_s, omega_s, vol_s, dx_s, r_s, nneigh_Aij_s, nids_Aij_s, Aij_s = data_swift
-
-    python_filep = open(python_dump, 'rb')
-    data_python = pickle.load(python_filep)
-    Aij_p, nneigh_p, nid_p = data_python
-
-
-    data_python_grad = pickle.load(python_grad_filep)
-    grads_p, sum_grad_p, grads_contrib_p, dwdr_p, nids_p, nneigh_p, omega_p, r_p, dx_p, iinds = data_python_grad
-
-    data_part = pickle.load(part_filep)
-    ids, pos, h = data_part
+    ids     = pickle.load(part_filep)
+    pos     = pickle.load(part_filep)
+    h       = pickle.load(part_filep)
+    part_filep.close()
     H = ms.get_H(h)
 
-    swift_filep.close()
+
+    python_filep = open(python_surface_dump, 'rb')
+    Aij_p = pickle.load(python_filep)
+    nneigh_Aij_p = pickle.load(python_filep)
+    nids_Aij_p = pickle.load(python_filep)
     python_filep.close()
+
+    try:
+        python_grad_filep = open(python_grad_dump, 'rb')
+    except FileNotFoundError:
+        print("File", python_grad_dump, "not found.")
+        print("Did you run check_gradients.py first?")
+        quit(2)
+    grads_p         = pickle.load(python_grad_filep)
+    sum_grad_p      = pickle.load(python_grad_filep)
+    grads_contrib_p = pickle.load(python_grad_filep)
+    dwdr_p          = pickle.load(python_grad_filep)
+    Wjxi_p          = pickle.load(python_grad_filep)
+    nids_p          = pickle.load(python_grad_filep)
+    nneigh_p        = pickle.load(python_grad_filep)
+    omega_p         = pickle.load(python_grad_filep)
+    r_p             = pickle.load(python_grad_filep)
+    dx_p            = pickle.load(python_grad_filep)
+    iinds           = pickle.load(python_grad_filep)
     python_grad_filep.close()
-    part_filep.close()
+    
 
 
 
@@ -209,16 +234,16 @@ def compare_Aij():
 
                 diff = py - sw
                 if diff > 0:
-                    larger = nid_p[p, :nneigh_p[p]]
-                    smaller = nid_s[p, :nneigh_s[p]]
+                    larger = nids_p[p, :nneigh_p[p]]
+                    smaller = nids_s[p, :nneigh_s[p]]
                     text = "in pyton but not in swift"
                     found_difference = True
                     print("Difference: Python found more neighbours. ID:", ids[p])
-                    print("sw:", nid_s[p, :nneigh_s[p]])
-                    print("py:", nid_p[p, :nneigh_p[p]])
+                    print("sw:", nids_s[p, :nneigh_s[p]])
+                    print("py:", nids_p[p, :nneigh_p[p]])
                 else:
-                    larger = nid_s[p, :nneigh_s[p]]
-                    smaller = nid_p[p, :nneigh_p[p]]
+                    larger = nids_s[p, :nneigh_s[p]]
+                    smaller = nids_p[p, :nneigh_p[p]]
                     text = "in swift but not in python"
 
                     swap = False
@@ -229,13 +254,13 @@ def compare_Aij():
                             yn = pos[n-1, 1]
                             xp = pos[p, 0]
                             yp = pos[p, 1]
-                            dx = ms.get_dx(xn, xp, yn, yp)
+                            dx = ms.get_dx(xn, xp, yn, yp, L=L, periodic=periodic)
                             r = np.sqrt(dx[0]*dx[0] + dx[1]*dx[1])
                             if r > H[n-1]:
                                 print("Neighbour", n, text)
                                 print("Difference: id:", ids[p], "neighbour:", ids[n])
-                                print("sw:", nid_s[p, :nneigh_s[p]])
-                                print("py:", nid_p[p, :nneigh_p[p]])
+                                print("sw:", nids_s[p, :nneigh_s[p]])
+                                print("py:", nids_p[p, :nneigh_p[p]])
                                 found_difference = True
                             else:
                                 # remove SWIFT extras
@@ -246,7 +271,7 @@ def compare_Aij():
                         n = 0
                         while n < nneigh_s[p]:
                             if remove[n] == 1:
-                                nid_s[p,n:nneigh_s[p]-1] = nid_s[p, n+1:nneigh_s[p]]
+                                nids_s[p,n:nneigh_s[p]-1] = nids_s[p, n+1:nneigh_s[p]]
                                 Aij_s[p, 2*n:2*nneigh_s[p]-2] = Aij_s[p, 2*n+2:2*nneigh_s[p]]
                                 remove[n:nneigh_s[p]-1] = remove[n+1:nneigh_s[p]]
                                 nneigh_s[p] -= 1
@@ -274,7 +299,7 @@ def compare_Aij():
 
         found_difference = False
         for p in range(npart):
-            pyarr = nid_p[p]
+            pyarr = nids_p[p]
             swarr = nids_Aij_s[p][:nneigh_s[p]]
             add = 0
             for n in range(nneigh_p[p]):
@@ -334,26 +359,26 @@ def compare_Aij():
             nb = nneigh_p[p]
             maxA = Aij_p[p, :nb].max()
             maxAtot = Aij_p.max()
-            null = NULL*maxA
+            null = NULL_RELATIVE*maxA
 
             add = 0
 
             for n in range(nb):
 
                 ns = n + add
-                nID_p = nids_p[p][n]
-                nID_s = nids_Aij_s[p][ns]
+                nid_p = nids_Aij_p[p][n]
+                nid_s = nids_Aij_s[p][ns]
 
-                while nID_p > nID_s:
+                while nid_p > nid_s:
                     # From the SWIFT output, there may be more neighbours than from python
                     # if rij < H_j but r_ij > H_i, particle j has i as neighbour, but
                     # i hasn't got j as neighbour. Both neighbours will be written down though
                     add += 1
                     try:
-                        nID_s = nids_Aij_s[p][n+add]
+                        nid_s = nids_Aij_s[p][n+add]
                     except IndexError:
                         print("Something fucky going on")
-                        print("particle:", ids[p], "neighbour swift:", nID_s, "neighbour py:", nID_p, "p:", p, "n:", n)
+                        print("particle:", ids[p], "neighbour swift:", nid_s, "neighbour py:", nid_p, "p:", p, "n:", n)
                         print("nneigh py:", nneigh_p[p], "nneigh sw:", nneigh_Aij_s[p])
                         quit()
 
@@ -362,7 +387,7 @@ def compare_Aij():
 
 
 
-                nbp = nid_p[p, n]
+                nbp = nids_Aij_p[p, n]
                 nbs = nids_Aij_s[p, ns]
                 pyx = Aij_p[p,n,0]
                 pyy = Aij_p[p,n,1]
@@ -394,8 +419,6 @@ def compare_Aij():
                         py = r_p[p, n]
                         sw = r_s[p, n]
                         print("r:           {0:14.7e}  {1:14.7e}  {2:14.7f}".format(py, sw, abs(1-py/sw)))
-
-
 
                         py = dx_p[p, n, 0]
                         sw = dx_s[p, 2*n]
@@ -433,12 +456,6 @@ def compare_Aij():
                         print("grad fin x:  {0:14.7e}  {1:14.7e}  {2:14.7f}".format(gpix, gsix, abs(1-gpix/gsix)))
                         print("grad fin y:  {0:14.7e}  {1:14.7e}  {2:14.7f}".format(gpiy, gsiy, abs(1-gpiy/gsiy)))
 
-                        # this is correct apparently?
-                        #  gpjx = grads_p[p, n, 0]
-                        #  gpjy = grads_p[p, n, 1]
-                        #  newns = np.asscalar(np.where(nids_Aij_s[nind]==ids[p])[0])
-                        #  gsjx = grads_s[nind, 2*newns]
-                        #  gsjy = grads_s[nind, 2*newns+1]
                         gpjx = grads_p[p, n, 0]
                         gpjy = grads_p[p, n, 1]
                         newns = np.asscalar(np.where(nids_Aij_s[nind]==ids[p])[0])
@@ -452,11 +469,6 @@ def compare_Aij():
 
                         print("recomp Ax:   {0:14.7e}  {1:14.7e}  {2:14.7f}".format(Apx, Asx, abs(1-Apx/Asx)))
                         print("recomp Ay:   {0:14.7e}  {1:14.7e}  {2:14.7f}".format(Apy, Asy, abs(1-Apy/Asy)))
-
-
-
-
-
 
                         #  print("Diff: {0:14.7f}".format(diff))
                         print()
