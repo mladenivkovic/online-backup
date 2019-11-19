@@ -36,8 +36,8 @@ swift_dump, part_dump, python_surface_dump, python_grad_dump = get_dumpfiles()
 # Behaviour params
 #----------------------
 
-tolerance = 1e-3    # relative tolerance threshold for relative float comparison: if (a - b)/a < tolerance, it's fine
-NULL_RELATIVE = 5e-3 # relative tolerance for values to ignore below this value
+tolerance = 1e-2    # relative tolerance threshold for relative float comparison: if (a - b)/a < tolerance, it's fine
+NULL_RELATIVE = 1e-3 # relative tolerance for values to ignore below this value
 
 do_break = True
 
@@ -355,15 +355,18 @@ def compare_Aij():
                         gsjx = grads_s[nind, 2*newns]
                         gsjy = grads_s[nind, 2*newns+1]
 
-                        vip = 1/omega_p[nind]
-                        vjp = 1/omega_p[p]
-                        vis = vol_s[nind]
-                        vjs = vol_s[p]
+                        vjp = 1/omega_p[nind]
+                        vip = 1/omega_p[p]
+                        vis = vol_s[p]
+                        vjs = vol_s[nind]
 
-                        Apx = vjp * gpix - vip * gpjx
-                        Apy = vjp * gpiy - vip * gpjy
-                        Asx = vjs * gsix - vis * gsjx
-                        Asy = vjs * gsiy - vis * gsjy
+                        Apx = vip * gpix - vjp * gpjx
+                        Apy = vip * gpiy - vjp * gpjy
+                        Asx = vis * gsix - vjs * gsjx
+                        Asy = vis * gsiy - vjs * gsjy
+
+                        print(vip, vis)
+                        print(vjp, vjs)
 
                         print(" recomputed :")
                         print("             dW / dx: {0:14.7e}  {1:14.7e}  {2:14.7f}".format(rpdwdx, rsdwdx, abs(1-rpdwdx/rsdwdx)))

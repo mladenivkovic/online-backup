@@ -73,8 +73,17 @@ def compute_gradients_my_way(periodic):
         #      print(j+1, '/', npart)
         for i, ind_n in enumerate(neighbours[j]):
             # kernels are symmetric in x_i, x_j, but h can vary!!!!
-            W_j_at_i[j, i] = ms.psi(x[ind_n], y[ind_n], x[j], y[j], H[ind_n], kernel=kernel, fact=fact, L=L, periodic=periodic)
-            omega[ind_n] += W_j_at_i[j, i]
+            W_j_at_i[j, i] = ms.psi(x[j], y[j], x[ind_n], y[ind_n], H[j], kernel=kernel, fact=fact, L=L, periodic=periodic)
+            omega[j] += W_j_at_i[j, i]
+            #  if ids[j] == 2066:
+            #      print("Adding W to omega of i= {0:6d} from j={1:6d}: {2:14.7e}".format(ids[j], ids[ind_n], W_j_at_i[j, i]))
+            #      dx, dy = ms.get_dx(x[ind_n], x[j], y[ind_n], y[j], L=L, periodic=periodic)
+            #      r = np.sqrt(dx*dx + dy*dy)
+            #      print("r:   {0:14.7e}".format(r))
+            #      print("H:   {0:14.7e}".format(H[ind_n]))
+            #      print("r/H: {0:14.7e}".format(r/H[ind_n]))
+            #      print("test: {0:14.7e}".format(ms.psi(x[ind_n], y[ind_n], x[j], y[j], H[j], L=L, periodic=periodic)))
+                #  print()
 
             # in swift output, in a particle array you always have the same smoothing length used.
             # store it this way too.
@@ -138,9 +147,8 @@ def compute_gradients_my_way(periodic):
         #      print(j+1, '/', npart)
         for i, ind_n in enumerate(neighbours[j]):
             # store them so that at index j, only hj is ever used
-            jind = iinds[j, i]
-            grad_psi_j_at_i[j, i, 0] = grad_W_j_at_i[j, i, 0]/omega[j] - W_j_at_i[ind_n, jind] * sum_grad_W[j, 0]/omega[j]**2
-            grad_psi_j_at_i[j, i, 1] = grad_W_j_at_i[j, i, 1]/omega[j] - W_j_at_i[ind_n, jind] * sum_grad_W[j, 1]/omega[j]**2
+            grad_psi_j_at_i[j, i, 0] = grad_W_j_at_i[j, i, 0]/omega[j] - W_j_at_i[j, i] * sum_grad_W[j, 0]/omega[j]**2
+            grad_psi_j_at_i[j, i, 1] = grad_W_j_at_i[j, i, 1]/omega[j] - W_j_at_i[j, i] * sum_grad_W[j, 1]/omega[j]**2
 
 
     nneighs = np.array([len(n) for n in neighbours], dtype=np.int)

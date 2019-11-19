@@ -39,7 +39,7 @@ swift_dump, part_dump, python_surface_dump, python_grad_dump = get_dumpfiles()
 
 tolerance = 1e-2    # relative tolerance threshold for relative float comparison: if (a - b)/a < tolerance, it's fine
 NULL = 1e-8         # treat values below this as zeroes
-NULL_RELATIVE = 1e-3    # ignore relative values below this threshold
+NULL_RELATIVE = 1e-2    # ignore relative values below this threshold
 
 
 do_break = True    # break after you found a difference
