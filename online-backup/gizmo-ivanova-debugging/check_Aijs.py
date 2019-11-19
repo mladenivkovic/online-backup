@@ -36,10 +36,10 @@ swift_dump, part_dump, python_surface_dump, python_grad_dump = get_dumpfiles()
 # Behaviour params
 #----------------------
 
-tolerance = 1e-1    # relative tolerance threshold for relative float comparison: if (a - b)/a < tolerance, it's fine
-NULL_RELATIVE = 1e-5 # relative tolerance for values to ignore below this value
+tolerance = 1e-3    # relative tolerance threshold for relative float comparison: if (a - b)/a < tolerance, it's fine
+NULL_RELATIVE = 5e-3 # relative tolerance for values to ignore below this value
 
-
+do_break = True
 
 
 
@@ -121,22 +121,6 @@ def compute_Aij_my_way():
             Aijs[i,n] = A_ij_all[ind, ninds[n]]
 
 
-    
-
-    #  for i in inds[:5]:
-    #
-    #      #  print("ID: {0:8d} ||".format(ids[inds[i]]), end='')
-    #      print("ID: {0:8d} {1:8d} ||".format(ids[i], nneighs[i]))
-    #
-    #      for n in range(nneighs[i]):
-    #
-    #          print(" {0:8d} |".format(neighbour_ids[i,n]), end='')
-    #          #  print("nb: {0:8d}  Aij: {1:14.8f} {2:14.8f} ||".format(neighbour_ids[i,n], Aijs[i,n,0], Aijs[i,n,1]), end='')
-    #      print()
-
-
-
-
     dumpfile = open(python_surface_dump, 'wb')
     pickle.dump(Aijs, dumpfile)
     pickle.dump(nneighs, dumpfile)
@@ -213,191 +197,71 @@ def compare_Aij():
 
     npart = nneigh_s.shape[0]
     H = ms.get_H(h)
+    L = ms.read_boxsize()
 
 
 
-
-    #---------------------------------------------
-    def check_neighbours():
-    #---------------------------------------------
-
-        print("Checking number of neighbours")
-
-        found_difference = False
-        for p in range(npart):
-            py = nneigh_p[p]
-            sw = nneigh_s[p]
-            if py != sw:
-                # if a neighbour of particle i is not inside i's compact
-                # support radius, but i is inside the neighbours, swift
-                # will write it down anyway. So check that that isn't the case.
-
-                diff = py - sw
-                if diff > 0:
-                    larger = nids_p[p, :nneigh_p[p]]
-                    smaller = nids_s[p, :nneigh_s[p]]
-                    text = "in pyton but not in swift"
-                    found_difference = True
-                    print("Difference: Python found more neighbours. ID:", ids[p])
-                    print("sw:", nids_s[p, :nneigh_s[p]])
-                    print("py:", nids_p[p, :nneigh_p[p]])
-                else:
-                    larger = nids_s[p, :nneigh_s[p]]
-                    smaller = nids_p[p, :nneigh_p[p]]
-                    text = "in swift but not in python"
-
-                    swap = False
-                    remove = np.zeros((nneigh_s[p]), dtype=np.int)
-                    for i,n in enumerate(larger):
-                        if not np.isin(n, smaller):
-                            xn = pos[n-1, 0]
-                            yn = pos[n-1, 1]
-                            xp = pos[p, 0]
-                            yp = pos[p, 1]
-                            dx = ms.get_dx(xn, xp, yn, yp, L=L, periodic=periodic)
-                            r = np.sqrt(dx[0]*dx[0] + dx[1]*dx[1])
-                            if r > H[n-1]:
-                                print("Neighbour", n, text)
-                                print("Difference: id:", ids[p], "neighbour:", ids[n])
-                                print("sw:", nids_s[p, :nneigh_s[p]])
-                                print("py:", nids_p[p, :nneigh_p[p]])
-                                found_difference = True
-                            else:
-                                # remove SWIFT extras
-                                swap = True
-                                remove[i] = 1
-
-                    if swap:
-                        n = 0
-                        while n < nneigh_s[p]:
-                            if remove[n] == 1:
-                                nids_s[p,n:nneigh_s[p]-1] = nids_s[p, n+1:nneigh_s[p]]
-                                Aij_s[p, 2*n:2*nneigh_s[p]-2] = Aij_s[p, 2*n+2:2*nneigh_s[p]]
-                                remove[n:nneigh_s[p]-1] = remove[n+1:nneigh_s[p]]
-                                nneigh_s[p] -= 1
-                                n -= 1
-                            n+=1
-
-
-        if not found_difference:
-            print("Finished, all the same.")
+    #-----------------------------------------------
+    def break_now(nis, nip, p, for_Aij = False):
+    #-----------------------------------------------
+        if for_Aij:
+            if nis >= nneigh_Aij_s[p]:
+                return True
         else:
-            print("Makes no sense to continue. Exiting")
-            quit()
-
-        return
-
-
-
-
-
-    #------------------------------------------
-    def check_neighbour_IDs():
-    #------------------------------------------
-
-        print("Checking neighbour IDs")
-
-        found_difference = False
-        for p in range(npart):
-            pyarr = nids_p[p]
-            swarr = nids_Aij_s[p][:nneigh_s[p]]
-            add = 0
-            for n in range(nneigh_p[p]):
-
-                ns = n + add
-                py = pyarr[n]
-                try:
-                    sw = nids_Aij_s[p][ns]
-                except IndexError:
-                    print("Something fucky going on")
-                    print("particle:", ids[p], "neighbour swift:", sw, "neighbour py:", py, "p:", p, "n:", n)
-                    print("nneigh py:", nneigh_p[p], "nneigh sw:", nneigh_Aij_s[p])
-                    quit()
-
-                while py > sw:
-                    # From the SWIFT output, there may be more neighbours than from python
-                    # if rij < H_j but r_ij > H_i, particle j has i as neighbour, but
-                    # i hasn't got j as neighbour. Both neighbours will be written down though
-                    add += 1
-                    try:
-                        sw = nids_Aij_s[p][n+add]
-                    except IndexError:
-                        print("Something fucky going on")
-                        print("particle:", ids[p], "neighbour swift:", sw, "neighbour py:", py, "p:", p, "n:", n)
-                        print("nneigh py:", nneigh_p[p], "nneigh sw:", nneigh_Aij_s[p])
-                        quit()
-
-                ns = n+add
-                sw = nids_Aij_s[p][ns]
-
-                if py != sw:
-                    found_difference = True
-                    print("Difference: id:", ids[p], "py:", py, "sw:", sw)
-
-        if not found_difference:
-            print("Finished, all the same.")
-        else:
-            print("Makes no sense to continue. Exiting")
-            quit()
-
-        return
+            if nis >= nneigh_s[p]:
+                return True
+        if nip >= nneigh_p[p]:
+            return True
+        return False
 
 
 
 
 
+    found_difference = False
+    maxAtot = np.absolute(Aij_p).max()
 
-    #-------------------------------
-    def check_Aij():
-    #-------------------------------
+    for p in range(npart):
 
-        print("Checking surfaces")
+        nb = nneigh_p[p]
+        maxA = np.absolute(Aij_p[p, :nb]).max()
+        maxAx = np.absolute(Aij_p[p, :nb, 0]).max()
+        maxAy = np.absolute(Aij_p[p, :nb, 1]).max()
+        null = NULL_RELATIVE*maxA
+        nullx = NULL_RELATIVE*maxAx
+        nully = NULL_RELATIVE*maxAy
 
-        found_difference = False
-        for p in range(npart):
+        nis = 0
+        nip = 0
 
-            nb = nneigh_p[p]
-            maxA = Aij_p[p, :nb].max()
-            maxAtot = Aij_p.max()
-            null = NULL_RELATIVE*maxA
+        while True :
+            if break_now(nis, nip, p, for_Aij=True): break
+            while nids_Aij_s[p, nis] != nids_Aij_p[p, nip]:
+                if nids_Aij_s[p, nis] < nids_Aij_p[p, nip]:
+                    nis += 1
+                    continue
+                elif nids_Aij_s[p, nis] > nids_Aij_p[p, nip]:
+                    nip += 1
+                    continue
+                if break_now(nis, nip, p, for_Aij=True): break
 
-            add = 0
+            nind = nids_Aij_p[p, nip] - 1
 
-            for n in range(nb):
+            nbp = nids_Aij_p[p, nip]
+            nbs = nids_Aij_s[p, nis]
+            pyx = Aij_p[p,nip,0]
+            pyy = Aij_p[p,nip,1]
+            pyn = np.sqrt(pyx**2 + pyy**2)
+            swx = Aij_s[p][2*nis]
+            swy = Aij_s[p][2*nis+1]
+            swn = np.sqrt(swx**2 + swy**2)
 
-                ns = n + add
-                nid_p = nids_Aij_p[p][n]
-                nid_s = nids_Aij_s[p][ns]
+            for P, S, N in [(pyx, swx, nullx), (pyy, swy, nully), (pyn, swn, null)]:
 
-                while nid_p > nid_s:
-                    # From the SWIFT output, there may be more neighbours than from python
-                    # if rij < H_j but r_ij > H_i, particle j has i as neighbour, but
-                    # i hasn't got j as neighbour. Both neighbours will be written down though
-                    add += 1
-                    try:
-                        nid_s = nids_Aij_s[p][n+add]
-                    except IndexError:
-                        print("Something fucky going on")
-                        print("particle:", ids[p], "neighbour swift:", nid_s, "neighbour py:", nid_p, "p:", p, "n:", n)
-                        print("nneigh py:", nneigh_p[p], "nneigh sw:", nneigh_Aij_s[p])
-                        quit()
-
-                ns = n+add
-
+                if P > N and S > N:
+                    diff = abs(1 - abs(P/S))
 
 
-
-                nbp = nids_Aij_p[p, n]
-                nbs = nids_Aij_s[p, ns]
-                pyx = Aij_p[p,n,0]
-                pyy = Aij_p[p,n,1]
-                pyn = np.sqrt(pyx**2 + pyy**2)
-                swx = Aij_s[p][2*ns]
-                swy = Aij_s[p][2*ns+1]
-                swn = np.sqrt(swx**2 + swy**2)
-
-                if swn > null and pyn > null:
-                    diff = 1 - pyn/swn
                     if diff > tolerance:
                         print("=========================================================================================")
                         print("Particle ID", ids[p], "neighbour id:", nbp)
@@ -412,72 +276,122 @@ def compare_Aij():
                         print()
 
 
-                        py = dwdr_p[p, n]
-                        sw = dwdr_s[p, n]
-                        print("dwdr:        {0:14.7e}  {1:14.7e}  {2:14.7f}".format(py, sw, abs(1-py/sw)))
+                        NIS = np.asscalar(np.where(nids_s[p, :nneigh_s[p]]==nids_Aij_s[p, nis])[0])
+                        if NIS != nis:
+                            print("==================================== NIS:", NIS, "nis:", nis)
+                            print(nids_Aij_s[p, :nneigh_Aij_s[p]])
+                            print(nids_s[p, :nneigh_s[p]])
 
-                        py = r_p[p, n]
-                        sw = r_s[p, n]
-                        print("r:           {0:14.7e}  {1:14.7e}  {2:14.7f}".format(py, sw, abs(1-py/sw)))
+                        py = Wjxi_p[p, nip]
+                        sw = Wjxi_s[p, NIS]
+                        rpwjxi = py
+                        rswjxi = sw
+                        print("              Wj(xi): {0:14.7e}  {1:14.7e}  {2:14.7f}".format(py, sw, abs(1-py/sw)))
 
-                        py = dx_p[p, n, 0]
-                        sw = dx_s[p, 2*n]
-                        print("dx[0]:       {0:14.7e}  {1:14.7e}  {2:14.7f}".format(py, sw, abs(1-py/sw)))
+                        py = dwdr_p[p, nip]
+                        sw = dwdr_s[p, NIS]
+                        rpdwdr = py
+                        rsdwdr = sw
+                        print("                dwdr: {0:14.7e}  {1:14.7e}  {2:14.7f}".format(py, sw, abs(1-py/sw)))
 
-                        py = dx_p[p, n, 1]
-                        sw = dx_s[p, 2*n+1]
-                        print("dx[1]:       {0:14.7e}  {1:14.7e}  {2:14.7f}".format(py, sw, abs(1-py/sw)))
+                        py = r_p[p, nip]
+                        sw = r_s[p, NIS]
+                        rpr = py
+                        rsr = sw
+                        print("                   r: {0:14.7e}  {1:14.7e}  {2:14.7f}".format(py, sw, abs(1-py/sw)))
+
+                        py = dx_p[p, nip, 0]
+                        sw = dx_s[p, 2*NIS]
+                        rpdx = py
+                        rsdx = sw
+                        print("               dx[0]: {0:14.7e}  {1:14.7e}  {2:14.7f}".format(py, sw, abs(1-py/sw)))
+
+                        py = dx_p[p, nip, 1]
+                        sw = dx_s[p, 2*NIS+1]
+                        rpdy = py
+                        rsdy = sw
+                        print("               dx[1]: {0:14.7e}  {1:14.7e}  {2:14.7f}".format(py, sw, abs(1-py/sw)))
 
                         py = sum_grad_p[p,0]
                         sw = sum_grad_s[p,0]
-                        print("sum_grad[0]: {0:14.7e}  {1:14.7e}  {2:14.7f}".format(py, sw, abs(1-py/sw)))
+                        rpsumx = py
+                        rssumx = sw
+                        print("         sum_grad[0]: {0:14.7e}  {1:14.7e}  {2:14.7f}".format(py, sw, abs(1-py/sw)))
 
                         py = sum_grad_p[p,1]
                         sw = sum_grad_s[p,1]
-                        print("sum_grad[1]: {0:14.7e}  {1:14.7e}  {2:14.7f}".format(py, sw, abs(1-py/sw)))
+                        rpsumy = py
+                        rssumy = sw
+                        print("         sum_grad[1]: {0:14.7e}  {1:14.7e}  {2:14.7f}".format(py, sw, abs(1-py/sw)))
 
-                        vip = 1/omega_p[p]
-                        vis = vol_s[p]
-                        print("volume i:    {0:14.7e}  {1:14.7e}  {2:14.7f}".format(vip, vis, abs(1-vip/vis)))
-
-                        nind = nids_p[p,n]-1
-                        vjp = 1/omega_p[nind]
-                        vjs = vol_s[nind]
-                        print("volume j:    {0:14.7e}  {1:14.7e}  {2:14.7f}".format(vjp, vjs, abs(1-vjp/vjs)))
+                        py = omega_p[p]
+                        sw = omega_s[p]
+                        rpom = py
+                        rsom = sw
+                        print("             1/omega: {0:14.7e}  {1:14.7e}  {2:14.7f}".format(1/py, 1/sw, abs(1-sw/py)))
 
 
-                        i = iinds[p, n]
-                        j = nind
-                        gpix = grads_p[j, i, 0]
-                        gpiy = grads_p[j, i, 1]
-                        gsix = grads_s[p, 2*ns]
-                        gsiy = grads_s[p, 2*ns+1]
+                        print()
 
-                        print("grad fin x:  {0:14.7e}  {1:14.7e}  {2:14.7f}".format(gpix, gsix, abs(1-gpix/gsix)))
-                        print("grad fin y:  {0:14.7e}  {1:14.7e}  {2:14.7f}".format(gpiy, gsiy, abs(1-gpiy/gsiy)))
+                        rpdwdx = rpdwdr * rpdx / rpr
+                        rpdwdy = rpdwdr * rpdy / rpr
+                        rsdwdx = rsdwdr * rsdx / rsr
+                        rsdwdy = rsdwdr * rsdy / rsr
+     
+                        rpx = rpdwdx / rpom - rpwjxi * rpsumx / rpom**2
+                        rpy = rpdwdy / rpom - rpwjxi * rpsumy / rpom**2
+                        rsx = rsdwdx / rsom - rswjxi * rssumx / rsom**2
+                        rsy = rsdwdy / rsom - rswjxi * rssumy / rsom**2
 
-                        gpjx = grads_p[p, n, 0]
-                        gpjy = grads_p[p, n, 1]
+                        iind = iinds[p, nip]
+                        gpix = grads_p[p, nip, 0]
+                        gpiy = grads_p[p, nip, 1]
+                        gsix = grads_s[p, 2*nis]
+                        gsiy = grads_s[p, 2*nis+1]
+
+                        gpjx = grads_p[nind, iind, 0]
+                        gpjy = grads_p[nind, iind, 1]
                         newns = np.asscalar(np.where(nids_Aij_s[nind]==ids[p])[0])
                         gsjx = grads_s[nind, 2*newns]
                         gsjy = grads_s[nind, 2*newns+1]
+
+                        vip = 1/omega_p[nind]
+                        vjp = 1/omega_p[p]
+                        vis = vol_s[nind]
+                        vjs = vol_s[p]
 
                         Apx = vjp * gpix - vip * gpjx
                         Apy = vjp * gpiy - vip * gpjy
                         Asx = vjs * gsix - vis * gsjx
                         Asy = vjs * gsiy - vis * gsjy
 
-                        print("recomp Ax:   {0:14.7e}  {1:14.7e}  {2:14.7f}".format(Apx, Asx, abs(1-Apx/Asx)))
-                        print("recomp Ay:   {0:14.7e}  {1:14.7e}  {2:14.7f}".format(Apy, Asy, abs(1-Apy/Asy)))
+                        print(" recomputed :")
+                        print("             dW / dx: {0:14.7e}  {1:14.7e}  {2:14.7f}".format(rpdwdx, rsdwdx, abs(1-rpdwdx/rsdwdx)))
+                        print("             dW / dy: {0:14.7e}  {1:14.7e}  {2:14.7f}".format(rpdwdy, rsdwdy, abs(1-rpdwdy/rsdwdy)))
+                        print("     del psi / del x: {0:14.7e}  {1:14.7e}  {2:14.7f}".format(rpx, rsx, abs(1-rpx/rsx)))
+                        print("     del psi / del y: {0:14.7e}  {1:14.7e}  {2:14.7f}".format(rpy, rsy, abs(1-rpy/rsy)))
+
+                        print("                  Ax: {0:14.7e}  {1:14.7e}  {2:14.7f}".format(Apx, Asx, abs(1-Apx/Asx)))
+                        print("                  Ay: {0:14.7e}  {1:14.7e}  {2:14.7f}".format(Apy, Asy, abs(1-Apy/Asy)))
 
                         #  print("Diff: {0:14.7f}".format(diff))
                         print()
                         found_difference = True
 
-        if not found_difference:
-            print("Finished, all the same.")
+                    if found_difference and do_break: # for P, S, N in ...
+                        break
 
-        return
+            if found_difference and do_break: # neighbour loop
+                break
+            nis +=1 
+            nip +=1
+        if found_difference and do_break: # particle loop
+            break
+
+    if not found_difference:
+        print("Finished, all the same.")
+
+    return
 
 
     
@@ -498,7 +412,7 @@ def main():
 #==========================
     
     announce()
-    extract_dump_data(srcfile, swift_dump, part_dump)
+    extract_dump_data()
     compute_Aij_my_way()
     compare_Aij()
     return

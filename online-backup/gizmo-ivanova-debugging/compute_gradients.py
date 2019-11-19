@@ -48,6 +48,7 @@ def compute_gradients_my_way(periodic):
 
     # first get neighbour data
     print("Finding Neighbours")
+    #  neighbour_data = ms.get_neighbour_data_for_all_naive(x, y, H, fact=fact, L=L, periodic=periodic)
     neighbour_data = ms.get_neighbour_data_for_all(x, y, H, fact=fact, L=L, periodic=periodic)
 
     maxneigh = neighbour_data.maxneigh
@@ -59,7 +60,9 @@ def compute_gradients_my_way(periodic):
     # first index: index j of psi: psi_j(x)
     # second index: index of x_i: psi(x_i)
 
-    W_j_at_i = np.zeros((npart, maxneigh), dtype=np.float)
+    #  W_j_at_i = np.zeros((npart, maxneigh*2), dtype=np.float)
+    W_j_at_i = np.ones((npart, maxneigh*2), dtype=np.float) 
+    W_j_at_i_output = np.ones((npart, maxneigh*2), dtype=np.float) 
     omega = np.zeros(npart, dtype=np.float)
 
 
@@ -70,40 +73,12 @@ def compute_gradients_my_way(periodic):
         #      print(j+1, '/', npart)
         for i, ind_n in enumerate(neighbours[j]):
             # kernels are symmetric in x_i, x_j, but h can vary!!!!
-            jind = ind_n
-            iind = iinds[j, i]
-            W_j_at_i[jind, iind] = ms.psi(x[ind_n], y[ind_n], x[j], y[j], H[ind_n], 
-                                    kernel=kernel, fact=fact, L=L, periodic=periodic)
-            omega[ind_n] += W_j_at_i[jind, iind]
+            W_j_at_i[j, i] = ms.psi(x[ind_n], y[ind_n], x[j], y[j], H[ind_n], kernel=kernel, fact=fact, L=L, periodic=periodic)
+            omega[ind_n] += W_j_at_i[j, i]
 
-            if j == 148 and ind_n == 123:
-                print("j=", j, "i=", i, W_j_at_i[j,i])
-                dx, dy = ms.get_dx(x[ind_n], x[j], y[ind_n], y[j], L=L, periodic=periodic)
-                r = np.sqrt(dx**2 + dy**2)
-                print("psi:", ms.psi(x[ind_n], y[ind_n], x[j], y[j], H[ind_n], L=L, periodic=periodic))
-                print("W:", ms.W(r/H[ind_n], H[ind_n]) )
-                print("r/H", r/H[ind_n], r, H[ind_n], dx, dy)
-                print((" Particle ID {0:8d}, "+
-                        "position {1:14.7e} {2:14.7e}, h = {3:14.7e}, "+
-                        "H = {4:14.7e}, dist = {5:14.7e}, dist/H = {6:14.7e}").format(
-                            ids[j], pos[j,0], pos[j,1], h[j], H[j], r, r/H[j])
-                            )
-                print((" Particle ID {0:8d}, "+
-                        "position {1:14.7e} {2:14.7e}, h = {3:14.7e}, "+
-                        "H = {4:14.7e}, dist = {5:14.7e}, dist/H = {6:14.7e}").format(
-                            ids[j], x[j], y[j], h[j], H[j], r, r/H[j])
-                        )
-                print(("Neighbour ID {0:8d}, "+
-                        "position {1:14.7e} {2:14.7e}, h = {3:14.7e}, "+
-                        "H = {4:14.7e}").format(
-                            ids[ind_n], pos[ind_n,0], pos[ind_n,1], h[ind_n], H[ind_n])
-                            )
-                print(("Neighbour ID {0:8d}, "+
-                        "position {1:14.7e} {2:14.7e}, h = {3:14.7e}, "+
-                        "H = {4:14.7e}").format(
-                            ids[ind_n], x[ind_n], y[ind_n], h[ind_n], H[ind_n])
-                            )
-                print()
+            # in swift output, in a particle array you always have the same smoothing length used.
+            # store it this way too.
+            W_j_at_i_output[j, i] = ms.psi(x[ind_n], y[ind_n], x[j], y[j], H[j], kernel=kernel, fact=fact, L=L, periodic=periodic)
 
         # add self-contribution
         omega[j] += ms.psi(0.0, 0.0, 0.0, 0.0, H[j], kernel=kernel, fact=fact, L=L, periodic=periodic)
@@ -113,39 +88,45 @@ def compute_gradients_my_way(periodic):
     # compute gradients now
 
     # gradient of psi_j at neighbour i's position
-    grad_psi_j_at_i = np.zeros((npart, maxneigh*2, 2), dtype=np.float)
+    grad_psi_j_at_i = np.zeros((npart, maxneigh, 2), dtype=np.float)
     # gradient of W_j at neighbour i's position
-    grad_W_j_at_i = np.zeros((npart, maxneigh*2, 2), dtype=np.float)
+    grad_W_j_at_i = np.zeros((npart, maxneigh, 2), dtype=np.float)
+    sum_grad_W_contrib = np.zeros((npart, maxneigh, 2), dtype=np.float)
     # gradient sum for the same h_i
     sum_grad_W = np.zeros((npart, 2), dtype=np.float)
 
-    dwdr = np.zeros((npart, 2*maxneigh), dtype=np.float)
-    r_store = np.zeros((npart, 2*maxneigh), dtype=np.float)
-    dx_store = np.zeros((npart, 2*maxneigh, 2), dtype=np.float)
+    dwdr = np.zeros((npart, maxneigh), dtype=np.float)
+    r_store = np.zeros((npart, maxneigh), dtype=np.float)
+    dx_store = np.zeros((npart, maxneigh, 2), dtype=np.float)
 
 
     print("Computing radial gradients of psi_j(x_i)")
 
-    for i in range(npart):
+    for j in range(npart):
         #  if (i+1)%200 == 0:
         #      print(i+1, '/', npart)
-        for j, jind in enumerate(neighbours[i]):
-            dx, dy = ms.get_dx(x[i], x[jind], y[i], y[jind], L=L, periodic=periodic)
+        for i, ind_n in enumerate(neighbours[j]):
+            dx, dy = ms.get_dx(x[j], x[ind_n], y[j], y[ind_n], L=L, periodic=periodic)
             r = np.sqrt(dx**2 + dy**2)
 
-            iind = iinds[i, j]
-            dw = ms.dWdr(r/H[i], H[i], kernel)
 
-            grad_W_j_at_i[jind, iind, 0] = dw * dx / r
-            grad_W_j_at_i[jind, iind, 1] = dw * dy / r
+            # now compute the term needed for the gradient sum need to do it separately: if i is neighbour of j,
+            # but j is not neighbour of i, then j's contribution will be missed
+            dwj= ms.dWdr(r/H[j], H[j], kernel)
+            sum_grad_W[j, 0] += dwj * dx / r
+            sum_grad_W[j, 1] += dwj * dy / r
+            sum_grad_W_contrib[j, i, 0] = dwj * dx / r
+            sum_grad_W_contrib[j, i, 1] = dwj * dy / r
 
-            sum_grad_W[i] += grad_W_j_at_i[jind, iind]
-
+            grad_W_j_at_i[j, i, 0] = dwj * dx / r
+            grad_W_j_at_i[j, i, 1] = dwj * dy / r
+ 
             # store other stuff
-            dwdr[i, j] = dw
-            r_store[i, j] = r
-            dx_store[i, j, 0] = dx
-            dx_store[i, j, 1] = dy
+            # store to mimick how swift writes output
+            dwdr[j, i] = dwj
+            r_store[j, i] = r       # symmetrical, no reason to store differently
+            dx_store[j, i, 0] = dx
+            dx_store[j, i, 1] = dy
 
 
 
@@ -156,8 +137,10 @@ def compute_gradients_my_way(periodic):
         #  if (j+1)%200 == 0:
         #      print(j+1, '/', npart)
         for i, ind_n in enumerate(neighbours[j]):
-            grad_psi_j_at_i[j, i, 0] = grad_W_j_at_i[j, i, 0]/omega[ind_n] - W_j_at_i[j, i] * sum_grad_W[ind_n, 0]/omega[ind_n]**2
-            grad_psi_j_at_i[j, i, 1] = grad_W_j_at_i[j, i, 1]/omega[ind_n] - W_j_at_i[j, i] * sum_grad_W[ind_n, 1]/omega[ind_n]**2
+            # store them so that at index j, only hj is ever used
+            jind = iinds[j, i]
+            grad_psi_j_at_i[j, i, 0] = grad_W_j_at_i[j, i, 0]/omega[j] - W_j_at_i[ind_n, jind] * sum_grad_W[j, 0]/omega[j]**2
+            grad_psi_j_at_i[j, i, 1] = grad_W_j_at_i[j, i, 1]/omega[j] - W_j_at_i[ind_n, jind] * sum_grad_W[j, 1]/omega[j]**2
 
 
     nneighs = np.array([len(n) for n in neighbours], dtype=np.int)
@@ -173,9 +156,9 @@ def compute_gradients_my_way(periodic):
     dumpfile = open(python_grad_dump, 'wb')
     pickle.dump(grad_psi_j_at_i, dumpfile)
     pickle.dump(sum_grad_W, dumpfile)
-    pickle.dump(grad_W_j_at_i, dumpfile)
+    pickle.dump(sum_grad_W_contrib, dumpfile)
     pickle.dump(dwdr, dumpfile)
-    pickle.dump(W_j_at_i, dumpfile)
+    pickle.dump(W_j_at_i_output, dumpfile)
     pickle.dump(nids, dumpfile)
     pickle.dump(nneighs, dumpfile)
     pickle.dump(omega, dumpfile)
@@ -186,9 +169,3 @@ def compute_gradients_my_way(periodic):
     print("Dumped python data")
 
     return
-
-
-
-
-
-
