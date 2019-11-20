@@ -38,8 +38,8 @@ swift_dump, part_dump, python_surface_dump, python_grad_dump = get_dumpfiles()
 #----------------------
 
 tolerance = 1e-2    # relative tolerance threshold for relative float comparison: if (a - b)/a < tolerance, it's fine
-NULL = 1e-8         # treat values below this as zeroes
-NULL_RELATIVE = 1e-2    # ignore relative values below this threshold
+NULL = 1e-12         # treat values below this as zeroes
+NULL_RELATIVE = 5e-3    # ignore relative values below this threshold
 
 
 do_break = True    # break after you found a difference
@@ -942,6 +942,9 @@ def compare_grads():
             nis = 0
             nip = 0
 
+            not_checked_py = [True for i in range(nneigh_p[p])]
+            not_checked_sw = [True for i in range(nneigh_Aij_s[p])]
+
             while True :
                 if break_now(nis, nip, p, for_Aij=True): break
                 while nids_Aij_s[p, nis] != nids_p[p, nip]:
@@ -952,6 +955,9 @@ def compare_grads():
                         nip += 1
                         continue
                     if break_now(nis, nip, p, for_Aij=True): break
+
+                not_checked_py[nip] = False
+                not_checked_sw[nis] = False
 
                 nind = nids_p[p, nip]-1
                 iind = iinds[p, nip]
@@ -1086,6 +1092,20 @@ def compare_grads():
 
             if do_break and found_difference: # particle loop
                 break
+            else:
+                for n, not_checked in enumerate(not_checked_py):
+                    if not_checked:
+                        nind = nids_p[p, n] - 1
+                        dx, dy = ms.get_dx(pos[p,0], pos[nind,0], pos[p,1], pos[nind,1], L=L, periodic=periodic)
+                        r = np.sqrt(dx**2 + dy**2)
+                        print("Not checked in python array: id {0:6d}, neighbour {1:6d}, r/H[i]: {2:14.7f} r/H[j]: {3:14.7f}".format(ids[p], ids[nind], r/H[p], r/H[nind]))
+                for n, not_checked in enumerate(not_checked_sw):
+                    if not_checked:
+                        nind = nids_Aij_s[p, n] - 1
+                        dx, dy = ms.get_dx(pos[p,0], pos[nind,0], pos[p,1], pos[nind,1], L=L, periodic=periodic)
+                        r = np.sqrt(dx**2 + dy**2)
+                        print("Not checked in swift array: id {0:6d}, neighbour {1:6d}, r/H[i]: {2:14.7f} r/H[j]: {3:14.7f}".format(ids[p], ids[nind], r/H[p], r/H[nind]))
+
 
         if not found_difference:
             print("Finished, all the same.")

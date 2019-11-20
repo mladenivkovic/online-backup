@@ -234,6 +234,9 @@ def compare_Aij():
         nis = 0
         nip = 0
 
+        not_checked_py = [True for i in range(nneigh_p[p])]
+        not_checked_sw = [True for i in range(nneigh_Aij_s[p])]
+
         while True :
             if break_now(nis, nip, p, for_Aij=True): break
             while nids_Aij_s[p, nis] != nids_Aij_p[p, nip]:
@@ -245,6 +248,9 @@ def compare_Aij():
                     continue
                 if break_now(nis, nip, p, for_Aij=True): break
 
+            not_checked_py[nip] = False
+            not_checked_sw[nis] = False
+ 
             nind = nids_Aij_p[p, nip] - 1
 
             nbp = nids_Aij_p[p, nip]
@@ -388,8 +394,25 @@ def compare_Aij():
                 break
             nis +=1 
             nip +=1
+
+
         if found_difference and do_break: # particle loop
             break
+        else:
+            for n, not_checked in enumerate(not_checked_py):
+                if not_checked:
+                    nind = nids_p[p, n] - 1
+                    dx, dy = ms.get_dx(pos[p,0], pos[nind,0], pos[p,1], pos[nind,1], L=L, periodic=periodic)
+                    r = np.sqrt(dx**2 + dy**2)
+                    print("Not checked in python array: id {0:6d}, neighbour {1:6d}, r/H[i]: {2:14.7f} r/H[j]: {3:14.7f}".format(ids[p], ids[nind], r/H[p], r/H[nind]))
+            for n, not_checked in enumerate(not_checked_sw):
+                if not_checked:
+                    nind = nids_Aij_s[p, n] - 1
+                    dx, dy = ms.get_dx(pos[p,0], pos[nind,0], pos[p,1], pos[nind,1], L=L, periodic=periodic)
+                    r = np.sqrt(dx**2 + dy**2)
+                    print("Not checked in swift array: id {0:6d}, neighbour {1:6d}, r/H[i]: {2:14.7f} r/H[j]: {3:14.7f}".format(ids[p], ids[nind], r/H[p], r/H[nind]))
+
+
 
     if not found_difference:
         print("Finished, all the same.")
