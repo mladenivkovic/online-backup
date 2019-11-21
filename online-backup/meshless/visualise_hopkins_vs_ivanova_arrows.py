@@ -83,17 +83,18 @@ def main():
 
     x_ij = ms.x_ij(pind, x, y, H, nbors=nbors)
 
-    #  print("Sum Hopkins:", np.sum(A_ij_Hopkins, axis=0))
-    #  print("Sum Ivanova:", np.sum(A_ij_Ivanova, axis=0))
+    print("Sum Hopkins:", np.sum(A_ij_Hopkins, axis=0))
+    print("Sum Ivanova:", np.sum(A_ij_Ivanova, axis=0))
     #  print("Sum Ivanova2:", np.sum(A_ij_Ivanova2, axis=0))
     #  print("Sum Ivanova3:", np.sum(A_ij_Ivanova3, axis=0))
 
 
-    #  print("")
+    print("")
     #  print("Ratios Hopkins/Ivanova")
 
 
-    #  print(r" Ratios Hopkins/Ivanova $|A_{ij}|$     & particle position \\")
+    print(r" Ratios Hopkins/Ivanova $|A_{ij}|$     & particle position \\")
+    print('\hline')
     dist = np.zeros(len(nbors), dtype=np.float)
     for i,n in enumerate(nbors):
         dx, dy = ms.get_dx(x[pind], x[n], y[pind], y[n])
@@ -101,11 +102,11 @@ def main():
 
     inds = np.argsort(dist)
 
-    #  for ind in range(len(nbors)):
-    #      i = inds[ind]
-    #      AI = np.sqrt(A_ij_Ivanova[i][0]**2 + A_ij_Ivanova[i][1]**2)
-    #      AH = np.sqrt(A_ij_Hopkins[i][0]**2 + A_ij_Hopkins[i][1]**2)
-    #      print(r'{0:8.6f}    & ({1:6.3f}, {2:6.3f} )\\'.format(AH/AI, x[nbors[i]], y[nbors[i]]))
+    for ind in range(len(nbors)):
+        i = inds[ind]
+        AI = np.sqrt(A_ij_Ivanova[i][0]**2 + A_ij_Ivanova[i][1]**2)
+        AH = np.sqrt(A_ij_Hopkins[i][0]**2 + A_ij_Hopkins[i][1]**2)
+        print(r'{0:8.6f}    & ({1:6.3f}, {2:6.3f} )\\'.format(AH/AI, x[nbors[i]], y[nbors[i]]))
 
 
 
@@ -126,7 +127,7 @@ def main():
     args = np.argsort(dist)
 
 
-    fig = plt.figure(figsize=(10, 5.5))
+    fig = plt.figure(figsize=(11, 5.5))
     #  fig = plt.figure(figsize=(34, 9))
     ax1 = fig.add_subplot(121, aspect='equal')
     ax2 = fig.add_subplot(122, aspect='equal')
@@ -173,8 +174,12 @@ def main():
 
 
         ax1.arrow(x_ij[ii][0], x_ij[ii][1], A_ij_Hopkins[ii][0], A_ij_Hopkins[ii][1],
+                color='k', lw=arrwidth+1, zorder=9+i)
+        ax1.arrow(x_ij[ii][0], x_ij[ii][1], A_ij_Hopkins[ii][0], A_ij_Hopkins[ii][1],
                 color=col, lw=arrwidth, zorder=10+i)
 
+        ax2.arrow(x_ij[ii][0], x_ij[ii][1], A_ij_Ivanova[ii][0], A_ij_Ivanova[ii][1],
+                color='k', lw=arrwidth+1, zorder=9+i)
         ax2.arrow(x_ij[ii][0], x_ij[ii][1], A_ij_Ivanova[ii][0], A_ij_Ivanova[ii][1],
                 color=col, lw=arrwidth, zorder=10+i)
 

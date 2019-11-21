@@ -79,14 +79,15 @@ def main():
     A_ij_Ivanova = ms.Aij_Ivanova(pind, x, y, H, m, rho)
     x_ij = ms.x_ij(pind, x, y, H, nbors=nbors)
 
-    print("Sum Hopkins:", np.sum(A_ij_Hopkins, axis=0))
-    print("Sum Ivanova:", np.sum(A_ij_Ivanova, axis=0))
+    print("Sum Hopkins:", np.sum(A_ij_Hopkins, axis=0), 'max:', np.absolute(A_ij_Hopkins[:,0]).max(), np.absolute(A_ij_Hopkins[:,1]).max())
+    print("Sum Ivanova:", np.sum(A_ij_Ivanova, axis=0), 'max:', np.absolute(A_ij_Ivanova[:,0]).max(), np.absolute(A_ij_Ivanova[:,1]).max())
 
     print("")
     print("Ratios Hopkins/Ivanova")
 
 
     print(r" Ratios Hopkins/Ivanova $|A_{ij}|$     & particle position \\")
+    print('\hline')
     dist = np.zeros(len(nbors), dtype=np.float)
     for i,n in enumerate(nbors):
         dx, dy = ms.get_dx(x[pind], x[n], y[pind], y[n])
@@ -116,7 +117,7 @@ def main():
     args = np.argsort(dist)
 
 
-    fig = plt.figure(figsize=(10, 5.5))
+    fig = plt.figure(figsize=(11, 5.5))
     #  fig = plt.figure(figsize=(34, 9))
     ax1 = fig.add_subplot(121, aspect='equal')
     ax2 = fig.add_subplot(122, aspect='equal')
@@ -124,7 +125,7 @@ def main():
     #  ax4 = fig.add_subplot(144, aspect='equal')
 
     pointsize = 100
-    arrwidth = 1
+    arrwidth = 2
 
     for ax in [ax1, ax2]: #, ax3, ax4]:
         ax.set_facecolor('lavender')
@@ -159,10 +160,15 @@ def main():
         col = fullcolorlist[cc]
 
 
+        # first draw a black one in the background to act as a line around the arrow
 
+        ax1.arrow(x_ij[ii][0], x_ij[ii][1], A_ij_Hopkins[ii][0], A_ij_Hopkins[ii][1],
+                color='k', lw=arrwidth+1, zorder=9+i)
         ax1.arrow(x_ij[ii][0], x_ij[ii][1], A_ij_Hopkins[ii][0], A_ij_Hopkins[ii][1],
                 color=col, lw=arrwidth, zorder=10+i)
 
+        ax2.arrow(x_ij[ii][0], x_ij[ii][1], A_ij_Ivanova[ii][0], A_ij_Ivanova[ii][1],
+                color='k', lw=arrwidth+1, zorder=9+i)
         ax2.arrow(x_ij[ii][0], x_ij[ii][1], A_ij_Ivanova[ii][0], A_ij_Ivanova[ii][1],
                 color=col, lw=arrwidth, zorder=10+i)
 
@@ -179,8 +185,8 @@ def main():
     plt.savefig('effective_area_hopkins_vs_ivanova_perturbed.png')
 
 
-    print(A_ij_Ivanova)
-    print(A_ij_Hopkins)
+    #  print(A_ij_Ivanova)
+    #  print(A_ij_Hopkins)
 
 
 
