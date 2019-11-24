@@ -55,6 +55,8 @@ LIBFLAGS="              --with-parmetis
 
 EXTRA_CFLAGS=""
 
+ADDFLAGS="" # other additional flags
+
 
 
 
@@ -81,20 +83,20 @@ function errexit() {
 
 function traceback
 {
-  # Hide the traceback() call.
-  local -i start=$(( ${1:-0} + 1 ))
-  local -i end=${#BASH_SOURCE[@]}
-  local -i i=0
-  local -i j=0
+    # Hide the traceback() call.
+    local -i start=$(( ${1:-0} + 1 ))
+    local -i end=${#BASH_SOURCE[@]}
+    local -i i=0
+    local -i j=0
 
-  echo "Traceback (last called is first):" 1>&2
-  for ((i=start; i < end; i++)); do
-    j=$(( i - 1 ))
-    local function="${FUNCNAME[$i]}"
-    local file="${BASH_SOURCE[$i]}"
-    local line="${BASH_LINENO[$j]}"
-    echo "     ${function}() in ${file}:${line}" 1>&2
-  done
+    echo "Traceback (last called is first):" 1>&2
+    for ((i=start; i < end; i++)); do
+      j=$(( i - 1 ))
+      local function="${FUNCNAME[$i]}"
+      local file="${BASH_SOURCE[$i]}"
+      local line="${BASH_LINENO[$j]}"
+      echo "     ${function}() in ${file}:${line}" 1>&2
+    done
 }
 
 
@@ -142,8 +144,7 @@ fi
 
 # HERE ARE MYFLAGS
 comp=default
-debug_program_suffix=''
-
+dim=3d
 
 if [[ $# == 0 ]]; then
     echo "NO ARGUMENTS GIVEN. COMPILING THE SAME WAY AS LAST TIME."
@@ -157,26 +158,25 @@ else
 
         default | -d | d | 3 | 3d | --3d | -3d)
             echo COMPILING DEFAULT 3D
-            comp=default
+            dim=3d
         ;;
 
         clean | c | -c | --c | --clean)
             echo COMPILING CLEAN
-            comp_clean='true'
-            echo "THE CLEAN FLAG ONLY ADDS A NAME SUFFIX. MAKE SURE YOU ARE ON THE RIGHT BRANCH."
-            read -p "Hit any button to continue."
+            GIZMOFLAGS=${GIZMOFLAGS//--enable-ivanova-surfaces/}
+            clean='true'
         ;;
 
         1 | --1d | -1d | -1 | --1 | 1d)
             echo COMPILING 1D SWIFT
             DIMFLAGS='--with-hydro-dimension=1'
-            comp=1d
+            dim=1d
         ;;
 
         2 | --2d | -2d | -2 | --2 | 2d)
             echo COMPILING 2D SWIFT
             DIMFLAGS='--with-hydro-dimension=2'
-            comp=2d
+            dim=2d
         ;;
 
         last | --last | -l | --l)
@@ -186,8 +186,16 @@ else
         
         me | my | mine | deb | debug | test)
             echo "ADDING DEBUG FLAGS"
-            debug_program_suffix='-debug'
+            debug='true'
             DEBUGFLAGS=$DEBUGFLAGS_IF_IN_USE
+        ;;
+
+
+        wendland | w | w6 )
+            echo "ADDING WENDLAND C6 FLAGS"
+            used_kernel='true'
+            kernelname='wendland-C6'
+            ADDFLAGS="$ADDFLAGS"" --with-kernel=wendland-C6 --disable-vec --disable-hand-vec"
         ;;
 
         *)
@@ -200,7 +208,28 @@ else
     done
 fi
 
-allflags="$LIBFLAGS ""$GIZMOFLAGS ""$DEFAULTFLAGS"" $DEBUGFLAGS"" $DIMFLAGS"" CFLAGS=$EXTRA_CFLAGS"
+
+
+
+
+
+#---------------------------------
+# generate exec filename suffix
+#---------------------------------
+
+program_suffix=-"$dim"
+
+if [ "$clean" = 'true' ]; then
+    program_suffix="$program_suffix""-clean"
+fi
+if [ "$debug" = 'true' ]; then
+    program_suffix="$program_suffix""-debug"
+fi
+if [ "$used_kernel" = "true" ]; then
+    program_suffix="$program_suffix"-"$kernelname"
+fi
+
+allflags="$LIBFLAGS ""$GIZMOFLAGS ""$DEFAULTFLAGS"" $ADDFLAGS"" $DEBUGFLAGS"" $DIMFLAGS"" CFLAGS=$EXTRA_CFLAGS" 
 
 
 
@@ -253,7 +282,7 @@ if [ -f .last_compile ]; then
 
 else
     # if no .last_compile is present
-    reconfigure=true
+    reconfigure='true'
     if [ "$comp" == 'last' ]; then
         lastname=swift
         lastname_mpi=swift_mpi
@@ -263,9 +292,9 @@ fi
 
 # if it's comp_clean, assume you haven't been up this far,
 # so reconfigure anyhow
-if [ "$comp_clean" = 'true' ]; then
-    reconfigure=true
-fi
+# if [ "$comp_clean" = 'true' ]; then
+#     reconfigure=true
+# fi
 
 
 
@@ -353,36 +382,16 @@ echo >> .last_compile # tr -d \\n removes all newlines, including the last one, 
 
 echo renaming.
 
-case $comp in
-
-    # $debug_program_suffix='' if debug not selected
-    default)
-        execname=./examples/swift-3d"$debug_program_suffix"
-        execname_mpi=./examples/swift_mpi-3d"$debug_program_suffix"
-    ;;
-
-    1d)
-        execname=./examples/swift-1d"$debug_program_suffix"
-        execname_mpi=./examples/swift_mpi-1d"$debug_program_suffix"
-    ;;
-
-    2d)
-        execname=./examples/swift-2d"$debug_program_suffix"
-        execname_mpi=./examples/swift_mpi-2d"$debug_program_suffix"
-    ;;
-
-    last)
-        execname=$lastname
-        execname_mpi=$lastname_mpi
-    ;;
-
-esac
-
-
-if  [ "$comp_clean" = 'true' ]; then
-    execname="$execname"-clean
-    execname_mpi="$execname_mpi"-clean
+if [ $comp != 'last' ]; then
+    execname="./examples/swift""$program_suffix"
+    execname_mpi="./examples/swift""$program_suffix"-mpi
+else
+    execname=$lastname
+    execname_mpi=$lastname_mpi
 fi
+
+
+
 
 
 

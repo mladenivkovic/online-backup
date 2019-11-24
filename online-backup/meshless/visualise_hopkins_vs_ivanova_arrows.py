@@ -88,6 +88,12 @@ def main():
     #  print("Sum Ivanova2:", np.sum(A_ij_Ivanova2, axis=0))
     #  print("Sum Ivanova3:", np.sum(A_ij_Ivanova3, axis=0))
 
+    Hnorm= np.sum(np.sqrt(A_ij_Hopkins[:,0]**2+A_ij_Hopkins[:,1]**2))
+    Inorm= np.sum(np.sqrt(A_ij_Ivanova[:,0]**2+A_ij_Ivanova[:,1]**2))
+    print("")
+    print("Sum norm Hopkins:", Hnorm)
+    print("Sum norm Ivanova:", Inorm)
+
 
     print("")
     #  print("Ratios Hopkins/Ivanova")
