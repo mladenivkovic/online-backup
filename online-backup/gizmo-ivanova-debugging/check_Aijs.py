@@ -22,6 +22,7 @@ from my_utils import yesno, one_arg_present
 
 from filenames import get_srcfile, get_dumpfiles
 from read_swift_dumps import extract_dump_data
+from compute_gradients import compute_gradients_my_way
 
 #-------------------------------
 # Filenames and global stuff
@@ -36,8 +37,8 @@ swift_dump, part_dump, python_surface_dump, python_grad_dump = get_dumpfiles()
 # Behaviour params
 #----------------------
 
-tolerance = 1e-2    # relative tolerance threshold for relative float comparison: if (a - b)/a < tolerance, it's fine
-NULL_RELATIVE = 1e-3 # relative tolerance for values to ignore below this value
+tolerance = 5e-3    # relative tolerance threshold for relative float comparison: if (a - b)/a < tolerance, it's fine
+NULL_RELATIVE = 1e-4 # relative tolerance for values to ignore below this value
 
 do_break = True
 
@@ -262,7 +263,8 @@ def compare_Aij():
             swy = Aij_s[p][2*nis+1]
             swn = np.sqrt(swx**2 + swy**2)
 
-            for P, S, N in [(pyx, swx, nullx), (pyy, swy, nully), (pyn, swn, null)]:
+            #  for P, S, N in [(pyx, swx, nullx), (pyy, swy, nully), (pyn, swn, null)]:
+            for P, S, N in [(pyn, swn, null)]:
 
                 if P > N and S > N:
                     diff = abs(1 - abs(P/S))
@@ -439,6 +441,7 @@ def main():
     
     announce()
     extract_dump_data()
+    compute_gradients_my_way(periodic)
     compute_Aij_my_way()
     compare_Aij()
     return
