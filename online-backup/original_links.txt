@@ -26,7 +26,6 @@
 /home/mivkov/EPFL/Meshless_Methods/runs/scripts/get_Aij_my_way.py:/home/mivkov/coding/small_projects/online-backup/gizmo-ivanova-debugging/get_Aij_my_way.py
 /home/mivkov/EPFL/Meshless_Methods/runs/scripts/sporadical_check_Aij.py:/home/mivkov/coding/small_projects/online-backup/gizmo-ivanova-debugging/sporadical_check_Aij.py
 /home/mivkov/EPFL/Meshless_Methods/visualise_effective_area/psi_uniform/visualise_psi_of_x_uniform.py:/home/mivkov/coding/small_projects/online-backup/meshless/visualise_psi_of_x_uniform.py
-/home/mivkov/EPFL/Meshless_Methods/visualise_effective_area/psi_perturbed/psi_of_x_perturbed.png:/home/mivkov/coding/small_projects/online-backup/meshless/visualise_psi_of_x_perturbed.py
 /home/mivkov/EPFL/Meshless_Methods/runs/scripts/read_swift_dumps.py:/home/mivkov/coding/small_projects/online-backup/gizmo-ivanova-debugging/read_swift_dumps.py
 /home/mivkov/EPFL/Meshless_Methods/visualise_effective_area/check_multiple_versions/check_versions.py:/home/mivkov/coding/small_projects/online-backup/meshless/check_versions.py
 /home/mivkov/EPFL/Meshless_Methods/runs/scripts/compute_gradients.py:/home/mivkov/coding/small_projects/online-backup/gizmo-ivanova-debugging/compute_gradients.py
