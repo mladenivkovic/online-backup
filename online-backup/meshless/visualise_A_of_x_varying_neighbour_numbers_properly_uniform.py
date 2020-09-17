@@ -10,7 +10,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors
 from mpl_toolkits.axes_grid1 import make_axes_locatable, axes_size, ImageGrid
-import meshless as ms
+import astro_meshless_surfaces as ml
+
+raise ImportError("Integrand functions in the astro_meshless_surfaces are deprecated.")
 
 
 ptype = "PartType0"  # for which particle type to look for
@@ -25,8 +27,8 @@ tol = (
 )
 
 
-kernels = ms.kernels
-kfacts = ms.kernelfacts
+kernels = ml.kernels
+kfacts = ml.kernelfacts
 
 
 def get_sample_size():
@@ -90,7 +92,7 @@ def main():
         print("working for eta =", eta)
         print("================================")
 
-        x, y, h, rho, m, ids, npart = ms.read_file(srcfiles[row], ptype)
+        x, y, h, rho, m, ids, npart = ml.read_file(srcfiles[row], ptype)
 
         # find where particles i (0.45, 0.45) and j (0.5, 0.5) are
         iind = None
@@ -120,7 +122,7 @@ def main():
             print("working for ", kernel)
 
             # translate h to H
-            H = ms.get_H(h, kernel)
+            H = ml.get_H(h, kernel)
 
             A = np.zeros(
                 (nx, nx, 2), dtype=np.float
@@ -138,11 +140,11 @@ def main():
                 for j in range(nx):
                     yy = lowlim + dx * j
 
-                    hh = ms.h_of_x(
+                    hh = ml.h_of_x(
                         xx, yy, x, y, H, m, rho, kernel=kernel, fact=kfacts[col]
                     )
 
-                    A[j, i] = ms.Integrand_Aij_Ivanova(
+                    A[j, i] = ml.Integrand_Aij_Ivanova(
                         iind,
                         jind,
                         xx,

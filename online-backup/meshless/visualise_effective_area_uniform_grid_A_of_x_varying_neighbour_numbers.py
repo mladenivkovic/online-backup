@@ -10,7 +10,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable, axes_size
-import meshless as ms
+import astro_meshless_surfaces as ml
+
+raise ImportError("Integrand functions in the astro_meshless_surfaces are deprecated.")
 
 import h5py
 
@@ -38,9 +40,9 @@ def main():
 
     print("Computing effective surfaces")
 
-    x, y, h, rho, m, ids, npart = ms.read_file(srcfile, ptype)
+    x, y, h, rho, m, ids, npart = ml.read_file(srcfile, ptype)
 
-    H = ms.get_H(h)
+    H = ml.get_H(h)
 
     # chosen particle coordinates for diagonal/vertical case
     x1_case = [0.4, 0.5]  # x coords for both cases for particle 1
@@ -125,9 +127,9 @@ def main():
                 for j in range(nx):
                     yy = lowlimy + dx * j
 
-                    hh = ms.h_of_x(xx, yy, x, y, H, m, rho, fact=hf)
+                    hh = ml.h_of_x(xx, yy, x, y, H, m, rho, fact=hf)
 
-                    A[j, i] = ms.Integrand_Aij_Ivanova(
+                    A[j, i] = ml.Integrand_Aij_Ivanova(
                         iind, jind, xx, yy, hh, x, y, H, m, rho, fact=hf
                     )  # not a typo: need A[j,i] for imshow
 

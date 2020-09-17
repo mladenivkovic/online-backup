@@ -11,7 +11,7 @@
 import numpy as np
 from matplotlib import pyplot as plt
 
-import meshless as ms
+import astro_meshless_surfaces as ml
 
 
 #  smoothing_lengths = [   0.25, 0.2,  0.15,
@@ -22,9 +22,9 @@ ncols = 3
 nx = 500  # how many points to compute for
 
 # particle positions
-p1 = [0.2, 0.2]
-p2 = [0.4, 0.8]
-p3 = [0.7, 0.4]
+p1 = np.array([0.2, 0.2])
+p2 = np.array([0.4, 0.8])
+p3 = np.array([0.7, 0.4])
 
 
 #  kernels = ['gaussian']
@@ -37,7 +37,7 @@ def compute_psis(x, y, h, kernel):
     psis = np.zeros(3, dtype=np.float128)
 
     for i, part in enumerate([p1, p2, p3]):
-        psis[i] = ms.psi(x, y, part[0], part[1], h, kernel)
+        psis[i] = ml.psi(x, y, part[0], part[1], h, kernel)
 
     if np.sum(psis) == 0:
         psis = 0
@@ -47,9 +47,7 @@ def compute_psis(x, y, h, kernel):
     return psis
 
 
-# ==============================
 def compute_image(h, kernel):
-    # ==============================
     """
     Computes the image by computing the psi of every particle at every position.
     """
@@ -68,9 +66,7 @@ def compute_image(h, kernel):
     return image
 
 
-# ==============================
 if __name__ == "__main__":
-    # ==============================
 
     for kernel in kernels:
         print("working for", kernel, "kernel")

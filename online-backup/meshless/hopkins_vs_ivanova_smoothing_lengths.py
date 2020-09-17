@@ -12,7 +12,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable, axes_size, ImageGrid
 import h5py
 
 
-import meshless as ms
+import astro_meshless_surfaces as ml
 from my_utils import setplotparams_multiple_plots
 
 setplotparams_multiple_plots(wspace=0.0, hspace=0.0)
@@ -26,7 +26,6 @@ lowlim = 0.45
 uplim = 0.55
 nx = 10
 tol = 1e-5  # tolerance for float comparison
-L = 20
 
 
 def main():
@@ -56,7 +55,7 @@ def main():
     ncols = len(etas)
 
     # assume that there are equally many files for every smoothing length
-    nx, filenummax, fileskip = ms.get_sample_size(dirs[0])
+    nx, filenummax, fileskip = ml.get_sample_size(dirs[0])
     #  fileskip = 100
     #  nx = 3
 
@@ -64,7 +63,7 @@ def main():
     Aij_Ivanova = [np.zeros((nx, nx, 2), dtype=np.float) for e in etas]
 
     A_list = [Aij_Hopkins, Aij_Ivanova]
-    A_list_funcs = [ms.Aij_Hopkins, ms.Aij_Ivanova]
+    A_list_funcs = [ml.Aij_Hopkins, ml.Aij_Ivanova]
 
     for e, eta in enumerate(etas):
 
@@ -86,15 +85,14 @@ def main():
                 )
                 print("working for ", srcfile)
 
-                x, y, h, rho, m, ids, npart = ms.read_file(srcfile, ptype)
-                H = ms.get_H(h)
+                x, y, h, rho, m, ids, npart = ml.read_file(srcfile, ptype)
+                H = ml.get_H(h)
 
-                cind = ms.find_central_particle(L, ids)
-                pind = ms.find_added_particle(ids)
-                nbors = ms.find_neighbours(pind, x, y, H)
-                try:
-                    ind = nbors.index(cind)
-                except ValueError:
+                cind = ml.find_central_particle(npart, ids)
+                pind = ml.find_added_particle(ids)
+                tree, nbors = ml.find_neighbours(pind, x, y, H)
+                ind = nbors == cind
+                if not ind.any():
                     print(nbors)
                     print(x[nbors])
                     print(y[nbors])
@@ -104,11 +102,11 @@ def main():
                     continue
 
                 for a in range(len(A_list)):
-                    f = A_list_funcs[a]
-                    A = A_list[a]
-                    res = f(pind, x, y, H, m, rho)
-                    A[e][jj, ii] = res[ind]
                     #  A[e][jj,ii] = np.random.uniform()
+                    resI = ml.Aij_Ivanova(pind, x, y, H, tree=tree)
+                    Aij_Ivanova[e][jj, ii] = resI[ind]
+                    resH = ml.Aij_Hopkins(pind, x, y, H, m, rho, tree=tree)
+                    Aij_Hopkins[e][jj, ii] = resH[ind]
 
                 jj += 1
 

@@ -11,7 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-import meshless as ms
+import astro_meshless_surfaces as ml
 import my_utils
 
 my_utils.setplotparams_multiple_plots()
@@ -24,7 +24,10 @@ my_utils.setplotparams_multiple_plots()
 
 srcfile = "./snapshot_0000.hdf5"  # swift output file
 ptype = "PartType0"  # for which particle type to look for
-pcoords = [[0.5, 0.5], [0.7, 0.7]]  # coordinates of particle to work for
+pcoords = [
+    np.array([0.5, 0.5]),
+    np.array([0.7, 0.7]),
+]  # coordinates of particle to work for
 
 verbose = True  # how talkative the code is
 
@@ -84,10 +87,10 @@ def extrapolate(x, y, pind, n):
 
 def main():
 
-    x, y, h, rho, m, ids, npart = ms.read_file(srcfile, ptype)
+    x, y, h, rho, m, ids, npart = ml.read_file(srcfile, ptype)
 
     # convert H to h
-    H = ms.get_H(h)
+    H = ml.get_H(h)
 
     # prepare figure
     nrows = len(pcoords)
@@ -99,15 +102,15 @@ def main():
 
         print("Working for particle at", pcoord)
 
-        pind = ms.find_index(x, y, pcoord, tolerance=0.05)
-        nbors = ms.find_neighbours(pind, x, y, H)
+        pind = ml.find_index(x, y, pcoord)
+        tree, nbors = ml.find_neighbours(pind, x, y, H)
 
         print("Computing effective surfaces")
 
-        A_ij_Hopkins = ms.Aij_Hopkins(pind, x, y, H, m, rho)
-        A_ij_Ivanova = ms.Aij_Ivanova(pind, x, y, H, m, rho)
+        A_ij_Hopkins = ml.Aij_Hopkins(pind, x, y, H, m, rho, tree=tree)
+        A_ij_Ivanova = ml.Aij_Ivanova(pind, x, y, H, tree=tree)
 
-        x_ij = ms.x_ij(pind, x, y, H, nbors=nbors)
+        x_ij = ml.x_ij(pind, x, y, H, nbors=nbors)
 
         print("Plotting")
 
@@ -141,7 +144,7 @@ def main():
             print("Sum abs Ivanova:   ", np.sum(abs_i))
 
             #  print("Ratio Hopkins/Ivanova", np.sum(abs1)/np.sum(abs_i))
-            V_i = ms.V(pind, m, rho)
+            V_i = ml.V(pind, m, rho)
             #  print(V_i)
             R = np.sqrt(V_i / np.pi)
             print("spheric surface", 2 * np.pi * R)

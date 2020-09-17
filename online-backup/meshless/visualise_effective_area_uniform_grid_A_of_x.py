@@ -10,7 +10,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable, axes_size
 
-import meshless as ms
+import astro_meshless_surfaces as ml
+
+raise ImportError("Integrand functions in the astro_meshless_surfaces are deprecated.")
 
 import h5py
 
@@ -36,8 +38,8 @@ def main():
 
     print("Computing effective surfaces")
 
-    x, y, h, rho, m, ids, npart = ms.read_file(srcfile, ptype)
-    H = ms.get_H(h)
+    x, y, h, rho, m, ids, npart = ml.read_file(srcfile, ptype)
+    H = ml.get_H(h)
 
     # find where particles i (0.4, 0.4) and j (0.5, 0.5) are
     iind = None
@@ -63,9 +65,9 @@ def main():
         for j in range(nx):
             yy = lowlim + dx * j
 
-            hh = ms.h_of_x(xx, yy, x, y, H, m, rho)
+            hh = ml.h_of_x(xx, yy, x, y, H, m, rho)
 
-            A[j, i] = ms.Integrand_Aij_Ivanova(
+            A[j, i] = ml.Integrand_Aij_Ivanova(
                 iind, jind, xx, yy, hh, x, y, H, m, rho
             )  # not a typo: need A[j,i] for imshow
 

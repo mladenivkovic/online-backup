@@ -13,7 +13,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-import meshless as ms
+import astro_meshless_surfaces as ml
 from my_utils import setplotparams_multiple_plots
 
 setplotparams_multiple_plots(for_presentation=True)
@@ -27,7 +27,7 @@ setplotparams_multiple_plots(for_presentation=True)
 # temp during rewriting
 srcfile = "./snapshot_0000.hdf5"  # swift output file
 ptype = "PartType0"  # for which particle type to look for
-pcoord = [0.5, 0.5]  # coordinates of particle to work for
+pcoord = np.array([0.5, 0.5])  # coordinates of particle to work for
 
 
 fullcolorlist = [
@@ -58,27 +58,23 @@ ncolrs = len(fullcolorlist)
 
 def main():
 
-    x, y, h, rho, m, ids, npart = ms.read_file(srcfile, ptype)
+    x, y, h, rho, m, ids, npart = ml.read_file(srcfile, ptype)
 
     # convert H to h
     #  H = h
-    H = ms.get_H(h)
-    pind = ms.find_index(x, y, pcoord)
-    nbors = ms.find_neighbours(pind, x, y, H)
+    H = ml.get_H(h)
+    pind = ml.find_index(x, y, pcoord)
+    tree, nbors = ml.find_neighbours(pind, x, y, H)
 
     print("Computing effective surfaces")
 
-    A_ij_Hopkins = ms.Aij_Hopkins(pind, x, y, H, m, rho)
-    A_ij_Ivanova = ms.Aij_Ivanova(pind, x, y, H, m, rho)
-    #  A_ij_Ivanova2 = ms.Aij_Ivanova_analytical_gradients(pind, x, y, H, m, rho)
-    #  A_ij_Ivanova3 = ms.Aij_Ivanova_approximate_gradients(pind, x, y, H, m, rho)
+    A_ij_Hopkins = ml.Aij_Hopkins(pind, x, y, H, m, rho, tree=tree)
+    A_ij_Ivanova = ml.Aij_Ivanova(pind, x, y, H, tree=tree)
 
-    x_ij = ms.x_ij(pind, x, y, H, nbors=nbors)
+    x_ij = ml.x_ij(pind, x, y, H, nbors=nbors)
 
     print("Sum Hopkins:", np.sum(A_ij_Hopkins, axis=0))
     print("Sum Ivanova:", np.sum(A_ij_Ivanova, axis=0))
-    #  print("Sum Ivanova2:", np.sum(A_ij_Ivanova2, axis=0))
-    #  print("Sum Ivanova3:", np.sum(A_ij_Ivanova3, axis=0))
 
     Hnorm = np.sum(np.sqrt(A_ij_Hopkins[:, 0] ** 2 + A_ij_Hopkins[:, 1] ** 2))
     Inorm = np.sum(np.sqrt(A_ij_Ivanova[:, 0] ** 2 + A_ij_Ivanova[:, 1] ** 2))
@@ -87,13 +83,12 @@ def main():
     print("Sum norm Ivanova:", Inorm)
 
     print("")
-    #  print("Ratios Hopkins/Ivanova")
 
     print(r" Ratios Hopkins/Ivanova $|A_{ij}|$     & particle position \\")
     print("\hline")
     dist = np.zeros(len(nbors), dtype=np.float)
     for i, n in enumerate(nbors):
-        dx, dy = ms.get_dx(x[pind], x[n], y[pind], y[n])
+        dx, dy = ml.get_dx(x[pind], x[n], y[pind], y[n])
         dist[i] = np.sqrt(dx ** 2 + dy ** 2)
 
     inds = np.argsort(dist)
@@ -123,8 +118,6 @@ def main():
     #  fig = plt.figure(figsize=(34, 9))
     ax1 = fig.add_subplot(121, aspect="equal")
     ax2 = fig.add_subplot(122, aspect="equal")
-    #  ax3 = fig.add_subplot(143, aspect='equal')
-    #  ax4 = fig.add_subplot(144, aspect='equal')
 
     pointsize = 100
     arrwidth = 2
@@ -198,12 +191,6 @@ def main():
             zorder=10 + i,
         )
 
-        #  ax3.arrow(x_ij[ii][0], x_ij[ii][1], A_ij_Ivanova2[ii][0], A_ij_Ivanova2[ii][1],
-        #          color=col, lw=arrwidth, zorder=10+i)
-        #
-        #  ax4.arrow(x_ij[ii][0], x_ij[ii][1], A_ij_Ivanova3[ii][0], A_ij_Ivanova3[ii][1],
-        #          color=col, lw=arrwidth, zorder=10+i)
-
     ax1.set_title(
         r"Hopkins $\mathbf{A}_{ij}$ at $\mathbf{x}_{ij} = \mathbf{x}_i + \frac{h_i}{h_i+h_j}(\mathbf{x}_j - \mathbf{x}_i)$"
     )  # , fontsize=18, pad=12)
@@ -211,11 +198,6 @@ def main():
     ax2.set_title(
         r"Ivanova $\mathbf{A}_{ij}$ at $\mathbf{x}_{ij} = \mathbf{x}_i + \frac{h_i}{h_i+h_j}(\mathbf{x}_j - \mathbf{x}_i)$"
     )  # , fontsize=18, pad=12)
-
-    #  ax3.set_title(r'Ivanova v2 analytic gradients $\mathbf{A}_{ij}$ at $\mathbf{x}_{ij} = \mathbf{x}_i + \frac{h_i}{h_i+h_j}(\mathbf{x}_j - \mathbf{x}_i)$', fontsize=18, pad=12)
-    #
-    #  ax4.set_title(r'Ivanova v2 approx gradients $\mathbf{A}_{ij}$ at $\mathbf{x}_{ij} = \mathbf{x}_i + \frac{h_i}{h_i+h_j}(\mathbf{x}_j - \mathbf{x}_i)$', fontsize=18, pad=12)
-    #
 
     plt.savefig("effective_area_hopkins_vs_ivanova.png")
 

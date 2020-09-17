@@ -11,7 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-import meshless as ms
+import astro_meshless_surfaces as ml
 import my_utils
 
 my_utils.setplotparams_multiple_plots()
@@ -65,13 +65,13 @@ def main():
     ids = np.array([0, 1])
 
     pind = 0
-    j = ms.find_neighbours(pind, x, y, h)
+    j = ml.find_neighbours(pind, x, y, h)
 
-    A_ij_I = ms.Aij_Ivanova(pind, x, y, h, m, rho)
+    A_ij_I = ml.Aij_Ivanova(pind, x, y, h, m, rho)
     print("For 2 particles, the matrix becomes singular and the code crashes here.")
-    A_ij_H = ms.Aij_Hopkins_v2(pind, x, y, h, m, rho)
+    A_ij_H = ml.Aij_Hopkins_v2(pind, x, y, h, m, rho)
 
-    x_ij = ms.x_ij(pind, x, y, h, nbors=j)
+    x_ij = ml.x_ij(pind, x, y, h, nbors=j)
 
     print("Plotting")
 

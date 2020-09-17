@@ -16,7 +16,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-import meshless as ms
+import astro_meshless_surfaces as ml
 
 
 # ---------------------------
@@ -62,15 +62,15 @@ ncolrs = len(fullcolorlist)
 
 def main():
 
-    x, y, h, rho, m, ids, npart = ms.read_file(srcfile, ptype)
-    pind = ms.find_index(x, y, pcoord)
-    H = ms.get_H(h)
-    nbors = ms.find_neighbours(pind, x, y, H)
+    x, y, h, rho, m, ids, npart = ml.read_file(srcfile, ptype)
+    pind = ml.find_index(x, y, pcoord)
+    H = ml.get_H(h)
+    nbors = ml.find_neighbours(pind, x, y, H)
 
     print("Computing effective surfaces")
 
-    A_ij = ms.Aij_Hopkins(pind, x, y, H, m, rho)
-    x_ij = ms.x_ij(pind, x, y, H, nbors=nbors)
+    A_ij = ml.Aij_Hopkins(pind, x, y, H, m, rho)
+    x_ij = ml.x_ij(pind, x, y, H, nbors=nbors)
 
     print("Plotting")
 

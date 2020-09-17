@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable, axes_size, ImageGrid
 
 
-import meshless as ms
+import astro_meshless_surfaces as ml
 from my_utils import setplotparams_multiple_plots
 
 setplotparams_multiple_plots(wspace=0.2, for_presentation=True)
@@ -30,22 +30,24 @@ pind = -1  # index of particle you chose with pcoord
 cind = None  # index of particle in the center (0.5, 0.5)
 
 
-L = 10
+nx = 10
 boxSize = 1
 
 tol = 1e-3  # tolerance for float comparison
 
 # border limits for plots
-lowlim = 0.4 - 0.2 * boxSize / L
-uplim = 0.4 - (0.2 - 203 / 100) * boxSize / L
+lowlim = 0.4 - 0.2 * boxSize / nx
+uplim = 0.4 - (0.2 - 203 / 100) * boxSize / nx
 
 nrows = 2
 ncols = 3
 
+L = np.array([1.0, 1.0])
+
 
 def main():
 
-    nx, filenummax, fileskip = ms.get_sample_size()
+    nx, filenummax, fileskip = ml.get_sample_size()
 
     # -----------------------------
     # Part1 : compute all A
@@ -72,7 +74,7 @@ def main():
             )
             print("working for ", srcfile)
 
-            x, y, h, rho, m, ids, npart = ms.read_file(srcfile, ptype)
+            x, y, h, rho, m, ids, npart = ml.read_file(srcfile, ptype)
             # comments/uncomment for testing purposes
             #  AH[jj,ii] = np.random.uniform()
             #  AI[jj,ii] = np.random.uniform()
@@ -80,16 +82,15 @@ def main():
             #  pind = 10
             #  continue
 
-            H = ms.get_H(h)
+            H = ml.get_H(h)
 
-            cind = ms.find_central_particle(L, ids)
-            pind = ms.find_added_particle(ids)
+            cind = ml.find_central_particle(npart, ids)
+            pind = ml.find_added_particle(ids)
             # displaced particle has index -1
-            nbors = ms.find_neighbours(pind, x, y, H)
-            try:
-                ind = nbors.index(cind)
-            except ValueError:
-                dx, dy = ms.get_dx(
+            tree, nbors = ml.find_neighbours(pind, x, y, H)
+            ind = nbors == cind
+            if not ind.any():
+                dx, dy = ml.get_dx(
                     x[pind], x[cind], y[pind], y[cind], L=L, periodic=True
                 )
                 r = np.sqrt(dx ** 2 + dy ** 2)
@@ -97,16 +98,16 @@ def main():
                     # the central particle is not a neighbour of the
                     # added particle, so try finding the added particle
                     # as a neighbour of the central particle
-                    nbors_central = ms.find_neighbours(cind, x, y, H)
-                    ind = nbors_central.index(pind)
-                    AijH = -ms.Aij_Hopkins(cind, x, y, H, m, rho)[ind]
-                    AijI = -ms.Aij_Ivanova(cind, x, y, H, m, rho)[ind]
+                    tree, nbors_central = ml.find_neighbours(cind, x, y, H, tree=tree)
+                    ind = nbors_central == pind
+                    AijH = -ml.Aij_Hopkins(cind, x, y, H, m, rho, tree=tree)[ind]
+                    AijI = -ml.Aij_Ivanova(cind, x, y, H, tree=tree)[ind]
                 else:
                     AijH = np.array([0.0, 0.0])
                     AijI = np.array([0.0, 0.0])
             else:
-                AijH = ms.Aij_Hopkins(pind, x, y, H, m, rho)[ind]
-                AijI = ms.Aij_Ivanova(pind, x, y, H, m, rho)[ind]
+                AijH = ml.Aij_Hopkins(pind, x, y, H, m, rho, tree=tree)[ind]
+                AijI = ml.Aij_Ivanova(pind, x, y, H, tree=tree)[ind]
 
             # pyplot.imshow takes [y,x] !
             AH[jj, ii] = AijH
@@ -135,7 +136,7 @@ def main():
     AIx = AI[:, :, 0]
     AIy = AI[:, :, 1]
     AInorm = np.sqrt(AIx ** 2 + AIy ** 2)
-    print(AIx.shape, AIy.shape, AInorm.shape)
+    #  print(AIx.shape, AIy.shape, AInorm.shape)
     Ixmin = AIx.min()
     Ixmax = AIx.max()
     Iymin = AIy.min()

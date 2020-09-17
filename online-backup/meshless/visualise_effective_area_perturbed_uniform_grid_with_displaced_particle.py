@@ -12,7 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable, axes_size
 import h5py
-import meshless as ms
+import astro_meshless_surfaces as ml
 
 
 ptype = "PartType0"  # for which particle type to look for
@@ -40,7 +40,7 @@ def main():
 
     print("Computing effective surfaces")
 
-    nx, filenummax, fileskip = ms.get_sample_size()
+    nx, filenummax, fileskip = ml.get_sample_size()
 
     A = np.zeros((nx, nx, 2), dtype=np.float)  # storing computed effective surfaces
 
@@ -54,16 +54,16 @@ def main():
             )
             print("working for ", srcfile)
 
-            x, y, h, rho, m, ids, npart = ms.read_file(srcfile, ptype)
+            x, y, h, rho, m, ids, npart = ml.read_file(srcfile, ptype)
 
-            H = ms.get_H(h)
+            H = ml.get_H(h)
             H *= cheatfact
 
-            cind = ms.find_central_particle(L, ids)
-            pind = ms.find_added_particle(ids)
+            cind = ml.find_central_particle(L, ids)
+            pind = ml.find_added_particle(ids)
 
-            nbors = ms.find_neighbours(pind, x, y, H)
-            Aij = ms.Aij_Hopkins(pind, x, y, H, m, rho)
+            nbors = ml.find_neighbours(pind, x, y, H)
+            Aij = ml.Aij_Hopkins(pind, x, y, H, m, rho)
 
             try:
                 ind = nbors.index(cind)

@@ -11,7 +11,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable, axes_size
-import meshless as ms
+import astro_meshless_surfaces as ml
 
 
 ptype = "PartType0"  # for which particle type to look for
@@ -27,7 +27,7 @@ tol = 1e-3  # tolerance for float comparison
 
 def main():
 
-    nx, filenummax, fileskip = ms.get_sample_size()
+    nx, filenummax, fileskip = ml.get_sample_size()
 
     # -----------------------------
     # Part1 : compute all A
@@ -47,16 +47,16 @@ def main():
             )
             print("working for ", srcfile)
 
-            x, y, h, rho, m, ids, npart = ms.read_file(srcfile, ptype)
+            x, y, h, rho, m, ids, npart = ml.read_file(srcfile, ptype)
 
-            H = ms.get_H(h)
+            H = ml.get_H(h)
 
-            cind = ms.find_central_particle(L, ids)
-            pind = ms.find_added_particle(ids)
+            cind = ml.find_central_particle(L, ids)
+            pind = ml.find_added_particle(ids)
             # displaced particle has index -1
-            nbors = ms.find_neighbours(pind, x, y, H)
+            nbors = ml.find_neighbours(pind, x, y, H)
 
-            Aij = ms.Aij_Hopkins(pind, x, y, H, m, rho)
+            Aij = ml.Aij_Hopkins(pind, x, y, H, m, rho)
 
             ind = nbors.index(cind)
 

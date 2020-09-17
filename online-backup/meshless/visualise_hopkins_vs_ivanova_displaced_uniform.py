@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable, axes_size, ImageGrid
 
 
-import meshless as ms
+import astro_meshless_surfaces as ml
 from my_utils import setplotparams_multiple_plots
 
 setplotparams_multiple_plots(wspace=0.2, for_presentation=True)
@@ -26,9 +26,9 @@ setplotparams_multiple_plots(wspace=0.2, for_presentation=True)
 
 # temp during rewriting
 ptype = "PartType0"  # for which particle type to look for
-pcoord = [0.5, 0.5]  # coordinates of particle to work for
+pcoord = np.array([0.5, 0.5])  # coordinates of particle to work for
 
-L = 10
+nx = 10
 
 # border limits for plots
 lowlim = 0.4
@@ -41,7 +41,7 @@ ncols = 3
 
 def main():
 
-    nx, filenummax, fileskip = ms.get_sample_size()
+    nx, filenummax, fileskip = ml.get_sample_size()
 
     # -----------------------------
     # Part1 : compute all A
@@ -68,7 +68,7 @@ def main():
             )
             print("working for ", srcfile)
 
-            x, y, h, rho, m, ids, npart = ms.read_file(srcfile, ptype)
+            x, y, h, rho, m, ids, npart = ml.read_file(srcfile, ptype)
             # comments/uncomment for testing purposes
             #  AH[jj,ii] = np.random.uniform()
             #  AI[jj,ii] = np.random.uniform()
@@ -76,20 +76,20 @@ def main():
             #  pind = 10
             #  continue
 
-            H = ms.get_H(h)
+            H = ml.get_H(h)
 
-            cind = ms.find_central_particle(L, ids)
-            pind = ms.find_added_particle(ids)
+            cind = ml.find_central_particle(npart, ids)
+            pind = ml.find_added_particle(ids)
             # displaced particle has index -1
-            nbors = ms.find_neighbours(pind, x, y, H)
-            ind = nbors.index(cind)
+            tree, nbors = ml.find_neighbours(pind, x, y, H)
+            ind = nbors == cind
 
-            Aij = ms.Aij_Hopkins(pind, x, y, H, m, rho)
+            Aij = ml.Aij_Hopkins(pind, x, y, H, m, rho, tree=tree)
 
             # pyplot.imshow takes [y,x] !
             AH[jj, ii] = Aij[ind]
 
-            Aij = ms.Aij_Ivanova(pind, x, y, H, m, rho)
+            Aij = ml.Aij_Ivanova(pind, x, y, H, tree=tree)
             AI[jj, ii] = Aij[ind]
 
             jj += 1

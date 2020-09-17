@@ -15,7 +15,7 @@ from matplotlib import colors as clrs
 import astro_meshless_surfaces as ml
 import my_utils
 
-my_utils.setplotparams_multiple_plots()
+my_utils.setplotparams_multiple_plots(for_presentation=True)
 
 
 # ---------------------------
@@ -41,7 +41,7 @@ def main():
     # convert H to h
     H = ml.get_H(h)
     pind = ml.find_index(x, y, pcoord)
-    tree, nbors = ml.find_neighbours(pind, x, y, H, tree=None)
+    tree, nbors = ml.find_neighbours(pind, x, y, H)
 
     # compute psi_i(x)
     psi = np.zeros((nx, nx), dtype=np.float)
@@ -57,12 +57,13 @@ def main():
             tree, neighs = ml.find_neighbours_arbitrary_x(xx, yy, x, y, eta, tree=tree)
             ind = neighs == pind
             if not ind.any():
-                # if index not in list
                 continue
+                #  raise ValueError("pind not in neighbour list")
 
             xj = x[neighs]
             yj = y[neighs]
             Hj = H[neighs]
+            Hav = np.mean(Hj)
 
             psi_j = ml.compute_psi_i(xx, yy, xj, yj, Hj)
             psi[j, i] = psi_j[ind] / np.sum(psi_j)
@@ -101,8 +102,8 @@ def main():
     for ax in [ax1, ax2]:
         ax.set_xlim((lowlim, uplim))
         ax.set_ylim((lowlim, uplim))
-        ax.set_xlabel("x")
-        ax.set_ylabel("y")
+        #  ax.set_xlabel('x')
+        #  ax.set_ylabel('y')
 
         # plot chosen particle and neighbours
         pointsize = 70
@@ -112,12 +113,7 @@ def main():
                 x[n], y[n], c="white", s=pointsize, zorder=10, lw=1, edgecolor="k"
             )
 
-    # add colorbar
-    #  divider = make_axes_locatable(ax1)
-    #  cax = divider.append_axes("right", size="5%", pad=0.05)
-    #  fig.colorbar(im1, cax=cax)
-
-    plt.savefig("psi_of_x_uniform.png")
+    plt.savefig("psi_of_x_perturbed.png")
 
 
 if __name__ == "__main__":

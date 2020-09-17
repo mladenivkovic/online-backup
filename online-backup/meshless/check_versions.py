@@ -13,7 +13,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-import meshless as ms
+import astro_meshless_surfaces as ml
 
 
 # ---------------------------
@@ -24,7 +24,10 @@ import meshless as ms
 # temp during rewriting
 srcfile = "./snapshot_perturbed.hdf5"  # swift output file
 ptype = "PartType0"  # for which particle type to look for
-pcoords = [[0.5, 0.5], [0.7, 0.7]]  # coordinates of particle to work for
+pcoords = [
+    np.array([0.5, 0.5]),
+    np.array([0.7, 0.7]),
+]  # coordinates of particle to work for
 
 print_by_particle = False  # whether to print differences for each particle separately
 
@@ -59,36 +62,36 @@ arrwidth = 2
 
 def main():
 
-    x, y, h, rho, m, ids, npart = ms.read_file(srcfile, ptype)
+    x, y, h, rho, m, ids, npart = ml.read_file(srcfile, ptype)
 
     # convert H to h
-    H = ms.get_H(h)
+    H = ml.get_H(h)
 
     # prepare figure
     nrows = len(pcoords)
     fig = plt.figure(figsize=(4 * 5 + 0.5, 2 * 5 + 1))
 
     # compute full ivanova only once
-    Aij_Ivanova_v2_full, nbors_all = ms.Aij_Ivanova_all(x, y, H, m, rho)
+    tree = ml.get_tree(x, y)
+    Aij_Ivanova_v2_full, nbors_all, nneigh = ml.Aij_Ivanova_all(x, y, H, tree=tree)
 
     count = 0
     for row, pcoord in enumerate(pcoords):
 
         print("Working for particle at", pcoord)
 
-        pind = ms.find_index(x, y, pcoord, tolerance=0.05)
-        nbors = nbors_all[pind]
+        pind = ml.find_index(x, y, pcoord)
+        nbors = nbors_all[pind, : nneigh[pind]]
 
         print("Computing effective surfaces")
 
-        Aij_Hopkins = ms.Aij_Hopkins(pind, x, y, H, m, rho)
-        Aij_Hopkins_v2 = ms.Aij_Hopkins_v2(pind, x, y, H, m, rho)
-        Aij_Ivanova = ms.Aij_Ivanova(pind, x, y, H, m, rho)
-        Aij_Ivanova_v2 = Aij_Ivanova_v2_full[pind][: len(nbors)]
+        Aij_Hopkins = ml.Aij_Hopkins(pind, x, y, H, m, rho, tree=tree)
+        Aij_Hopkins_v2 = ml.Aij_Hopkins_v2(pind, x, y, H, m, rho, tree=tree)
+        Aij_Ivanova = ml.Aij_Ivanova(pind, x, y, H, tree=tree)
+        Aij_Ivanova_v2 = Aij_Ivanova_v2_full[pind][: nneigh[pind]]
 
-        x_ij = ms.x_ij(pind, x, y, H, nbors=nbors)
+        x_ij = ml.x_ij(pind, x, y, H, nbors=nbors)
 
-        # --------------------------------------------------------------------------------------------------------
         print("Comparing Hopkins:")
         print("Sum Hopkins:", np.sum(Aij_Hopkins, axis=0))
         print("Sum Hopkins_v2:", np.sum(Aij_Hopkins_v2, axis=0))
@@ -122,7 +125,6 @@ def main():
         print("Max difference norm:", np.max((abs1 - abs2) / abs1))
         print("===================================================")
         print()
-        # --------------------------------------------------------------------------------------------------------
 
         print("Plotting")
 

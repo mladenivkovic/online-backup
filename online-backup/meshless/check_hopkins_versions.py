@@ -11,7 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-import meshless as ms
+import astro_meshless_surfaces as ml
 
 
 # ---------------------------
@@ -82,10 +82,10 @@ def extrapolate(x, y, pind, n):
 
 def main():
 
-    x, y, h, rho, m, ids, npart = ms.read_file(srcfile, ptype)
+    x, y, h, rho, m, ids, npart = ml.read_file(srcfile, ptype)
 
     # convert H to h
-    H = ms.get_H(h)
+    H = ml.get_H(h)
 
     # prepare figure
     nrows = len(pcoords)
@@ -97,15 +97,15 @@ def main():
 
         print("Working for particle at", pcoord)
 
-        pind = ms.find_index(x, y, pcoord, tolerance=0.05)
-        nbors = ms.find_neighbours(pind, x, y, H)
+        pind = ml.find_index(x, y, pcoord, tolerance=0.05)
+        nbors = ml.find_neighbours(pind, x, y, H)
 
         print("Computing effective surfaces")
 
-        A_ij_Hopkins = ms.Aij_Hopkins(pind, x, y, H, m, rho)
-        A_ij_Hopkins_v2 = ms.Aij_Hopkins_v2(pind, x, y, H, m, rho)
+        A_ij_Hopkins = ml.Aij_Hopkins(pind, x, y, H, m, rho)
+        A_ij_Hopkins_v2 = ml.Aij_Hopkins_v2(pind, x, y, H, m, rho)
 
-        x_ij = ms.x_ij(pind, x, y, H, nbors=nbors)
+        x_ij = ml.x_ij(pind, x, y, H, nbors=nbors)
 
         print("Plotting")
 
@@ -139,7 +139,7 @@ def main():
             print("Sum abs Hopkins_v2:", np.sum(abs2))
 
             #  print("Ratio Hopkins/Ivanova", np.sum(abs1)/np.sum(abs_i))
-            V_i = ms.V(pind, m, rho)
+            V_i = ml.V(pind, m, rho)
             #  print(V_i)
             R = np.sqrt(V_i / np.pi)
             print("spheric surface", 2 * np.pi * R)

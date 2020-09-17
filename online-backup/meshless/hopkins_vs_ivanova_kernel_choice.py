@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable, axes_size, ImageGrid
 import h5py
 
-import meshless as ms
+import astro_meshless_surfaces as ml
 from my_utils import setplotparams_multiple_plots
 
 setplotparams_multiple_plots(wspace=0.0, hspace=0.0)
@@ -23,10 +23,10 @@ ptype = "PartType0"  # for which particle type to look for
 lowlim = 0.40
 uplim = 0.60
 tol = 1e-5  # tolerance for float comparison
-L = 10
+L = np.array([1.0, 1.0])
 
 
-kernels = ms.kernels
+kernels = ml.kernels
 
 
 def main():
@@ -35,7 +35,7 @@ def main():
     # Part1 : compute all A
     # -----------------------------
 
-    nx, filenummax, fileskip = ms.get_sample_size()
+    nx, filenummax, fileskip = ml.get_sample_size()
     #  nx = 10
 
     ncols = len(kernels)
@@ -45,7 +45,7 @@ def main():
     Aij_Ivanova = [np.zeros((nx, nx, 2), dtype=np.float) for k in kernels]
 
     A_list = [Aij_Hopkins, Aij_Ivanova]
-    A_list_funcs = [ms.Aij_Hopkins, ms.Aij_Ivanova]
+    A_list_funcs = [ml.Aij_Hopkins, ml.Aij_Ivanova]
 
     # loop over all files
     ii = 0
@@ -58,28 +58,29 @@ def main():
             )
             print("working for ", srcfile)
 
-            x, y, h, rho, m, ids, npart = ms.read_file(srcfile, ptype)
-            H = ms.get_H(h)
+            x, y, h, rho, m, ids, npart = ml.read_file(srcfile, ptype)
 
-            cind = ms.find_central_particle(L, ids)
-            pind = ms.find_added_particle(ids)
-            nbors = ms.find_neighbours(pind, x, y, H)
-            try:
-                ind = nbors.index(cind)
-            except ValueError:
+            cind = ml.find_central_particle(npart, ids)
+            pind = ml.find_added_particle(ids)
+            tree, nbors = ml.find_neighbours(pind, x, y, H, L=L)
+            ind = nbors == cind
+            if not ind.any():
                 print(nbors)
                 print(x[nbors])
                 print(y[nbors])
                 print("central:", cind, x[cind], y[cind])
                 print("displaced:", pind, x[pind], y[pind], 2 * h[pind])
+                raise ValueError
 
             for k, kernel in enumerate(kernels):
+                H = ml.get_H(h, kernel=kernel)
                 for a in range(len(A_list)):
-                    f = A_list_funcs[a]
-                    A = A_list[a]
-                    res = f(pind, x, y, H, m, rho, kernel=kernel)
-                    A[k][jj, ii] = res[ind]
-                    #  A[k][jj, ii] = np.random.uniform() / (k+1) / 100
+                    resI = ml.Aij_Ivanova(pind, x, y, H, kernel=kernel, tree=tree)
+                    Aij_Ivanova[k][jj, ii] = resI[ind]
+                    resH = ml.Aij_Hopkins(
+                        pind, x, y, H, m, rho, kernel=kernel, tree=tree
+                    )
+                    Aij_Hopkins[k][jj, ii] = resH[ind]
 
             jj += 1
 
@@ -175,7 +176,7 @@ def main():
                 if row == 1:
                     ax.set_ylabel(r"Ivanova $|\mathbf{A}_{ij}|$", fontsize=14)
             if row == 0:
-                name = ms.kernel_pretty_names[col]
+                name = ml.kernel_pretty_names[col]
                 ax.set_title(name, fontsize=14)
 
             # Add colorbar

@@ -13,7 +13,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-import meshless as ms
+import astro_meshless_surfaces as ml
 from my_utils import setplotparams_multiple_plots
 
 setplotparams_multiple_plots(for_presentation=True)
@@ -58,18 +58,18 @@ ncolrs = len(fullcolorlist)
 
 def main():
 
-    x, y, h, rho, m, ids, npart = ms.read_file(srcfile, ptype)
+    x, y, h, rho, m, ids, npart = ml.read_file(srcfile, ptype)
 
     # convert H to h
-    H = ms.get_H(h)
-    pind = ms.find_index(x, y, pcoord)
-    nbors = ms.find_neighbours(pind, x, y, H)
+    H = ml.get_H(h)
+    pind = ml.find_index(x, y, pcoord)
+    nbors = ml.find_neighbours(pind, x, y, H)
 
     print("Computing effective surfaces")
 
-    A_ij_Hopkins = ms.Aij_Hopkins(pind, x, y, H, m, rho)
-    A_ij_Ivanova = ms.Aij_Ivanova(pind, x, y, H, m, rho)
-    x_ij = ms.x_ij(pind, x, y, H, nbors=nbors)
+    A_ij_Hopkins = ml.Aij_Hopkins(pind, x, y, H, m, rho)
+    A_ij_Ivanova = ml.Aij_Ivanova(pind, x, y, H, m, rho)
+    x_ij = ml.x_ij(pind, x, y, H, nbors=nbors)
 
     print(
         "Sum Hopkins:",
@@ -99,7 +99,7 @@ def main():
     print("\hline")
     dist = np.zeros(len(nbors), dtype=np.float)
     for i, n in enumerate(nbors):
-        dx, dy = ms.get_dx(x[pind], x[n], y[pind], y[n])
+        dx, dy = ml.get_dx(x[pind], x[n], y[pind], y[n])
         dist[i] = np.sqrt(dx ** 2 + dy ** 2)
 
     inds = np.argsort(dist)
