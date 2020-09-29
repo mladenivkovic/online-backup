@@ -1,0 +1,4 @@
+Workflow to check consistency of Aij for swift/python:
+
+- get_Aij_my_way.py snapshot.hdf5
+- 

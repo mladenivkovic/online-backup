@@ -36,3 +36,4 @@
 /home/mivkov/EPFL/Meshless_Methods/visualise_effective_area/ivanova_xij/ivanova_xij.py:/home/mivkov/coding/small_projects/online-backup/meshless//ivanova_xij.py
 /home/mivkov/EPFL/Meshless_Methods/visualise_effective_area/three_particles_volume_distribution/three_particles_volume_distribution.py:/home/mivkov/coding/small_projects/online-backup/meshless/three_particles_volume_distribution.py
 /home/mivkov/EPFL/Meshless_Methods/visualise_effective_area/three_particles_volume_distribution/three_particles_volume_distribution-single-plot.py:/home/mivkov/coding/small_projects/online-backup/meshless/three_particles_volume_distribution-single-plot.py
+/home/mivkov/EPFL/Meshless_Methods/runs/scripts/README:/home/mivkov/coding/small_projects/online-backup/gizmo-ivanova-debugging//README

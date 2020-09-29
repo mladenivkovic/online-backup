@@ -12,12 +12,11 @@
 #   I handwrote for this and implemented into swift
 # ========================================================
 
-
 import numpy as np
 import pickle
 import os
 
-import meshless as ms
+import astro_meshless_surfaces as ml
 from my_utils import yesno, one_arg_present
 
 from read_swift_dumps import extract_dump_data
@@ -29,7 +28,9 @@ from compute_gradients import compute_gradients_my_way
 # -----------------------------
 
 periodic = True
+print("in check_gradients:")
 srcfile = get_srcfile()
+print("in check_gradients:")
 swift_dump, part_dump, python_surface_dump, python_grad_dump = get_dumpfiles()
 
 
@@ -47,9 +48,8 @@ do_break = True  # break after you found a difference
 limit_q = True  # whether to ignore differences for high q = r/H; Seems to be stupid round off errors around
 q_limit = 0.99  # upper limit for q = r/H if difference is found;
 
-single_particle = (
-    False  # whether to print out results only for one particle, specified by ID below
-)
+# whether to print out results only for one particle, specified by ID below
+single_particle = False
 single_ID = 4463  # ID for which to print out results
 
 
@@ -101,7 +101,7 @@ def compare_grads():
     pos = pickle.load(part_filep)
     h = pickle.load(part_filep)
     part_filep.close()
-    H = ms.get_H(h)
+    H = ml.get_H(h)
 
     python_filep = open(python_grad_dump, "rb")
     grads_p = pickle.load(python_filep)
@@ -114,15 +114,9 @@ def compare_grads():
     omega_p = pickle.load(python_filep)
     r_p = pickle.load(python_filep)
     dx_p = pickle.load(python_filep)
-    iinds = pickle.load(python_filep)
-    #  iinds:         iinds[i, j] = which index does particle i have in the neighbour
-    #                      list of particle j, where j is the j-th neighbour of i
-    #                      Due to different smoothing lengths, particle j can be the
-    #                      neighbour of i, but i not the neighbour of j.
-    #                      In that case, the particles will be assigned indices j > nneigh[i]
     python_filep.close()
 
-    L = ms.read_boxsize()
+    L = ml.read_boxsize()
 
     npart = ids.shape[0]
 
@@ -164,7 +158,7 @@ def compare_grads():
                     for n in range(nneigh_s[p]):
                         if swn[n] not in pyn:
                             nind = swn[n] - 1
-                            dx, dy = ms.get_dx(
+                            dx, dy = ml.get_dx(
                                 pos[p, 0],
                                 pos[nind, 0],
                                 pos[p, 1],
@@ -213,7 +207,7 @@ def compare_grads():
                 for n in range(nl):
                     if larger[n] not in smaller:
                         nind = larger[n] - 1
-                        dx, dy = ms.get_dx(
+                        dx, dy = ml.get_dx(
                             pos[p, 0],
                             pos[nind, 0],
                             pos[p, 1],
@@ -253,7 +247,7 @@ def compare_grads():
 
                         else:
                             nneigh_p[p] -= 1
-                            for arr in [dwdr_p, r_p, dx_p, Wjxi_p, iinds]:
+                            for arr in [dwdr_p, r_p, dx_p, Wjxi_p]:
                                 arr[p, n : nl - 1] = arr[p, n + 1 : nl]
 
                         nl -= 1
@@ -345,7 +339,7 @@ def compare_grads():
                         nip += 1
                         continue
 
-                    dx, dy = ms.get_dx(
+                    dx, dy = ml.get_dx(
                         pos[p, 0],
                         pos[nind, 0],
                         pos[p, 1],
@@ -380,10 +374,10 @@ def compare_grads():
                         )
                     )
                     print("TEMPNULL is {0:14.7e}".format(TEMPNULL))
-                    #  print("index guessing ", py, Wjxi_p[p,n], ms.W(r/H[p], H[p]))
+                    #  print("index guessing ", py, Wjxi_p[p,n], ml.W(r/H[p], H[p]))
                     print("p is", p, "n is", nip, "nind is", nind)
-                    print("recompute hi: ", ms.W(r / H[nind], H[nind]))
-                    print("recompute hj: ", ms.W(r / H[p], H[p]))
+                    print("recompute hi: ", ml.W(r / H[nind], H[nind]))
+                    print("recompute hj: ", ml.W(r / H[p], H[p]))
                     print("swn:", nids_s[p, : nneigh_s[p]])
                     print("pyn:", nids_p[p, : nneigh_p[p]])
                     #  print("dx:", dx, "dy", dy, "r", r)
@@ -505,7 +499,7 @@ def compare_grads():
                         continue
 
                     nind = nids_p[p, nip] - 1
-                    dx, dy = ms.get_dx(
+                    dx, dy = ml.get_dx(
                         pos[p, 0],
                         pos[nind, 0],
                         pos[p, 1],
@@ -540,8 +534,8 @@ def compare_grads():
                             py, sw, diff
                         )
                     )
-                    dw = ms.dWdr(r / H[p], H[p])
-                    dw2 = ms.dWdr(r / H[nind], H[nind])
+                    dw = ml.dWdr(r / H[p], H[p])
+                    dw2 = ml.dWdr(r / H[nind], H[nind])
                     print(
                         "dwdr recompute H[p]: {0:14.7e}, H[nind] = {1:14.7e}".format(
                             dw, dw2
@@ -612,7 +606,7 @@ def compare_grads():
                         nip += 1
                         continue
 
-                    dx, dy = ms.get_dx(
+                    dx, dy = ml.get_dx(
                         pos[p, 0],
                         pos[nind, 0],
                         pos[p, 1],
@@ -725,7 +719,7 @@ def compare_grads():
                             continue
 
                         nind = nids_p[p, n] - 1
-                        dx, dy = ms.get_dx(
+                        dx, dy = ml.get_dx(
                             pos[p, 0],
                             pos[nind, 0],
                             pos[p, 1],
@@ -822,7 +816,6 @@ def compare_grads():
 
                 nind = nids_p[p, nip] - 1
 
-                #  iind = iinds[p,nip]
                 pyx = grads_contrib_p[p, nip, 0]
                 pyy = grads_contrib_p[p, nip, 1]
                 swx = grads_contrib_s[p, 2 * nis]
@@ -847,7 +840,7 @@ def compare_grads():
                             nip += 1
                             continue
 
-                        dx, dy = ms.get_dx(
+                        dx, dy = ml.get_dx(
                             pos[p, 0],
                             pos[nind, 0],
                             pos[p, 1],
@@ -1042,7 +1035,6 @@ def compare_grads():
                 not_checked_sw[nis] = False
 
                 nind = nids_p[p, nip] - 1
-                iind = iinds[p, nip]
 
                 pyx = grads_p[p, nip, 0]
                 pyy = grads_p[p, nip, 1]
@@ -1066,7 +1058,7 @@ def compare_grads():
                         if single_particle and ids[p] != single_ID:
                             continue
 
-                        dx, dy = ms.get_dx(
+                        dx, dy = ml.get_dx(
                             pos[p, 0],
                             pos[nind, 0],
                             pos[p, 1],
@@ -1264,7 +1256,7 @@ def compare_grads():
                 for n, not_checked in enumerate(not_checked_py):
                     if not_checked:
                         nind = nids_p[p, n] - 1
-                        dx, dy = ms.get_dx(
+                        dx, dy = ml.get_dx(
                             pos[p, 0],
                             pos[nind, 0],
                             pos[p, 1],
@@ -1281,7 +1273,7 @@ def compare_grads():
                 for n, not_checked in enumerate(not_checked_sw):
                     if not_checked:
                         nind = nids_Aij_s[p, n] - 1
-                        dx, dy = ms.get_dx(
+                        dx, dy = ml.get_dx(
                             pos[p, 0],
                             pos[nind, 0],
                             pos[p, 1],
@@ -1305,8 +1297,6 @@ def compare_grads():
     # Do the actual checks
     # ==================================
 
-    #  check_number_of_neighbours()
-    #  check_neighbour_IDs()
     check_wjxi()
     check_vol()
     check_dwdr()

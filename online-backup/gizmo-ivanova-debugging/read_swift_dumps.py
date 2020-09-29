@@ -11,14 +11,14 @@ from my_utils import yesno, one_arg_present
 
 from filenames import get_srcfile, get_dumpfiles
 
-srcfile = get_srcfile()
-swift_dump, part_dump, python_surface_dump, python_grad_dump = get_dumpfiles()
-
 
 def extract_dump_data():
     """
     Reads in, sorts out and pickle dumps from swift output
     """
+
+    srcfile = get_srcfile()
+    swift_dump, part_dump, python_surface_dump, python_grad_dump = get_dumpfiles()
 
     if os.path.isfile(swift_dump):
         if not yesno("Dump file", swift_dump, "already exists. Shall I overwrite it?"):
@@ -194,12 +194,17 @@ def extract_dump_data():
     return
 
 
-# ==========================================
+# =====================================================
+# Deprecated stuff
+# =====================================================
+
+
 def extract_Aij_from_snapshot_old():
-    # ==========================================
     """
     Reads in, sorts out and pickle dumps from swift output
     """
+    srcfile = get_srcfile()
+    swift_dump, part_dump, python_surface_dump, python_grad_dump = get_dumpfiles()
 
     if os.path.isfile(swift_dump):
         if not yesno("Dump file", swift_dump, "already exists. Shall I overwrite it?"):
@@ -290,6 +295,9 @@ def extract_gradients_from_snapshot_hdf5():
     Reads in, sorts out and pickle dumps from swift output
     !!! DEPRECATED !!!!!!!!!!!!
     """
+
+    srcfile = get_srcfile()
+    swift_dump, part_dump, python_surface_dump, python_grad_dump = get_dumpfiles()
 
     if os.path.isfile(swift_dump):
         if not yesno("Dump file", swift_dump, "already exists. Shall I overwrite it?"):
