@@ -38,14 +38,18 @@ swift_dump, part_dump, python_surface_dump, python_grad_dump = get_dumpfiles()
 # Behaviour params
 # ----------------------
 
-tolerance = 1e-2  # relative tolerance threshold for relative float comparison: if (a - b)/a < tolerance, it's fine
+tolerance = (
+    1e-2
+)  # relative tolerance threshold for relative float comparison: if (a - b)/a < tolerance, it's fine
 NULL = 1e-12  # treat values below this as zeroes
 NULL_RELATIVE = 5e-3  # ignore relative values below this threshold
 
 
 do_break = True  # break after you found a difference
 
-limit_q = True  # whether to ignore differences for high q = r/H; Seems to be stupid round off errors around
+limit_q = (
+    True
+)  # whether to ignore differences for high q = r/H; Seems to be stupid round off errors around
 q_limit = 0.99  # upper limit for q = r/H if difference is found;
 
 # whether to print out results only for one particle, specified by ID below

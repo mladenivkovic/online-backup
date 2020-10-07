@@ -17,7 +17,7 @@ import pickle
 import h5py
 import os
 
-import meshless as ms
+import astro_meshless_surfaces as ml
 from my_utils import yesno, one_arg_present
 
 from filenames import get_srcfile, get_dumpfiles
@@ -72,7 +72,6 @@ def compute_Aij_my_way():
     pos = pickle.load(part_filep)
     h = pickle.load(part_filep)
     part_filep.close()
-    H = ms.get_H(h)
 
     x = pos[:, 0]
     y = pos[:, 1]
@@ -80,15 +79,12 @@ def compute_Aij_my_way():
     npart = x.shape[0]
 
     # get kernel support radius instead of smoothing length
-    H = ms.get_H(h)
-    m = 1
-    rho = 1
-    L = ms.read_boxsize()
+    H = ml.get_H(h)
+    L = ml.read_boxsize()
 
-    A_ij_all, neighbours_all = ms.Aij_Ivanova_all(x, y, H, m, rho, L=L)
+    A_ij_all, neighbours_all, nneighs = ml.Aij_Ivanova_all(x, y, H, L=L)
 
     Aijs = np.zeros((npart, 200, 2), dtype=np.float)
-    nneighs = np.zeros((npart), dtype=np.int)
     neighbour_ids = np.zeros((npart, 200), dtype=np.int)
 
     inds = np.argsort(ids)
@@ -96,15 +92,12 @@ def compute_Aij_my_way():
     for i, ind in enumerate(inds):
         # i: index in arrays to write
         # ind: sorted index
-        nbs = np.array(neighbours_all[ind])  # list of neighbours of current particle
-        nneighs[i] = nbs.shape[0]
+        nbs = neighbours_all[ind, :nneighs[ind]  # list of neighbours of current particle
         ninds = np.argsort(ids[nbs])  # indices of neighbours in nbs array sorted by IDs
-        #  ninds = np.argsort(np.array(ids[nbs]))  # indices of neighbours in nbs array sorted by IDs
 
-        for n in range(nneighs[i]):
-            nind = nbs[
-                ninds[n]
-            ]  # index of n-th neighbour to write in increasing ID order in global arrays
+        for n in range(nneighs[i]): 
+            # index of n-th neighbour to write in increasing ID order in global arrays
+            nind = nbs[ninds[n]] 
             neighbour_ids[i, n] = ids[nind]
             Aijs[i, n] = A_ij_all[ind, ninds[n]]
 
@@ -146,7 +139,7 @@ def compare_Aij():
     pos = pickle.load(part_filep)
     h = pickle.load(part_filep)
     part_filep.close()
-    H = ms.get_H(h)
+    H = ml.get_H(h)
 
     python_filep = open(python_surface_dump, "rb")
     Aij_p = pickle.load(python_filep)
@@ -170,12 +163,11 @@ def compare_Aij():
     omega_p = pickle.load(python_grad_filep)
     r_p = pickle.load(python_grad_filep)
     dx_p = pickle.load(python_grad_filep)
-    iinds = pickle.load(python_grad_filep)
     python_grad_filep.close()
 
     npart = nneigh_s.shape[0]
-    H = ms.get_H(h)
-    L = ms.read_boxsize()
+    H = ml.get_H(h)
+    L = ml.read_boxsize()
 
     # -----------------------------------------------
     def break_now(nis, nip, p, for_Aij=False):
@@ -458,7 +450,7 @@ def compare_Aij():
             for n, not_checked in enumerate(not_checked_py):
                 if not_checked:
                     nind = nids_p[p, n] - 1
-                    dx, dy = ms.get_dx(
+                    dx, dy = ml.get_dx(
                         pos[p, 0],
                         pos[nind, 0],
                         pos[p, 1],
@@ -475,7 +467,7 @@ def compare_Aij():
             for n, not_checked in enumerate(not_checked_sw):
                 if not_checked:
                     nind = nids_Aij_s[p, n] - 1
-                    dx, dy = ms.get_dx(
+                    dx, dy = ml.get_dx(
                         pos[p, 0],
                         pos[nind, 0],
                         pos[p, 1],

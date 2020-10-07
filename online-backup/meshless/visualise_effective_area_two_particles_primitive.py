@@ -18,7 +18,9 @@ from mpl_toolkits.mplot3d import Axes3D
 # -------------------------
 
 
-nx = 100  # number of grid points in any direction for plots. For 3D, 20 barely works for me.
+nx = (
+    100
+)  # number of grid points in any direction for plots. For 3D, 20 barely works for me.
 # also note that this is for 3D, so don't overdo it?
 boxlen = 1  # box size in every direction
 dx = boxlen / nx

@@ -17,7 +17,6 @@ ptype = "PartType0"  # for which particle type to look for
 # get snap number string
 # assumes it ends with XXXX.hdf5
 nrstring = srcfile[-9:-5]
-print("NRSTRING", nrstring)
 
 
 def main():

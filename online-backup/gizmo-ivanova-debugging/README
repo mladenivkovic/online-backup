@@ -1,4 +1,11 @@
 Workflow to check consistency of Aij for swift/python:
 
-- get_Aij_my_way.py snapshot.hdf5
-- 
+-   get_Aij_my_way.py: best don't use this. All updates happen in check_Aij.py
+
+-   check_gradients.py: calls compute gradients and dumps result files. Checks partial
+    computations for gradients of psi, and final gradients as well.
+
+-   check_Aij.py: Compares gradients first, then final Aij's. If you run check_gradients.py
+    first, you don't need to re-compute the gradients with python. The file dumps can be
+    re-used. The code will ask you whether you want to overwrite files. If you say no, it
+    will use them to compare the results between swift and python.
