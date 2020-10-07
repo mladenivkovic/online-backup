@@ -41,3 +41,4 @@
 /home/mivkov/coding/workbench/swift/IsolatedGalaxy_feedback/compare_output_grav_drift_out.py:/home/mivkov/coding/small_projects/online-backup/swift-gravity-dependencies//compare_output_grav_drift_out.py
 /home/mivkov/coding/workbench/swift/IsolatedGalaxy_feedback/sort_cell_hierarchy_output.py:/home/mivkov/coding/small_projects/online-backup/swift-gravity-dependencies//sort_cell_hierarchy_output.py
 /home/mivkov/coding/workbench/swift/IsolatedGalaxy_feedback/sort_output_drift_grav_out_debugging.py:/home/mivkov/coding/small_projects/online-backup/swift-gravity-dependencies//sort_output_drift_grav_out_debugging.py
+/home/mivkov/EPFL/rt/runs/uniform-3D/rt-checks-uniform.py:/home/mivkov/coding/small_projects/online-backup/swift-rt//rt-checks-uniform.py
