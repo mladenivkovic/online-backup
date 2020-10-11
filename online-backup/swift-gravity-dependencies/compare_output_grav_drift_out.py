@@ -25,13 +25,13 @@ if not os.path.exists(log2):
 
 
 log1cellloc = np.loadtxt(log1, dtype=np.float, delimiter=",", usecols=[1, 2, 3])
-log1case, log1depth = np.loadtxt(
-    log1, dtype=int, delimiter=",", usecols=[0, 4], unpack=True
+log1case, log1depth, log1maxdepth, log1split = np.loadtxt(
+    log1, dtype=int, delimiter=",", usecols=[0, 4, 5, 6], unpack=True
 )
 
 log2cellloc = np.loadtxt(log2, dtype=float, delimiter=",", usecols=[1, 2, 3])
-log2case, log2depth = np.loadtxt(
-    log2, dtype=int, delimiter=",", usecols=[0, 4], unpack=True
+log2case, log2depth, log2maxdepth, log2split = np.loadtxt(
+    log2, dtype=int, delimiter=",", usecols=[0, 4, 5, 6], unpack=True
 )
 
 # sort
@@ -53,8 +53,8 @@ matched_case1 = 0
 matched_case2 = 0
 print("In", log1, "but not in", log2)
 print(
-    "{0:12} {1:12} {2:12} {3:12} | {4:12}".format(
-        "loc[0]", "loc[1]", "loc[2]", "depth", "case"
+    "{0:12} {1:12} {2:12} {3:12} {4:12} {5:12} {6:12}".format(
+        "loc[0]", "loc[1]", "loc[2]", "case", "depth", "maxdepth", "split"
     )
 )
 for i, loc1 in enumerate(log1cellloc):
@@ -63,6 +63,7 @@ for i, loc1 in enumerate(log1cellloc):
         #  if checked[j]:
         #      continue
         if log2depth[j] == log1depth[i]:
+            #  if log2maxdepth[j] == log1maxdepth[i]:
             if (loc1 == loc2).all():
                 checked[j] = True
                 found = True
@@ -80,8 +81,8 @@ for i, loc1 in enumerate(log1cellloc):
 
     if not found:
         print(
-            "{0:12.6f} {1:12.6f} {2:12.6f} {3:12d} | {4:12d}".format(
-                loc1[0], loc1[1], loc1[2], log1depth[i], log1case[i]
+            "{0:12.6f} {1:12.6f} {2:12.6f} {3:12d} {4:12d} {5:12d} {6:12d}".format(
+                loc1[0], loc1[1], loc1[2], log1case[i], log1depth[i], log1maxdepth[i], log1split[i]
             )
         )
 
@@ -89,16 +90,16 @@ for i, loc1 in enumerate(log1cellloc):
 print("")
 print("In", log2, "but not in", log1)
 print(
-    "{0:12} {1:12} {2:12} {3:12} | {4:12}".format(
-        "loc[0]", "loc[1]", "loc[2]", "depth", "case"
+    "{0:12} {1:12} {2:12} {3:12} {4:12} {5:12} {6:12}".format(
+        "loc[0]", "loc[1]", "loc[2]", "case", "depth", "maxdepth", "split"
     )
 )
 
 for i, c in enumerate(checked):
     if not c:
         print(
-            "{0:12.6f} {1:12.6f} {2:12.6f} {3:12d} | {4:12d}".format(
-                loc1[0], loc1[1], loc1[2], log1depth[i], log1case[i]
+            "{0:12.6f} {1:12.6f} {2:12.6f} {3:12d} {4:12d} {5:12d} {6:12d}".format(
+                log2cellloc[i][0], log2cellloc[i][1], log2cellloc[i][2], log2case[i], log2depth[i], log2maxdepth[i], log2split[i]
             )
         )
 

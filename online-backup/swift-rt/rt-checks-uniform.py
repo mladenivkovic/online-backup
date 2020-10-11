@@ -13,138 +13,22 @@
 #----------------------------------------------
 
 
-
-import os
 import numpy as np
-import h5py
+from swift_rt_io import get_snap_data
 
 
 # some behaviour options
 skip_snap_zero = True   # skip snap_0000.hdf5
+skip_last_snap = True   # skip snap_0max.hdf5
 skip_coords = False      # skip coordinates check
+skip_sml = False      # skip smoothing lengths check
 print_diffs = True      # print differences you find
 break_on_diff = True   # quit when you find a difference 
-break_on_diff = False   # quit when you find a difference
+#  break_on_diff = False   # quit when you find a difference
 
-float_comparison_tolerance = 1e-5
-
-
-
-
-class RTGasData(object):
-    """
-    Object to store RT gas particle data of a snapshot
-    """
-
-    def __init__(self):
-        self.IDs = None
-        self.coords = None
-        self.RTCalls_pair_injection = None
-        self.RTCalls_self_injection = None
-        self.RTCalls_this_step = None
-        self.photons_updated = None
-        self.RTStarIact = None
-        self.RTTotalCalls = None
-        return
-
-
-class RTStarData(object):
-    """
-    Object to store RT star particle data of a snapshot
-    """
-
-    def __init__(self):
-        self.IDs = None
-        self.coords = None
-        self.RTCalls_pair_injection = None
-        self.RTCalls_self_injection = None
-        self.RTCalls_this_step = None
-        self.RTHydroIact = None
-        self.RTTotalCalls = None
-        return
-
-
-class RTSnapData(object):
-    """
-    Object to store RT snapshot data
-    """
-
-
-    def __init__(self):
-        self.snapnr = None
-        self.stars = RTStarData()
-        self.gas = RTGasData()
-        return
-
-
-
-
-def get_snap_data():
-    """
-    Finds all 'uniform-rt_XXXX.hdf5' files and reads
-    the RT data in.
-
-    Returns
-    -------
-
-    snapdata: list
-        list of RTSnapData objects filled out with actual
-        snapshot data
-    """
-
-    snapdata = []
-
-    ls = os.listdir()
-    hdf5files = []
-    for f in ls:
-        if f.startswith("uniform-rt_") and f.endswith("hdf5"):
-            hdf5files.append(f)
-
-    if len(hdf5files) == 0:
-        raise IOError("No uniform-rt_XXXX.hdf5 files found in this directory")
-
-    hdf5files.sort()
-
-
-    for f in hdf5files:
-        snapnrstr = f[11:15]
-        snapnr = int(snapnrstr)
-        if snapnr == 0:
-            continue
-
-        newsnap = RTSnapData()
-        newsnap.snapnr = snapnr
-
-        F = h5py.File(f, 'r')
-        Gas = F['PartType0']
-        ids = Gas["ParticleIDs"][:]
-        inds = np.argsort(ids)
-        newsnap.gas.IDs = ids[inds]
-        newsnap.gas.coords = Gas["Coordinates"][:][inds]
-        newsnap.gas.RTCalls_pair_injection = Gas["RTCallsPairInjection"][:][inds]
-        newsnap.gas.RTCalls_self_injection = Gas["RTCallsSelfInjection"][:][inds]
-        newsnap.gas.RTCalls_this_step = Gas["RTCallsThisStep"][:][inds]
-        newsnap.gas.photons_updated = Gas["RTPhotonsUpdated"][:][inds]
-        newsnap.gas.RTStarIact = Gas["RTStarIact"][:][inds]
-        newsnap.gas.RTTotalCalls = Gas["RTTotalCalls"][:][inds]
-
-
-
-        Stars = F['PartType4']
-        ids = Stars["ParticleIDs"][:]
-        inds = np.argsort(ids)
-        newsnap.stars.IDs = ids[inds]
-        newsnap.stars.coords = Stars["Coordinates"][:][inds]
-        newsnap.stars.RTCalls_pair_injection = Stars["RTCallsPairInjection"][:][inds]
-        newsnap.stars.RTCalls_self_injection = Stars["RTCallsSelfInjection"][:][inds]
-        newsnap.stars.RTCalls_this_step = Stars["RTCallsThisStep"][:][inds]
-        newsnap.stars.RTHydroIact = Stars["RTHydroIact"][:][inds]
-        newsnap.stars.RTTotalCalls = Stars["RTTotalCalls"][:][inds]
-
-
-        snapdata.append(newsnap)
-
-    return snapdata
+# tolerance for a float to be equal
+float_comparison_tolerance = 1e-3 # with feedback
+#  float_comparison_tolerance = 1e-5 # without feedback
 
 
 
@@ -173,6 +57,21 @@ def check_all_hydro_is_equal(snapdata):
 
                 if break_on_diff:
                     quit()
+
+        # Smoothing Lengths
+        if not skip_sml:
+
+            diff = np.abs((ref.gas.h - compare.gas.h) / ref.gas.h)
+            if (diff > float_comparison_tolerance).any():
+                print("--- Coordinates vary")
+                if print_diffs:
+                    for i in range(npart):
+                        if ((ref.gas.h[i] - compare.gas.h[i])/ref.gas.h[i]).any():
+                            print(ref.gas.h[i], "|", compare.gas.h[i])
+
+                if break_on_diff:
+                    quit()
+
 
 
         # Pair Injection
@@ -226,6 +125,19 @@ def check_all_hydro_is_equal(snapdata):
             if break_on_diff:
                 quit()
 
+        # Photon number updates
+        if (ref.gas.photons_updated != compare.gas.photons_updated).any():
+            print("--- Calls to photons_updated")
+
+            if print_diffs:
+                for i in range(npart):
+                    if ref.gas.photons_updated[i] != compare.gas.photons_updated[i]:
+                        print("-----", ref.gas.IDs[i], ref.gas.photons_updated[i], compare.gas.photons_updated[i])
+
+            if break_on_diff:
+                quit()
+
+
     return
 
 
@@ -248,15 +160,17 @@ def check_hydro_sanity(snapdata):
         print("Checking hydro sanity pt1", 
             snapdata[s].snapnr, "->", snapdata[s-1].snapnr)
 
-        # TODO: getting errors here :/
         # check number increase for total calls
-        #  totalCallsExpect = prev.RTTotalCalls + this.RTCalls_this_step
-        #  if (this.RTTotalCalls != totalCallsExpect).any():
-        #      print("--- Total Calls not consistent")
-        #      if print_diffs:
-        #          for i in range(npart):
-        #              if this.RTTotalCalls[i] != totalCallsExpect[i]:
-        #                  print("-----", this.RTTotalCalls[i], prev.RTTotalCalls[i], prev.RTCalls_this_step[i])
+        totalCallsExpect = prev.RTTotalCalls + this.RTCalls_this_step
+        if (this.RTTotalCalls != totalCallsExpect).any():
+            print("--- Total Calls not consistent")
+            if print_diffs:
+                for i in range(npart):
+                    if this.RTTotalCalls[i] != totalCallsExpect[i]:
+                        print("-----", this.RTTotalCalls[i], prev.RTTotalCalls[i], prev.RTCalls_this_step[i])
+
+            if break_on_diff:
+                quit()
 
 
 
@@ -309,7 +223,22 @@ def check_all_stars_is_equal(snapdata):
                 if break_on_diff:
                     quit()
 
-        # TODO: getting errors here. CHECK!
+
+        # Smoothing Lengths
+        if not skip_sml:
+
+            diff = np.abs((ref.gas.h - compare.gas.h) / ref.gas.h)
+            if (diff > float_comparison_tolerance).any():
+                print("--- Coordinates vary")
+                if print_diffs:
+                    for i in range(npart):
+                        if ((ref.gas.h[i] - compare.gas.h[i])/ref.gas.h[i]).any():
+                            print(ref.gas.h[i], "|", compare.gas.h[i])
+
+                if break_on_diff:
+                    quit()
+
+
         # Pair Injection
         if (ref.stars.RTCalls_pair_injection != compare.stars.RTCalls_pair_injection).any():
             print("--- Calls Pair Injection Vary")
@@ -322,7 +251,6 @@ def check_all_stars_is_equal(snapdata):
             if break_on_diff:
                 quit()
 
-
         # Self Injection
         if (ref.stars.RTCalls_self_injection != compare.stars.RTCalls_self_injection).any():
             print("--- Calls Self Injection Vary")
@@ -334,7 +262,6 @@ def check_all_stars_is_equal(snapdata):
 
             if break_on_diff:
                 quit()
-
 
         # Calls this step
         if (ref.stars.RTCalls_this_step != compare.stars.RTCalls_this_step).any():
@@ -368,52 +295,50 @@ def check_stars_sanity(snapdata):
     """
     Sanity checks for stars variables.
     - total calls keep increasing?
+    - emission rates set?
     """
 
     nsnaps = len(snapdata)
-    npart = snapdata[0].gas.coords.shape[0]
+    npart = snapdata[0].stars.coords.shape[0]
 
     # check relative changes
-    for s in range(nsnaps):
+    for s in range(1, nsnaps):
 
         this = snapdata[s].stars
         prev = snapdata[s-1].stars
 
-        print("Checking stars sanity pt1", 
-            snapdata[s].snapnr)
+        print("Checking stars sanity pt1", snapdata[s].snapnr, '->', snapdata[s-1].snapnr)
 
-        # TODO: getting errors here :/
         #  check number increase for total calls
-        #  totalCallsExpect = prev.RTTotalCalls + this.RTCalls_this_step
-        #  if (this.RTTotalCalls != totalCallsExpect).any():
-        #      print("--- Total Calls not consistent")
-        #      if print_diffs:
-        #          for i in range(npart):
-        #              if this.RTTotalCalls[i] != totalCallsExpect[i]:
-        #                  print("-----", this.RTTotalCalls[i], prev.RTTotalCalls[i], prev.RTCalls_this_step[i])
-        #
-        #      if break_on_diff:
-        #          quit()
+        totalCallsExpect = prev.RTTotalCalls + this.RTCalls_this_step
+        if (this.RTTotalCalls != totalCallsExpect).any():
+            print("--- Total Calls not consistent: decreasing?")
+            if print_diffs:
+                for i in range(npart):
+                    if this.RTTotalCalls[i] != totalCallsExpect[i]:
+                        print("-----", this.RTTotalCalls[i], prev.RTTotalCalls[i], this.RTCalls_this_step)
+
+            if break_on_diff:
+                quit()
 
 
 
-    # check absolute values every snapshot
-    #  for snap in snapdata:
-    #
-    #      gas = snap.gas
-    #
-    #      print("Checking stars sanity pt2", snap.snapnr)
-    #
-    #      # check that photons have been updated (ghost1 called)
-    #      if (gas.photons_updated == 0).any():
-    #          print("--- Some photons haven't been updated")
-    #          if print_diffs:
-    #              print("----- IDs with photons_updated==0:")
-    #              print(gas.IDs[this.photons_updated == 0])
-    #
-    #          if break_on_diff:
-    #              quit()
-    #
+    #  check consistency of individual snapshots
+    for snap in snapdata:
+
+        print("Checking stars sanity pt2", snap.snapnr)
+        this = snap.stars
+
+        
+        if (this.EmissionRateSet != 1).any():
+            print("--- Emisison Rates not consistent")
+            if print_diffs:
+                for i in range(npart):
+                    if this.EmissionRateSet[i] != 1:
+                        print("-----", EmissionRateSet[i])
+
+            if break_on_diff:
+                quit()
 
     return
 
@@ -425,7 +350,7 @@ def main():
     Main function to run.
     """
 
-    snapdata = get_snap_data()
+    snapdata = get_snap_data(prefix="uniform-rt", skip_snap_zero=skip_snap_zero, skip_last_snap=skip_last_snap)
 
     check_all_hydro_is_equal(snapdata)
     check_hydro_sanity(snapdata)
