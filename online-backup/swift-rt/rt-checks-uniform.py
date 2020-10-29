@@ -23,8 +23,8 @@ skip_last_snap = True   # skip snap_0max.hdf5
 skip_coords = False      # skip coordinates check
 skip_sml = False      # skip smoothing lengths check
 print_diffs = True      # print differences you find
-break_on_diff = True   # quit when you find a difference 
-#  break_on_diff = False   # quit when you find a difference
+#  break_on_diff = True   # quit when you find a difference
+break_on_diff = False   # quit when you find a difference
 
 # tolerance for a float to be equal
 float_comparison_tolerance = 1e-3 # with feedback
@@ -138,6 +138,34 @@ def check_all_hydro_is_equal(snapdata):
                 quit()
 
 
+        # Gradient Loop Calls
+        if (ref.gas.RTCallsIactGradient != compare.gas.RTCallsIactGradient).any():
+            print("--- Calls to iact gradient")
+
+            if print_diffs:
+                for i in range(npart):
+                    if ref.gas.RTCallsIactGradient[i] != compare.gas.RTCallsIactGradient[i]:
+                        print("-----", ref.gas.IDs[i], ref.gas.RTCallsIactGradient[i], compare.gas.RTCallsIactGradient[i])
+
+            if break_on_diff:
+                quit()
+
+        # Transport Loop Calls
+        if (ref.gas.RTCallsIactTransport != compare.gas.RTCallsIactTransport).any():
+            print("--- Calls to iact gradient")
+
+            if print_diffs:
+                for i in range(npart):
+                    if ref.gas.RTCallsIactTransport[i] != compare.gas.RTCallsIactTransport[i]:
+                        print("-----", ref.gas.IDs[i], ref.gas.RTCallsIactTransport[i], compare.gas.RTCallsIactTransport[i])
+
+            if break_on_diff:
+                quit()
+
+
+
+
+
     return
 
 
@@ -189,6 +217,16 @@ def check_hydro_sanity(snapdata):
             if print_diffs:
                 print("----- IDs with photons_updated==0:")
                 print(gas.IDs[this.photons_updated == 0])
+
+            if break_on_diff:
+                quit()
+
+        # check that number of calls to gradient interactions is
+        # same as number of calls to transport interactions
+        if (gas.RTCallsIactTransport < gas.RTCallsIactGradient).any():
+            print("transport calls < gradient calls")
+            mask = gas.RTCallsIactTransport < gas.RTCallsIactGradient
+            print(gas.IDs[mask], gas.RTCallsIactGradient[mask], gas.RTCallsIactTransport[mask])
 
             if break_on_diff:
                 quit()
@@ -332,10 +370,13 @@ def check_stars_sanity(snapdata):
         
         if (this.EmissionRateSet != 1).any():
             print("--- Emisison Rates not consistent")
-            if print_diffs:
-                for i in range(npart):
-                    if this.EmissionRateSet[i] != 1:
-                        print("-----", EmissionRateSet[i])
+            count = 0
+            for i in range(npart):
+                if this.EmissionRateSet[i] != 1:
+                    count += 1
+                    if print_diffs:
+                        print("-----", this.EmissionRateSet[i], "ID", this.IDs[i])
+            print("----- count: ", count, "/", this.EmissionRateSet.shape[0])
 
             if break_on_diff:
                 quit()
