@@ -224,12 +224,46 @@ def check_hydro_sanity(snapdata):
         # check that number of calls to gradient interactions is
         # same as number of calls to transport interactions
         if (gas.RTCallsIactTransport < gas.RTCallsIactGradient).any():
-            print("transport calls < gradient calls")
+            print("--- transport calls < gradient calls")
             mask = gas.RTCallsIactTransport < gas.RTCallsIactGradient
             print(gas.IDs[mask], gas.RTCallsIactGradient[mask], gas.RTCallsIactTransport[mask])
 
             if break_on_diff:
                 quit()
+
+        # Check that number of symmetric + nonsymmetric interactions is
+        # also the number of total calls you get
+        GradExpect = gas.RTCallsIactGradientSym + gas.RTCallsIactGradientNonSym
+        if (gas.RTCallsIactGradient != GradExpect).any():
+            print("--- gradient number of calls wrong :(")
+
+            if print_diffs:
+                for i in range(npart):
+                    if gas.RTCallsIactGradient[i] != GradExpect[i]:
+                        print("-----", gas.IDs[i], gas.RTCallsIactGradient[i], GradExpect[i])
+
+            if break_on_diff:
+                quit()
+
+        TransportExpect = gas.RTCallsIactTransportSym + gas.RTCallsIactTransportNonSym
+        if (gas.RTCallsIactTransport != TransportExpect).any():
+            print("--- transport number of calls wrong :(")
+
+            if print_diffs:
+                for i in range(npart):
+                    if gas.RTCallsIactTransport[i] != TransportExpect[i]:
+                        print("-----", gas.IDs[i], gas.RTCallsIactTransport[i], TransportExpect[i])
+
+            if break_on_diff:
+                quit()
+
+        #  nzs = gas.photons_updated > 0
+        #  if (gas.GradientsDone[nzs] == 0).any():
+        #      print("Oh no")
+        #  if (gas.TransportDone[nzs] == 0).any():
+        #      print("Oh no")
+        #  if (gas.ThermochemistryDone[nzs] == 0).any():
+            #  print("Oh no")
 
 
     return

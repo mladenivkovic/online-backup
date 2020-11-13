@@ -21,13 +21,20 @@ class RTGasData(object):
         self.coords = None
         self.h = None
         self.RTCallsIactGradient = None
+        self.RTCallsIactGradientSym = None
+        self.RTCallsIactGradientNonSym = None
         self.RTCallsIactTransport = None
         self.RTCalls_pair_injection = None
         self.RTCalls_self_injection = None
         self.RTCalls_this_step = None
-        self.photons_updated = None
         self.RTStarIact = None
         self.RTTotalCalls = None
+        self.photons_updated = None
+        # TODO: for later
+        #  self.ThermochemistryDone = None
+        #  self.TransportDone = None
+        #  self.GradientsDone = None
+
         return
 
 
@@ -126,11 +133,19 @@ def get_snap_data(prefix="output_", skip_snap_zero=False, skip_last_snap=False):
         newsnap.gas.RTCalls_pair_injection = Gas["RTCallsPairInjection"][:][inds]
         newsnap.gas.RTCalls_self_injection = Gas["RTCallsSelfInjection"][:][inds]
         newsnap.gas.RTCalls_this_step = Gas["RTCallsThisStep"][:][inds]
-        newsnap.gas.photons_updated = Gas["RTPhotonsUpdated"][:][inds]
         newsnap.gas.RTStarIact = Gas["RTStarIact"][:][inds]
         newsnap.gas.RTTotalCalls = Gas["RTTotalCalls"][:][inds]
         newsnap.gas.RTCallsIactGradient = Gas["RTCallsIactGradient"][:][inds]
         newsnap.gas.RTCallsIactTransport = Gas["RTCallsIactTransport"][:][inds]
+        newsnap.gas.photons_updated = Gas["RTPhotonsUpdated"][:][inds]
+        # TODO: for later
+        #  newsnap.gas.GradientsDone = Gas["RTGradientsFinished"][:][inds]
+        #  newsnap.gas.TransportDone = Gas["RTTransportDone"][:][inds]
+        #  newsnap.gas.ThermochemistryDone = Gas["RTThermochemistryDone"][:][inds]
+        newsnap.gas.RTCallsIactGradientSym = Gas["RTCallsIactGradientSym"][:][inds]
+        newsnap.gas.RTCallsIactGradientNonSym = Gas["RTCallsIactGradientNonSym"][:][inds]
+        newsnap.gas.RTCallsIactTransportSym = Gas["RTCallsIactTransportSym"][:][inds]
+        newsnap.gas.RTCallsIactTransportNonSym = Gas["RTCallsIactTransportNonSym"][:][inds]
 
 
 
@@ -139,7 +154,7 @@ def get_snap_data(prefix="output_", skip_snap_zero=False, skip_last_snap=False):
         inds = np.argsort(ids)
         newsnap.stars.IDs = ids[inds]
         newsnap.stars.coords = Stars["Coordinates"][:][inds]
-        newsnap.stars.coords = Stars["SmoothingLengths"][:][inds]
+        newsnap.stars.h = Stars["SmoothingLengths"][:][inds]
         newsnap.stars.RTCalls_pair_injection = Stars["RTCallsPairInjection"][:][inds]
         newsnap.stars.RTCalls_self_injection = Stars["RTCallsSelfInjection"][:][inds]
         newsnap.stars.RTCalls_this_step = Stars["RTCallsThisStep"][:][inds]

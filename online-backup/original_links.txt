@@ -43,3 +43,4 @@
 /home/mivkov/coding/workbench/swift/IsolatedGalaxy_feedback/sort_output_drift_grav_out_debugging.py:/home/mivkov/coding/small_projects/online-backup/swift-gravity-dependencies//sort_output_drift_grav_out_debugging.py
 /home/mivkov/EPFL/rt/runs/uniform-3D/rt-checks-uniform.py:/home/mivkov/coding/small_projects/online-backup/swift-rt//rt-checks-uniform.py
 /home/mivkov/EPFL/rt/runs/py/swift_rt_io.py:/home/mivkov/coding/small_projects/online-backup/swift-rt/swift_rt_io.py
+/home/mivkov/EPFL/Meshless_Methods/runs/scripts/check_Aijs_new.py:/home/mivkov/coding/small_projects/online-backup/meshless//check_Aijs_new.py
