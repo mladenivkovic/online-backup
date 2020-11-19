@@ -35,6 +35,14 @@ class RTGasData(object):
         #  self.TransportDone = None
         #  self.GradientsDone = None
 
+        self.neighbours_grad = None
+        self.neighcells_grad = None
+        self.nneigh_grad = None
+        self.neighbours_transport = None
+        self.neighcells_transport = None
+        self.nneigh_transport = None
+        self.this_cell = None
+
         return
 
 
@@ -64,6 +72,7 @@ class RTSnapData(object):
     def __init__(self):
         self.snapnr = None
         self.ncells = None
+        self.boxsize = None
         self.stars = RTStarData()
         self.gas = RTGasData()
         return
@@ -123,6 +132,7 @@ def get_snap_data(prefix="output_", skip_snap_zero=False, skip_last_snap=False):
         newsnap.snapnr = snapnr
 
         F = h5py.File(f, 'r')
+        newsnap.boxsize = F["Header"].attrs["BoxSize"]
         newsnap.ncells = F["Cells"]
         Gas = F['PartType0']
         ids = Gas["ParticleIDs"][:]
@@ -146,6 +156,14 @@ def get_snap_data(prefix="output_", skip_snap_zero=False, skip_last_snap=False):
         newsnap.gas.RTCallsIactGradientNonSym = Gas["RTCallsIactGradientNonSym"][:][inds]
         newsnap.gas.RTCallsIactTransportSym = Gas["RTCallsIactTransportSym"][:][inds]
         newsnap.gas.RTCallsIactTransportNonSym = Gas["RTCallsIactTransportNonSym"][:][inds]
+
+        newsnap.gas.neighbours_grad = Gas["RTNeighsIactGrad"][:][inds]
+        newsnap.gas.neighcells_grad = Gas["RTNeighCellsIactGrad"][:][inds]
+        newsnap.gas.nneigh_grad = Gas["RTNrNeighIactGrad"][:][inds]
+        newsnap.gas.neighbours_transport = Gas["RTNeighsIactTransport"][:][inds]
+        newsnap.gas.neighcells_transport = Gas["RTNeighCellsIactTransport"][:][inds]
+        newsnap.gas.nneigh_transport = Gas["RTNrNeighIactTransport"][:][inds]
+        newsnap.gas.this_cell = Gas["RTThisCell"][:][inds]
 
 
 

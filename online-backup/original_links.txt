@@ -44,3 +44,5 @@
 /home/mivkov/EPFL/rt/runs/uniform-3D/rt-checks-uniform.py:/home/mivkov/coding/small_projects/online-backup/swift-rt//rt-checks-uniform.py
 /home/mivkov/EPFL/rt/runs/py/swift_rt_io.py:/home/mivkov/coding/small_projects/online-backup/swift-rt/swift_rt_io.py
 /home/mivkov/EPFL/Meshless_Methods/runs/scripts/check_Aijs_new.py:/home/mivkov/coding/small_projects/online-backup/meshless//check_Aijs_new.py
+/home/mivkov/EPFL/rt/runs/IsolatedGalaxy_feedback/rt-checks-IsolatedGalaxy.py:/home/mivkov/coding/small_projects/online-backup/swift-rt/rt-checks-IsolatedGalaxy.py
+/home/mivkov/EPFL/rt/runs/IsolatedGalaxy_feedback/rt-debugging-gradient-transport.py:/home/mivkov/coding/small_projects/online-backup/swift-rt/rt-debugging-gradient-transport.py
