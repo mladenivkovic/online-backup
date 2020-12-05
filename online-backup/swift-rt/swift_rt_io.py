@@ -35,6 +35,7 @@ class RTGasData(object):
         #  self.TransportDone = None
         #  self.GradientsDone = None
 
+        # debugging gradient/transport loops
         self.neighbours_grad = None
         self.neighcells_grad = None
         self.nneigh_grad = None
@@ -42,6 +43,15 @@ class RTGasData(object):
         self.neighcells_transport = None
         self.nneigh_transport = None
         self.this_cell = None
+
+        self.hydro_neighbours_grad = None
+        self.hydro_neighcells_grad = None
+        self.hydro_nneigh_grad = None
+        self.hydro_neighbours_transport = None
+        self.hydro_neighcells_transport = None
+        self.hydro_nneigh_transport = None
+        self.hydro_this_cell = None
+
 
         return
 
@@ -163,8 +173,24 @@ def get_snap_data(prefix="output_", skip_snap_zero=False, skip_last_snap=False):
         newsnap.gas.neighbours_transport = Gas["RTNeighsIactTransport"][:][inds]
         newsnap.gas.neighcells_transport = Gas["RTNeighCellsIactTransport"][:][inds]
         newsnap.gas.nneigh_transport = Gas["RTNrNeighIactTransport"][:][inds]
-        newsnap.gas.this_cell = Gas["RTThisCell"][:][inds]
+        newsnap.gas.this_cell_grad = Gas["RTThisCellGrad"][:][inds]
+        newsnap.gas.this_cell_transport = Gas["RTThisCellTransport"][:][inds]
 
+        newsnap.gas.hydro_neighbours_grad = Gas["RTHydroNeighsIactGrad"][:][inds]
+        newsnap.gas.hydro_neighcells_grad = Gas["RTHydroNeighCellsIactGrad"][:][inds]
+        newsnap.gas.hydro_nneigh_grad = Gas["RTHydroNrNeighIactGrad"][:][inds]
+        newsnap.gas.hydro_neighbours_transport = Gas["RTHydroNeighsIactTransport"][:][inds]
+        newsnap.gas.hydro_neighcells_transport = Gas["RTHydroNeighCellsIactTransport"][:][inds]
+        newsnap.gas.hydro_nneigh_transport = Gas["RTHydroNrNeighIactTransport"][:][inds]
+        newsnap.gas.hydro_this_cell_grad = Gas["RTHydroThisCellGrad"][:][inds]
+        newsnap.gas.hydro_this_cell_transport = Gas["RTHydroThisCellTransport"][:][inds]
+
+        newsnap.gas.RTHydroCallsIactGradient = Gas["RTHydroCallsIactGradient"][:][inds]
+        newsnap.gas.RTHydroCallsIactForce = Gas["RTHydroCallsIactForce"][:][inds]
+        newsnap.gas.RTHydroCallsIactGradientSym = Gas["RTHydroCallsIactGradientSym"][:][inds]
+        newsnap.gas.RTHydroCallsIactGradientNonSym = Gas["RTHydroCallsIactGradientNonSym"][:][inds]
+        newsnap.gas.RTHydroCallsIactForceSym = Gas["RTHydroCallsIactForceSym"][:][inds]
+        newsnap.gas.RTHydroCallsIactForceNonSym = Gas["RTHydroCallsIactForceNonSym"][:][inds]
 
 
         Stars = F['PartType4']
