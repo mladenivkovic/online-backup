@@ -163,6 +163,8 @@ def check_hydro_sanity(snapdata):
             print("   RT < Hydro:", np.count_nonzero(gas.hydro_nneigh_grad > gas.nneigh_grad), "/", npart)
             if break_on_diff:
                 quit()
+        else:
+            print("   nneigh_grad is equal between hydro and RT :)")
 
         # --------------------------------------------------------------
         # check number of neighbours for gradient interactions
@@ -180,6 +182,8 @@ def check_hydro_sanity(snapdata):
             print("   RT < Hydro:", np.count_nonzero(gas.hydro_nneigh_transport > gas.nneigh_transport), "/", npart)
             if break_on_diff:
                 quit()
+        else:
+            print("   nneigh_transport is equal between hydro and RT :)")
 
 
         # --------------------------------------------------------------
@@ -188,68 +192,73 @@ def check_hydro_sanity(snapdata):
         # in RT interactions
         # --------------------------------------------------------------
         if (gas.RTCallsIactTransport < gas.RTCallsIactGradient).any():
-            print("   Found RT transport calls < gradient calls")
-            for i in range(npart):
-                if gas.RTCallsIactTransport[i] < gas.RTCallsIactGradient[i]:
-                    print("   Particle ID {0:6d}".format(gas.IDs[i]))
-                    print("      cell ID {0:18d}".format(gas.this_cell_transport[i]))
-                    print("      calls grad: {0:4d} calls transport: {1:4d}".format(
-                            gas.RTCallsIactGradient[i], gas.RTCallsIactTransport[i]))
-                    
-                    ngb_grad = gas.neighbours_grad[i, :gas.nneigh_grad[i]]
-                    ncell_grad = gas.neighcells_grad[i, :gas.nneigh_grad[i]]
+            print("   Found RT transport calls < gradient calls:", np.count_nonzero(gas.RTCallsIactTransport < gas.RTCallsIactGradient), "/", npart)
+        else:
+            print("   RT Transport calls >= RT Gradient calls everywhere :)")
 
-                    ngb_transport = gas.neighbours_transport[i,:gas.nneigh_transport[i]]
-                    ncell_transport = gas.neighcells_transport[i,:gas.nneigh_transport[i]]
-
-                    for g, gid in enumerate(ngb_grad):
-                        if gid not in ngb_transport:
-                            # get compact supports
-                            Hi = gas.h[i] * kernel_gamma
-                            xi = gas.coords[i]
-                            indj = gas.IDs == gid
-                            Hj = gas.h[indj].item() * kernel_gamma
-                            xj = gas.coords[indj].ravel()
-
-                            # get r and periodicity corrections
-                            r = 0.
-                            for d in range(3):
-                                dx = xi[d] - xj[d]
-                                if dx < - snap.boxsize[d] * 0.5:
-                                    dx += snap.boxsize[d]
-                                if dx > snap.boxsize[d] * 0.5:
-                                    dx -= snap.boxsize[d]
-                                r += dx**2
-
-                            r = np.sqrt(r)
-
-                            print("      G!inT: ID {0:6d} cellID {1:18d} | r/Hi: {2:.3f} r/Hj: {3:.3f}".format(gid, ncell_grad[g], r/Hi, r/Hj))
-
-                    for t, tid in enumerate(ngb_transport):
-                        if tid not in ngb_grad:
-                            # get compact supports
-                            Hi = gas.h[i] * kernel_gamma
-                            xi = gas.coords[i]
-                            indj = gas.IDs == tid
-                            Hj = gas.h[indj].item() * kernel_gamma
-                            xj = gas.coords[indj].ravel()
-
-                            # get r and periodicity corrections
-                            r = 0.
-                            for d in range(3):
-                                dx = xi[d] - xj[d]
-                                if dx < - snap.boxsize[d] * 0.5:
-                                    dx += snap.boxsize[d]
-                                if dx > snap.boxsize[d] * 0.5:
-                                    dx -= snap.boxsize[d]
-                                r += dx**2
-
-                            r = np.sqrt(r)
-                            print("      T!inG: ID {0:6d} cellID {1:18d} | r/Hi: {2:.3f} r/Hj: {3:.3f}".format(tid, ncell_transport[t], r/Hi, r/Hj))
-
-            if break_on_diff:
-                quit()
-
+            #  print("   Found RT transport calls < gradient calls")
+            #  for i in range(npart):
+            #      if gas.RTCallsIactTransport[i] < gas.RTCallsIactGradient[i]:
+            #          print("   Particle ID {0:6d}".format(gas.IDs[i]))
+            #          print("      cell ID {0:18d}".format(gas.this_cell_transport[i]))
+            #          print("      calls grad: {0:4d} calls transport: {1:4d}".format(
+            #                  gas.RTCallsIactGradient[i], gas.RTCallsIactTransport[i]))
+            #
+            #          ngb_grad = gas.neighbours_grad[i, :gas.nneigh_grad[i]]
+            #          ncell_grad = gas.neighcells_grad[i, :gas.nneigh_grad[i]]
+            #
+            #          ngb_transport = gas.neighbours_transport[i,:gas.nneigh_transport[i]]
+            #          ncell_transport = gas.neighcells_transport[i,:gas.nneigh_transport[i]]
+            #
+            #          for g, gid in enumerate(ngb_grad):
+            #              if gid not in ngb_transport:
+            #                  # get compact supports
+            #                  Hi = gas.h[i] * kernel_gamma
+            #                  xi = gas.coords[i]
+            #                  indj = gas.IDs == gid
+            #                  Hj = gas.h[indj].item() * kernel_gamma
+            #                  xj = gas.coords[indj].ravel()
+            #
+            #                  # get r and periodicity corrections
+            #                  r = 0.
+            #                  for d in range(3):
+            #                      dx = xi[d] - xj[d]
+            #                      if dx < - snap.boxsize[d] * 0.5:
+            #                          dx += snap.boxsize[d]
+            #                      if dx > snap.boxsize[d] * 0.5:
+            #                          dx -= snap.boxsize[d]
+            #                      r += dx**2
+            #
+            #                  r = np.sqrt(r)
+            #
+            #                  print("      G!inT: ID {0:6d} cellID {1:18d} | r/Hi: {2:.3f} r/Hj: {3:.3f}".format(gid, ncell_grad[g], r/Hi, r/Hj))
+            #
+            #          for t, tid in enumerate(ngb_transport):
+            #              if tid not in ngb_grad:
+            #                  # get compact supports
+            #                  Hi = gas.h[i] * kernel_gamma
+            #                  xi = gas.coords[i]
+            #                  indj = gas.IDs == tid
+            #                  Hj = gas.h[indj].item() * kernel_gamma
+            #                  xj = gas.coords[indj].ravel()
+            #
+            #                  # get r and periodicity corrections
+            #                  r = 0.
+            #                  for d in range(3):
+            #                      dx = xi[d] - xj[d]
+            #                      if dx < - snap.boxsize[d] * 0.5:
+            #                          dx += snap.boxsize[d]
+            #                      if dx > snap.boxsize[d] * 0.5:
+            #                          dx -= snap.boxsize[d]
+            #                      r += dx**2
+            #
+            #                  r = np.sqrt(r)
+            #                  print("      T!inG: ID {0:6d} cellID {1:18d} | r/Hi: {2:.3f} r/Hj: {3:.3f}".format(tid, ncell_transport[t], r/Hi, r/Hj))
+            #
+            #  if break_on_diff:
+            #      quit()
+            #
+            #
 
         # --------------------------------------------------------------
         # check that number of calls to gradient interactions is
@@ -257,70 +266,73 @@ def check_hydro_sanity(snapdata):
         # in hydro interactions
         # --------------------------------------------------------------
         if (gas.RTHydroCallsIactForce < gas.RTHydroCallsIactGradient).any():
-            print("   Found hydro force calls < gradient calls")
-            for i in range(npart):
-                if gas.RTHydroCallsIactForce[i] < gas.RTHydroCallsIactGradient[i]:
-                    print("   Particle ID {0:6d}".format(gas.IDs[i]))
-                    print("      cell ID {0:18d}".format(gas.this_cell_transport[i]))
-                    print("      calls grad: {0:4d} calls force: {1:4d}".format(
-                            gas.RTHydroCallsIactGradient[i], gas.RTHydroCallsIactForce[i]))
-                    
-                    ngb_grad = gas.hydro_neighbours_grad[i, :gas.hydro_nneigh_grad[i]]
-                    ncell_grad = gas.hydro_neighcells_grad[i, :gas.hydro_nneigh_grad[i]]
-
-                    ngb_transport = gas.hydro_neighbours_transport[i,:gas.hydro_nneigh_transport[i]]
-                    ncell_transport = gas.hydro_neighcells_transport[i,:gas.hydro_nneigh_transport[i]]
-
-                    for g, gid in enumerate(ngb_grad):
-                        if gid not in ngb_transport:
-                            # get compact supports
-                            Hi = gas.h[i] * kernel_gamma
-                            xi = gas.coords[i]
-                            indj = gas.IDs == gid
-                            Hj = gas.h[indj].item() * kernel_gamma
-                            xj = gas.coords[indj].ravel()
-
-                            # get r and periodicity corrections
-                            r = 0.
-                            for d in range(3):
-                                dx = xi[d] - xj[d]
-                                if dx < - snap.boxsize[d] * 0.5:
-                                    dx += snap.boxsize[d]
-                                if dx > snap.boxsize[d] * 0.5:
-                                    dx -= snap.boxsize[d]
-                                r += dx**2
-
-                            r = np.sqrt(r)
-
-                            print("      G!inF: ID {0:6d} cellID {1:18d} | r/Hi: {2:.3f} r/Hj: {3:.3f}".format(gid, ncell_grad[g], r/Hi, r/Hj))
-
-                    for t, tid in enumerate(ngb_transport):
-                        if tid not in ngb_grad:
-                            # get compact supports
-                            Hi = gas.h[i] * kernel_gamma
-                            xi = gas.coords[i]
-                            indj = gas.IDs == tid
-                            Hj = gas.h[indj].item() * kernel_gamma
-                            xj = gas.coords[indj].ravel()
-
-                            # get r and periodicity corrections
-                            r = 0.
-                            for d in range(3):
-                                dx = xi[d] - xj[d]
-                                if dx < - snap.boxsize[d] * 0.5:
-                                    dx += snap.boxsize[d]
-                                if dx > snap.boxsize[d] * 0.5:
-                                    dx -= snap.boxsize[d]
-                                r += dx**2
-
-                            r = np.sqrt(r)
-                            print("      F!inG: ID {0:6d} cellID {1:18d} | r/Hi: {2:.3f} r/Hj: {3:.3f}".format(tid, ncell_transport[t], r/Hi, r/Hj))
-
-            if break_on_diff:
-                quit()
-
-        #  nzs = gas.photons_updated > 0
-        #  if (gas.GradientsDone[nzs] == 0).any():
+            print("   Found hydro force calls < gradient calls:", np.count_nonzero(gas.RTHydroCallsIactForce < gas.RTHydroCallsIactGradient), "/", npart )
+        else:
+            print("   Hydro Force calls >= Hydro Gradient calls everywhere :)")
+        #      print("   Found hydro force calls < gradient calls")
+        #      for i in range(npart):
+        #          if gas.RTHydroCallsIactForce[i] < gas.RTHydroCallsIactGradient[i]:
+        #              print("   Particle ID {0:6d}".format(gas.IDs[i]))
+        #              print("      cell ID {0:18d}".format(gas.this_cell_transport[i]))
+        #              print("      calls grad: {0:4d} calls force: {1:4d}".format(
+        #                      gas.RTHydroCallsIactGradient[i], gas.RTHydroCallsIactForce[i]))
+        #
+        #              ngb_grad = gas.hydro_neighbours_grad[i, :gas.hydro_nneigh_grad[i]]
+        #              ncell_grad = gas.hydro_neighcells_grad[i, :gas.hydro_nneigh_grad[i]]
+        #
+        #              ngb_transport = gas.hydro_neighbours_transport[i,:gas.hydro_nneigh_transport[i]]
+        #              ncell_transport = gas.hydro_neighcells_transport[i,:gas.hydro_nneigh_transport[i]]
+        #
+        #              for g, gid in enumerate(ngb_grad):
+        #                  if gid not in ngb_transport:
+        #                      # get compact supports
+        #                      Hi = gas.h[i] * kernel_gamma
+        #                      xi = gas.coords[i]
+        #                      indj = gas.IDs == gid
+        #                      Hj = gas.h[indj].item() * kernel_gamma
+        #                      xj = gas.coords[indj].ravel()
+        #
+        #                      # get r and periodicity corrections
+        #                      r = 0.
+        #                      for d in range(3):
+        #                          dx = xi[d] - xj[d]
+        #                          if dx < - snap.boxsize[d] * 0.5:
+        #                              dx += snap.boxsize[d]
+        #                          if dx > snap.boxsize[d] * 0.5:
+        #                              dx -= snap.boxsize[d]
+        #                          r += dx**2
+        #
+        #                      r = np.sqrt(r)
+        #
+        #                      print("      G!inF: ID {0:6d} cellID {1:18d} | r/Hi: {2:.3f} r/Hj: {3:.3f}".format(gid, ncell_grad[g], r/Hi, r/Hj))
+        #
+        #              for t, tid in enumerate(ngb_transport):
+        #                  if tid not in ngb_grad:
+        #                      # get compact supports
+        #                      Hi = gas.h[i] * kernel_gamma
+        #                      xi = gas.coords[i]
+        #                      indj = gas.IDs == tid
+        #                      Hj = gas.h[indj].item() * kernel_gamma
+        #                      xj = gas.coords[indj].ravel()
+        #
+        #                      # get r and periodicity corrections
+        #                      r = 0.
+        #                      for d in range(3):
+        #                          dx = xi[d] - xj[d]
+        #                          if dx < - snap.boxsize[d] * 0.5:
+        #                              dx += snap.boxsize[d]
+        #                          if dx > snap.boxsize[d] * 0.5:
+        #                              dx -= snap.boxsize[d]
+        #                          r += dx**2
+        #
+        #                      r = np.sqrt(r)
+        #                      print("      F!inG: ID {0:6d} cellID {1:18d} | r/Hi: {2:.3f} r/Hj: {3:.3f}".format(tid, ncell_transport[t], r/Hi, r/Hj))
+        #
+        #      if break_on_diff:
+        #          quit()
+        #
+        #  #  nzs = gas.photons_updated > 0
+        #  #  if (gas.GradientsDone[nzs] == 0).any():
         #      print("Oh no 1")
         #  if (gas.TransportDone[nzs] == 0).any():
         #      print("Oh no 2")
