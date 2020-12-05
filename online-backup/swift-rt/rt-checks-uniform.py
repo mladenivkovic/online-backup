@@ -162,111 +162,8 @@ def check_all_hydro_is_equal(snapdata):
             if break_on_diff:
                 quit()
 
-
-
-
-
     return
 
-
-def check_hydro_sanity(snapdata):
-    """
-    Sanity checks for hydro variables.
-    - photons updated every time step?
-    - total calls keep increasing?
-    """
-
-    nsnaps = len(snapdata)
-    npart = snapdata[0].gas.coords.shape[0]
-
-    # check relative changes
-    for s in range(1, nsnaps):
-
-        this = snapdata[s].gas
-        prev = snapdata[s-1].gas
-
-        print("Checking hydro sanity pt1", 
-            snapdata[s].snapnr, "->", snapdata[s-1].snapnr)
-
-        # check number increase for total calls
-        totalCallsExpect = prev.RTTotalCalls + this.RTCalls_this_step
-        if (this.RTTotalCalls != totalCallsExpect).any():
-            print("--- Total Calls not consistent")
-            if print_diffs:
-                for i in range(npart):
-                    if this.RTTotalCalls[i] != totalCallsExpect[i]:
-                        print("-----", this.RTTotalCalls[i], prev.RTTotalCalls[i], prev.RTCalls_this_step[i])
-
-            if break_on_diff:
-                quit()
-
-
-
-
-
-    # check absolute values every snapshot
-    for snap in snapdata:
-
-        gas = snap.gas
-
-        print("Checking hydro sanity pt2", snap.snapnr)
-
-        # check that photons have been updated (ghost1 called)
-        if (gas.photons_updated == 0).any():
-            print("--- Some photons haven't been updated")
-            if print_diffs:
-                print("----- IDs with photons_updated==0:")
-                print(gas.IDs[this.photons_updated == 0])
-
-            if break_on_diff:
-                quit()
-
-        # check that number of calls to gradient interactions is
-        # same as number of calls to transport interactions
-        if (gas.RTCallsIactTransport < gas.RTCallsIactGradient).any():
-            print("--- transport calls < gradient calls")
-            mask = gas.RTCallsIactTransport < gas.RTCallsIactGradient
-            print(gas.IDs[mask], gas.RTCallsIactGradient[mask], gas.RTCallsIactTransport[mask])
-
-            if break_on_diff:
-                quit()
-
-        # Check that number of symmetric + nonsymmetric interactions is
-        # also the number of total calls you get
-        GradExpect = gas.RTCallsIactGradientSym + gas.RTCallsIactGradientNonSym
-        if (gas.RTCallsIactGradient != GradExpect).any():
-            print("--- gradient number of calls wrong :(")
-
-            if print_diffs:
-                for i in range(npart):
-                    if gas.RTCallsIactGradient[i] != GradExpect[i]:
-                        print("-----", gas.IDs[i], gas.RTCallsIactGradient[i], GradExpect[i])
-
-            if break_on_diff:
-                quit()
-
-        TransportExpect = gas.RTCallsIactTransportSym + gas.RTCallsIactTransportNonSym
-        if (gas.RTCallsIactTransport != TransportExpect).any():
-            print("--- transport number of calls wrong :(")
-
-            if print_diffs:
-                for i in range(npart):
-                    if gas.RTCallsIactTransport[i] != TransportExpect[i]:
-                        print("-----", gas.IDs[i], gas.RTCallsIactTransport[i], TransportExpect[i])
-
-            if break_on_diff:
-                quit()
-
-        #  nzs = gas.photons_updated > 0
-        #  if (gas.GradientsDone[nzs] == 0).any():
-        #      print("Oh no")
-        #  if (gas.TransportDone[nzs] == 0).any():
-        #      print("Oh no")
-        #  if (gas.ThermochemistryDone[nzs] == 0).any():
-            #  print("Oh no")
-
-
-    return
 
 
 def check_all_stars_is_equal(snapdata):
@@ -363,60 +260,6 @@ def check_all_stars_is_equal(snapdata):
     return
 
 
-def check_stars_sanity(snapdata):
-    """
-    Sanity checks for stars variables.
-    - total calls keep increasing?
-    - emission rates set?
-    """
-
-    nsnaps = len(snapdata)
-    npart = snapdata[0].stars.coords.shape[0]
-
-    # check relative changes
-    for s in range(1, nsnaps):
-
-        this = snapdata[s].stars
-        prev = snapdata[s-1].stars
-
-        print("Checking stars sanity pt1", snapdata[s].snapnr, '->', snapdata[s-1].snapnr)
-
-        #  check number increase for total calls
-        totalCallsExpect = prev.RTTotalCalls + this.RTCalls_this_step
-        if (this.RTTotalCalls != totalCallsExpect).any():
-            print("--- Total Calls not consistent: decreasing?")
-            if print_diffs:
-                for i in range(npart):
-                    if this.RTTotalCalls[i] != totalCallsExpect[i]:
-                        print("-----", this.RTTotalCalls[i], prev.RTTotalCalls[i], this.RTCalls_this_step)
-
-            if break_on_diff:
-                quit()
-
-
-
-    #  check consistency of individual snapshots
-    for snap in snapdata:
-
-        print("Checking stars sanity pt2", snap.snapnr)
-        this = snap.stars
-
-        
-        if (this.EmissionRateSet != 1).any():
-            print("--- Emisison Rates not consistent")
-            count = 0
-            for i in range(npart):
-                if this.EmissionRateSet[i] != 1:
-                    count += 1
-                    if print_diffs:
-                        print("-----", this.EmissionRateSet[i], "ID", this.IDs[i])
-            print("----- count: ", count, "/", this.EmissionRateSet.shape[0])
-
-            if break_on_diff:
-                quit()
-
-    return
-
 
 
 
@@ -428,10 +271,7 @@ def main():
     snapdata = get_snap_data(prefix="uniform-rt", skip_snap_zero=skip_snap_zero, skip_last_snap=skip_last_snap)
 
     check_all_hydro_is_equal(snapdata)
-    check_hydro_sanity(snapdata)
-
     check_all_stars_is_equal(snapdata)
-    check_stars_sanity(snapdata)
 
 
 
