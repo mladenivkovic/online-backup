@@ -153,14 +153,51 @@ def check_hydro_sanity(snapdata):
         # --------------------------------------------------------------
         if (gas.hydro_nneigh_grad != gas.nneigh_grad).any():
             print("   Got different neighbour numbers for nneigh_grad between hydro and RT")
-            #  for i in range(npart):
-            #      if gas.hydro_nneigh_grad[i] != gas.nneigh_grad[i]:
-            #          #  print("    ID: {0:6d} RT: {1:4d} Hydro: {2:4d} RT transport: {3:4d} Hydro transport: {4:4d}".format(
-            #          #           gas.IDs[i], gas.nneigh_grad[i], gas.hydro_nneigh_grad[i], gas.nneigh_transport[i], gas.hydro_nneigh_transport[i]))
-            #          print("    ID: {0:6d} RT: {1:4d} Hydro: {2:4d}".format(
-            #                  gas.IDs[i], gas.nneigh_grad[i], gas.hydro_nneigh_grad[i]))
-            print("   RT > Hydro:", np.count_nonzero(gas.hydro_nneigh_grad < gas.nneigh_grad), "/", npart)
-            print("   RT < Hydro:", np.count_nonzero(gas.hydro_nneigh_grad > gas.nneigh_grad), "/", npart)
+            print("     RT > Hydro:", np.count_nonzero(gas.hydro_nneigh_grad < gas.nneigh_grad), "/", npart)
+            print("     RT < Hydro:", np.count_nonzero(gas.hydro_nneigh_grad > gas.nneigh_grad), "/", npart)
+            different_cells = 0
+            in_hydro_but_not_rt = 0
+            in_rt_but_not_hydro = 0
+            for i in range(npart):
+                if gas.hydro_nneigh_grad[i] != gas.nneigh_grad[i]:
+                    #  print("    ID: {0:6d} RT: {1:4d} Hydro: {2:4d}".format(
+                    #          gas.IDs[i], gas.nneigh_grad[i], gas.hydro_nneigh_grad[i]))
+                    cells_hydro = []
+                    for j in range(gas.hydro_nneigh_grad[i]):
+                        pjind = gas.hydro_neighbours_grad[i][j] - 1
+                        if (gas.IDs[pjind] != gas.hydro_neighbours_grad[i][j]):
+                            raise ValueError("ID[pjind] != neighbour_ID")
+                        cellID = gas.hydro_this_cell_grad[pjind]
+                        if cellID not in cells_hydro:
+                            cells_hydro.append(cellID)
+
+                    cells_RT = []
+                    for j in range(gas.nneigh_grad[i]):
+                        pjind = gas.neighbours_grad[i][j] - 1
+                        if (gas.IDs[pjind] != gas.neighbours_grad[i][j]):
+                            raise ValueError("ID[pjind] != neighbour_ID")
+                        cellID = gas.this_cell_grad[pjind]
+                        if cellID not in cells_RT:
+                            cells_hydro.append(cellID)
+
+                    diff = set(cells_hydro).symmetric_difference(set(cells_RT))
+                    if len(diff) > 0:
+                        different_cells += 1
+                        RTnotinhydro = set(cells_RT).difference(set(cells_hydro))
+                        if len(RTnotinhydro) > 0:
+                            in_rt_but_not_hydro += 1
+                        hydronotinRT = set(cells_hydro).difference(set(cells_RT))
+                        if len(hydronotinRT) > 0:
+                            in_hydro_but_not_rt += 1
+                        #  print("      Particle {0:5d}: Different cells interacted.".format(gas.IDs[i]))
+                        #  print("        In RT but not in hydro:", RTnotinhydro)
+                        #  print("        In hydro but not in RT:", hydronotinRT)
+
+            if different_cells > 0:
+                print("     Found {0:5d} particles with different cell interactions".format(different_cells))
+                print("        Parts with RT cells that are not in hydro: {0:5d}".format(in_rt_but_not_hydro))
+                print("        Parts with hydro cells that are not in RT: {0:5d}".format(in_hydro_but_not_rt))
+                    
             if break_on_diff:
                 quit()
         else:
@@ -178,8 +215,8 @@ def check_hydro_sanity(snapdata):
             #          #           gas.IDs[i], gas.nneigh_transport[i], gas.hydro_nneigh_transport[i], gas.nneigh_grad[i], gas.hydro_nneigh_grad[i]))
             #          print("    ID: {0:6d} RT: {1:4d} Hydro: {2:4d}".format(
             #                  gas.IDs[i], gas.nneigh_transport[i], gas.hydro_nneigh_transport[i]))
-            print("   RT > Hydro:", np.count_nonzero(gas.hydro_nneigh_transport < gas.nneigh_transport), "/", npart)
-            print("   RT < Hydro:", np.count_nonzero(gas.hydro_nneigh_transport > gas.nneigh_transport), "/", npart)
+            print("     RT > Hydro:", np.count_nonzero(gas.hydro_nneigh_transport < gas.nneigh_transport), "/", npart)
+            print("     RT < Hydro:", np.count_nonzero(gas.hydro_nneigh_transport > gas.nneigh_transport), "/", npart)
             if break_on_diff:
                 quit()
         else:
@@ -338,6 +375,59 @@ def check_hydro_sanity(snapdata):
         #      print("Oh no 2")
         #  if (gas.ThermochemistryDone[nzs] == 0).any():
             #  print("Oh no 3")
+
+
+
+
+
+        # --------------------------------------------------------------
+        #  Compare Smoothing Lengths between grad and transport
+        #  RT <-> RT comparison
+        # --------------------------------------------------------------
+        mask = gas.h_grad != gas.h_transport
+        if (mask).any():
+            ndiff = np.count_nonzero(mask)
+            maxdiff = np.abs(gas.h_grad[mask] / gas.h_transport[mask] - 1.).max()
+            print("   Got different smoothing lengths for particles between RT gradient and RT transport: ", ndiff, "/", npart)
+            print("     max(| h_grad / h_transport - 1|) = {0:.6f}".format(maxdiff))
+        else:
+            print("   Smoothing lengths between  RT gradient and RT transport are the same :)")
+
+        # --------------------------------------------------------------
+        #  Compare Smoothing Lengths between grad and force
+        #  hydro <-> hydro comparison
+        # --------------------------------------------------------------
+        if (gas.h_hydro_grad != gas.h_force).any():
+            ndiff = np.count_nonzero(gas.h_grad != gas.h_transport)
+            print("   Got different smoothing lengths for particles between hydro gradient and hydro force: ", ndiff, "/", npart)
+        else:
+            print("   Smoothing lengths between hydro gradient and hydro force are the same :)")
+
+        # --------------------------------------------------------------
+        #  Compare Smoothing Lengths between grad and transport
+        #  hydro <-> RT comparison
+        # --------------------------------------------------------------
+        mask = gas.h_grad != gas.h_hydro_grad
+        if (mask).any():
+            ndiff = np.count_nonzero(gas.h_grad != gas.h_hydro_grad)
+            maxdiff = np.abs(gas.h_grad[mask] / gas.h_hydro_grad[mask] - 1.).max()
+            print("   Got different smoothing lengths for particles between RT gradient and hydro gradient: ", ndiff, "/", npart)
+            print("     max(| h_grad / h_grad_hydro - 1|) = {0:.6f}".format(maxdiff))
+        else:
+            print("   Smoothing lengths between hydro gradient and RT gradient are the same :)")
+
+        # --------------------------------------------------------------
+        #  Compare Smoothing Lengths between grad and force
+        #  hydro <-> RT comparison
+        # --------------------------------------------------------------
+        if (gas.h_transport != gas.h_force).any():
+            ndiff = np.count_nonzero(gas.h_transport != gas.h_force)
+            print("   Got different smoothing lengths for particles between RT transport and hydro force: ", ndiff, "/", npart)
+        else:
+            print("   Smoothing lengths between hydro force and RT transport are the same :)")
+
+
+
 
 
         # --------------------------------------------------------------

@@ -52,6 +52,10 @@ class RTGasData(object):
         self.hydro_nneigh_transport = None
         self.hydro_this_cell = None
 
+        self.h_grad = None
+        self.h_transport = None
+        self.h_hydro_grad = None
+        self.h_force = None
 
         return
 
@@ -191,6 +195,11 @@ def get_snap_data(prefix="output_", skip_snap_zero=False, skip_last_snap=False):
         newsnap.gas.RTHydroCallsIactGradientNonSym = Gas["RTHydroCallsIactGradientNonSym"][:][inds]
         newsnap.gas.RTHydroCallsIactForceSym = Gas["RTHydroCallsIactForceSym"][:][inds]
         newsnap.gas.RTHydroCallsIactForceNonSym = Gas["RTHydroCallsIactForceNonSym"][:][inds]
+
+        newsnap.gas.h_grad = Gas["RTSmlGrad"][:][inds]
+        newsnap.gas.h_transport = Gas["RTSmlTransport"][:][inds]
+        newsnap.gas.h_hydro_grad = Gas["RTHydroSmlGrad"][:][inds]
+        newsnap.gas.h_force = Gas["RTHydroSmlForce"][:][inds]
 
 
         Stars = F['PartType4']
