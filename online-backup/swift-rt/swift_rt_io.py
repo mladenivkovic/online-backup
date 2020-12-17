@@ -30,10 +30,9 @@ class RTGasData(object):
         self.RTStarIact = None
         self.RTTotalCalls = None
         self.photons_updated = None
-        # TODO: for later
-        #  self.ThermochemistryDone = None
-        #  self.TransportDone = None
-        #  self.GradientsDone = None
+        self.ThermochemistryDone = None
+        self.TransportDone = None
+        self.GradientsDone = None
 
         # debugging gradient/transport loops
         self.neighbours_grad = None
@@ -154,52 +153,57 @@ def get_snap_data(prefix="output_", skip_snap_zero=False, skip_last_snap=False):
         newsnap.gas.IDs = ids[inds]
         newsnap.gas.coords = Gas["Coordinates"][:][inds]
         newsnap.gas.h = Gas["SmoothingLengths"][:][inds]
-        newsnap.gas.RTCalls_pair_injection = Gas["RTCallsPairInjection"][:][inds]
-        newsnap.gas.RTCalls_self_injection = Gas["RTCallsSelfInjection"][:][inds]
         newsnap.gas.RTCalls_this_step = Gas["RTCallsThisStep"][:][inds]
         newsnap.gas.RTStarIact = Gas["RTStarIact"][:][inds]
         newsnap.gas.RTTotalCalls = Gas["RTTotalCalls"][:][inds]
         newsnap.gas.RTCallsIactGradient = Gas["RTCallsIactGradient"][:][inds]
         newsnap.gas.RTCallsIactTransport = Gas["RTCallsIactTransport"][:][inds]
         newsnap.gas.photons_updated = Gas["RTPhotonsUpdated"][:][inds]
-        # TODO: for later
-        #  newsnap.gas.GradientsDone = Gas["RTGradientsFinished"][:][inds]
-        #  newsnap.gas.TransportDone = Gas["RTTransportDone"][:][inds]
-        #  newsnap.gas.ThermochemistryDone = Gas["RTThermochemistryDone"][:][inds]
-        newsnap.gas.RTCallsIactGradientSym = Gas["RTCallsIactGradientSym"][:][inds]
-        newsnap.gas.RTCallsIactGradientNonSym = Gas["RTCallsIactGradientNonSym"][:][inds]
-        newsnap.gas.RTCallsIactTransportSym = Gas["RTCallsIactTransportSym"][:][inds]
-        newsnap.gas.RTCallsIactTransportNonSym = Gas["RTCallsIactTransportNonSym"][:][inds]
+        newsnap.gas.GradientsDone = Gas["RTGradientsDone"][:][inds]
+        newsnap.gas.TransportDone = Gas["RTTransportDone"][:][inds]
+        newsnap.gas.ThermochemistryDone = Gas["RTThermochemistryDone"][:][inds]
 
-        newsnap.gas.neighbours_grad = Gas["RTNeighsIactGrad"][:][inds]
-        newsnap.gas.neighcells_grad = Gas["RTNeighCellsIactGrad"][:][inds]
-        newsnap.gas.nneigh_grad = Gas["RTNrNeighIactGrad"][:][inds]
-        newsnap.gas.neighbours_transport = Gas["RTNeighsIactTransport"][:][inds]
-        newsnap.gas.neighcells_transport = Gas["RTNeighCellsIactTransport"][:][inds]
-        newsnap.gas.nneigh_transport = Gas["RTNrNeighIactTransport"][:][inds]
-        newsnap.gas.this_cell_grad = Gas["RTThisCellGrad"][:][inds]
-        newsnap.gas.this_cell_transport = Gas["RTThisCellTransport"][:][inds]
 
-        newsnap.gas.hydro_neighbours_grad = Gas["RTHydroNeighsIactGrad"][:][inds]
-        newsnap.gas.hydro_neighcells_grad = Gas["RTHydroNeighCellsIactGrad"][:][inds]
-        newsnap.gas.hydro_nneigh_grad = Gas["RTHydroNrNeighIactGrad"][:][inds]
-        newsnap.gas.hydro_neighbours_transport = Gas["RTHydroNeighsIactTransport"][:][inds]
-        newsnap.gas.hydro_neighcells_transport = Gas["RTHydroNeighCellsIactTransport"][:][inds]
-        newsnap.gas.hydro_nneigh_transport = Gas["RTHydroNrNeighIactTransport"][:][inds]
-        newsnap.gas.hydro_this_cell_grad = Gas["RTHydroThisCellGrad"][:][inds]
-        newsnap.gas.hydro_this_cell_transport = Gas["RTHydroThisCellTransport"][:][inds]
+        #------------------------
+        # deprecated debugging
+        #------------------------
 
-        newsnap.gas.RTHydroCallsIactGradient = Gas["RTHydroCallsIactGradient"][:][inds]
-        newsnap.gas.RTHydroCallsIactForce = Gas["RTHydroCallsIactForce"][:][inds]
-        newsnap.gas.RTHydroCallsIactGradientSym = Gas["RTHydroCallsIactGradientSym"][:][inds]
-        newsnap.gas.RTHydroCallsIactGradientNonSym = Gas["RTHydroCallsIactGradientNonSym"][:][inds]
-        newsnap.gas.RTHydroCallsIactForceSym = Gas["RTHydroCallsIactForceSym"][:][inds]
-        newsnap.gas.RTHydroCallsIactForceNonSym = Gas["RTHydroCallsIactForceNonSym"][:][inds]
+        #  newsnap.gas.RTCalls_pair_injection = Gas["RTCallsPairInjection"][:][inds]
+        #  newsnap.gas.RTCalls_self_injection = Gas["RTCallsSelfInjection"][:][inds]
 
-        newsnap.gas.h_grad = Gas["RTSmlGrad"][:][inds]
-        newsnap.gas.h_transport = Gas["RTSmlTransport"][:][inds]
-        newsnap.gas.h_hydro_grad = Gas["RTHydroSmlGrad"][:][inds]
-        newsnap.gas.h_force = Gas["RTHydroSmlForce"][:][inds]
+        #  newsnap.gas.RTCallsIactGradientSym = Gas["RTCallsIactGradientSym"][:][inds]
+        #  newsnap.gas.RTCallsIactGradientNonSym = Gas["RTCallsIactGradientNonSym"][:][inds]
+        #  newsnap.gas.RTCallsIactTransportSym = Gas["RTCallsIactTransportSym"][:][inds]
+        #  newsnap.gas.RTCallsIactTransportNonSym = Gas["RTCallsIactTransportNonSym"][:][inds]
+        #  newsnap.gas.neighbours_grad = Gas["RTNeighsIactGrad"][:][inds]
+        #  newsnap.gas.neighcells_grad = Gas["RTNeighCellsIactGrad"][:][inds]
+        #  newsnap.gas.nneigh_grad = Gas["RTNrNeighIactGrad"][:][inds]
+        #  newsnap.gas.neighbours_transport = Gas["RTNeighsIactTransport"][:][inds]
+        #  newsnap.gas.neighcells_transport = Gas["RTNeighCellsIactTransport"][:][inds]
+        #  newsnap.gas.nneigh_transport = Gas["RTNrNeighIactTransport"][:][inds]
+        #  newsnap.gas.this_cell_grad = Gas["RTThisCellGrad"][:][inds]
+        #  newsnap.gas.this_cell_transport = Gas["RTThisCellTransport"][:][inds]
+        #
+        #  newsnap.gas.hydro_neighbours_grad = Gas["RTHydroNeighsIactGrad"][:][inds]
+        #  newsnap.gas.hydro_neighcells_grad = Gas["RTHydroNeighCellsIactGrad"][:][inds]
+        #  newsnap.gas.hydro_nneigh_grad = Gas["RTHydroNrNeighIactGrad"][:][inds]
+        #  newsnap.gas.hydro_neighbours_transport = Gas["RTHydroNeighsIactTransport"][:][inds]
+        #  newsnap.gas.hydro_neighcells_transport = Gas["RTHydroNeighCellsIactTransport"][:][inds]
+        #  newsnap.gas.hydro_nneigh_transport = Gas["RTHydroNrNeighIactTransport"][:][inds]
+        #  newsnap.gas.hydro_this_cell_grad = Gas["RTHydroThisCellGrad"][:][inds]
+        #  newsnap.gas.hydro_this_cell_transport = Gas["RTHydroThisCellTransport"][:][inds]
+        #
+        #  newsnap.gas.RTHydroCallsIactGradient = Gas["RTHydroCallsIactGradient"][:][inds]
+        #  newsnap.gas.RTHydroCallsIactForce = Gas["RTHydroCallsIactForce"][:][inds]
+        #  newsnap.gas.RTHydroCallsIactGradientSym = Gas["RTHydroCallsIactGradientSym"][:][inds]
+        #  newsnap.gas.RTHydroCallsIactGradientNonSym = Gas["RTHydroCallsIactGradientNonSym"][:][inds]
+        #  newsnap.gas.RTHydroCallsIactForceSym = Gas["RTHydroCallsIactForceSym"][:][inds]
+        #  newsnap.gas.RTHydroCallsIactForceNonSym = Gas["RTHydroCallsIactForceNonSym"][:][inds]
+        #
+        #  newsnap.gas.h_grad = Gas["RTSmlGrad"][:][inds]
+        #  newsnap.gas.h_transport = Gas["RTSmlTransport"][:][inds]
+        #  newsnap.gas.h_hydro_grad = Gas["RTHydroSmlGrad"][:][inds]
+        #  newsnap.gas.h_force = Gas["RTHydroSmlForce"][:][inds]
 
 
         Stars = F['PartType4']
@@ -208,12 +212,12 @@ def get_snap_data(prefix="output_", skip_snap_zero=False, skip_last_snap=False):
         newsnap.stars.IDs = ids[inds]
         newsnap.stars.coords = Stars["Coordinates"][:][inds]
         newsnap.stars.h = Stars["SmoothingLengths"][:][inds]
-        newsnap.stars.RTCalls_pair_injection = Stars["RTCallsPairInjection"][:][inds]
-        newsnap.stars.RTCalls_self_injection = Stars["RTCallsSelfInjection"][:][inds]
         newsnap.stars.RTCalls_this_step = Stars["RTCallsThisStep"][:][inds]
         newsnap.stars.RTHydroIact = Stars["RTHydroIact"][:][inds]
         newsnap.stars.RTTotalCalls = Stars["RTTotalCalls"][:][inds]
         newsnap.stars.EmissionRateSet = Stars["RTEmissionRateSet"][:][inds]
+        #  newsnap.stars.RTCalls_pair_injection = Stars["RTCallsPairInjection"][:][inds]
+        #  newsnap.stars.RTCalls_self_injection = Stars["RTCallsSelfInjection"][:][inds]
 
 
         snapdata.append(newsnap)

@@ -63,7 +63,7 @@ def check_all_hydro_is_equal(snapdata):
 
             diff = np.abs((ref.gas.h - compare.gas.h) / ref.gas.h)
             if (diff > float_comparison_tolerance).any():
-                print("--- Coordinates vary")
+                print("--- Smoothing Lengths vary")
                 if print_diffs:
                     for i in range(npart):
                         if ((ref.gas.h[i] - compare.gas.h[i])/ref.gas.h[i]).any():
@@ -71,33 +71,6 @@ def check_all_hydro_is_equal(snapdata):
 
                 if break_on_diff:
                     quit()
-
-
-
-        # Pair Injection
-        if (ref.gas.RTCalls_pair_injection != compare.gas.RTCalls_pair_injection).any():
-            print("--- Calls Pair Injection Vary")
-
-            if print_diffs:
-                for i in range(npart):
-                    if ref.gas.RTCalls_pair_injection[i] != compare.gas.RTCalls_pair_injection[i]:
-                        print("-----", ref.gas.IDs[i], ref.gas.RTCalls_pair_injection[i], compare.gas.RTCalls_pair_injection[i])
-
-            if break_on_diff:
-                quit()
-
-
-        # Self Injection
-        if (ref.gas.RTCalls_self_injection != compare.gas.RTCalls_self_injection).any():
-            print("--- Calls Self Injection Vary")
-
-            if print_diffs:
-                for i in range(npart):
-                    if ref.gas.RTCalls_self_injection[i] != compare.gas.RTCalls_self_injection[i]:
-                        print("-----", ref.gas.IDs[i], ref.gas.RTCalls_self_injection[i], compare.gas.RTCalls_self_injection[i])
-
-            if break_on_diff:
-                quit()
 
 
         # Calls this step
@@ -124,6 +97,7 @@ def check_all_hydro_is_equal(snapdata):
 
             if break_on_diff:
                 quit()
+
 
         # Photon number updates
         if (ref.gas.photons_updated != compare.gas.photons_updated).any():
@@ -162,8 +136,62 @@ def check_all_hydro_is_equal(snapdata):
             if break_on_diff:
                 quit()
 
+
+        # --------------------------------------------------------------
+        # Check that every particle called in a previous task is also
+        # called in later tasks during one time step.
+        # In the code, I check that when a later task is called, the
+        # previous one has been executed already. Now check that if
+        # it's been called before, it will be called later.
+        # --------------------------------------------------------------
+        nzs = gas.photons_updated > 0
+        if (gas.GradientsDone[nzs] == 0).any():
+            print("Oh no 1")
+        if (gas.TransportDone[nzs] == 0).any():
+            print("Oh no 2")
+        if (gas.ThermochemistryDone[nzs] == 0).any():
+            print("Oh no 3")
+
     return
 
+
+def check_all_hydro_deprecated(snapdata):
+    """
+    Deprecated checks. Kept here for copy-pasting if needed.
+    """
+   
+    ref = snapdata[0]
+    npart = ref.gas.coords.shape[0]
+
+    for compare in snapdata[1:]:
+        print("Comparing hydro", ref.snapnr, "->", compare.snapnr)
+
+        # Pair Injection
+        if (ref.gas.RTCalls_pair_injection != compare.gas.RTCalls_pair_injection).any():
+            print("--- Calls Pair Injection Vary")
+
+            if print_diffs:
+                for i in range(npart):
+                    if ref.gas.RTCalls_pair_injection[i] != compare.gas.RTCalls_pair_injection[i]:
+                        print("-----", ref.gas.IDs[i], ref.gas.RTCalls_pair_injection[i], compare.gas.RTCalls_pair_injection[i])
+
+            if break_on_diff:
+                quit()
+
+
+        # Self Injection
+        if (ref.gas.RTCalls_self_injection != compare.gas.RTCalls_self_injection).any():
+            print("--- Calls Self Injection Vary")
+
+            if print_diffs:
+                for i in range(npart):
+                    if ref.gas.RTCalls_self_injection[i] != compare.gas.RTCalls_self_injection[i]:
+                        print("-----", ref.gas.IDs[i], ref.gas.RTCalls_self_injection[i], compare.gas.RTCalls_self_injection[i])
+
+            if break_on_diff:
+                quit()
+
+    return
 
 
 def check_all_stars_is_equal(snapdata):
@@ -174,10 +202,6 @@ def check_all_stars_is_equal(snapdata):
 
     ref = snapdata[0]
     npart = ref.stars.coords.shape[0]
-
-    print("Check all stars is equal is broken after changes to compute photon emission rate.")
-    print("Look into this later.")
-    return
 
     for compare in snapdata[1:]:
         print("Comparing stars", ref.snapnr, "->", compare.snapnr)
@@ -212,57 +236,69 @@ def check_all_stars_is_equal(snapdata):
                     quit()
 
 
-        # Pair Injection
-        #  if (ref.stars.RTCalls_pair_injection != compare.stars.RTCalls_pair_injection).any():
-        #      print("--- Calls Pair Injection Vary")
-        #
-        #      if print_diffs:
-        #          for i in range(npart):
-        #              if ref.stars.RTCalls_pair_injection[i] != compare.stars.RTCalls_pair_injection[i]:
-        #                  print("-----", ref.stars.IDs[i], ref.stars.RTCalls_pair_injection[i], compare.stars.RTCalls_pair_injection[i])
-        #
-        #      if break_on_diff:
-        #          quit()
-
-        # Self Injection
-        #  if (ref.stars.RTCalls_self_injection != compare.stars.RTCalls_self_injection).any():
-        #      print("--- Calls Self Injection Vary")
-        #
-        #      if print_diffs:
-        #          for i in range(npart):
-        #              if ref.stars.RTCalls_self_injection[i] != compare.stars.RTCalls_self_injection[i]:
-        #                  print("-----", ref.stars.IDs[i], ref.stars.RTCalls_self_injection[i], compare.stars.RTCalls_self_injection[i])
-        #
-        #      if break_on_diff:
-        #          quit()
-
-        # Calls this step
-        #  if (ref.stars.RTCalls_this_step != compare.stars.RTCalls_this_step).any():
-        #      print("--- Calls this step Vary")
-        #
-        #      if print_diffs:
-        #          for i in range(npart):
-        #              if ref.stars.RTCalls_this_step[i] != compare.stars.RTCalls_this_step[i]:
-        #                  print("-----", ref.stars.IDs[i], ref.stars.RTCalls_this_step[i], compare.stars.RTCalls_this_step[i])
-        #
-        #      if break_on_diff:
-        #          quit()
-
-
         # Calls to star interactions
-        #  if (ref.stars.RTHydroIact != compare.stars.RTHydroIact).any():
-        #      print("--- Calls to hydro interactions vary")
-        #
-        #      if print_diffs:
-        #          for i in range(npart):
-        #              if ref.stars.RTHydroIact[i] != compare.stars.RTHydroIact[i]:
-        #                  print("-----", ref.stars.IDs[i], ref.stars.RTHydroIact[i], compare.stars.RTHydroIact[i])
-        #
-        #      if break_on_diff:
-        #          quit()
+        if (ref.stars.RTHydroIact != compare.stars.RTHydroIact).any():
+            print("--- Calls to hydro interactions vary")
+
+            if print_diffs:
+                for i in range(npart):
+                    if ref.stars.RTHydroIact[i] != compare.stars.RTHydroIact[i]:
+                        print("-----", ref.stars.IDs[i], ref.stars.RTHydroIact[i], compare.stars.RTHydroIact[i])
+
+            if break_on_diff:
+                quit()
+
+
 
     return
 
+
+def check_all_stars_deprecated(snapdata):
+    """
+    Deprecated checks for stars, kept here for quick
+    copy-pastes.
+    """
+
+    ref = snapdata[0]
+    npart = ref.stars.coords.shape[0]
+
+    for compare in snapdata[1:]:
+
+        #  Pair Injection
+        if (ref.stars.RTCalls_pair_injection != compare.stars.RTCalls_pair_injection).any():
+            print("--- Calls Pair Injection Vary")
+
+            if print_diffs:
+                for i in range(npart):
+                    if ref.stars.RTCalls_pair_injection[i] != compare.stars.RTCalls_pair_injection[i]:
+                        print("-----", ref.stars.IDs[i], ref.stars.RTCalls_pair_injection[i], compare.stars.RTCalls_pair_injection[i])
+
+            if break_on_diff:
+                quit()
+
+        #  Self Injection
+        if (ref.stars.RTCalls_self_injection != compare.stars.RTCalls_self_injection).any():
+            print("--- Calls Self Injection Vary")
+
+            if print_diffs:
+                for i in range(npart):
+                    if ref.stars.RTCalls_self_injection[i] != compare.stars.RTCalls_self_injection[i]:
+                        print("-----", ref.stars.IDs[i], ref.stars.RTCalls_self_injection[i], compare.stars.RTCalls_self_injection[i])
+
+            if break_on_diff:
+                quit()
+
+        #  Calls this step
+        if (ref.stars.RTCalls_this_step != compare.stars.RTCalls_this_step).any():
+            print("--- Calls this step Vary")
+
+            if print_diffs:
+                for i in range(npart):
+                    if ref.stars.RTCalls_this_step[i] != compare.stars.RTCalls_this_step[i]:
+                        print("-----", ref.stars.IDs[i], ref.stars.RTCalls_this_step[i], compare.stars.RTCalls_this_step[i])
+
+            if break_on_diff:
+                quit()
 
 
 
