@@ -144,12 +144,12 @@ def check_all_hydro_is_equal(snapdata):
         # previous one has been executed already. Now check that if
         # it's been called before, it will be called later.
         # --------------------------------------------------------------
-        nzs = gas.photons_updated > 0
-        if (gas.GradientsDone[nzs] == 0).any():
+        nzs = compare.gas.photons_updated > 0
+        if (compare.gas.GradientsDone[nzs] == 0).any():
             print("Oh no 1")
-        if (gas.TransportDone[nzs] == 0).any():
+        if (compare.gas.TransportDone[nzs] == 0).any():
             print("Oh no 2")
-        if (gas.ThermochemistryDone[nzs] == 0).any():
+        if (compare.gas.ThermochemistryDone[nzs] == 0).any():
             print("Oh no 3")
 
     return
@@ -237,13 +237,14 @@ def check_all_stars_is_equal(snapdata):
 
 
         # Calls to star interactions
-        if (ref.stars.RTHydroIact != compare.stars.RTHydroIact).any():
-            print("--- Calls to hydro interactions vary")
+        prev = snapdata[compare.snapnr - 2]
+        if (ref.stars.RTCalls_this_step != compare.stars.RTCalls_this_step - prev.stars.RTCalls_this_step).any():
+            print("--- Calls to stars interactions vary")
 
             if print_diffs:
                 for i in range(npart):
-                    if ref.stars.RTHydroIact[i] != compare.stars.RTHydroIact[i]:
-                        print("-----", ref.stars.IDs[i], ref.stars.RTHydroIact[i], compare.stars.RTHydroIact[i])
+                    if ref.stars.RTCalls_this_step[i] != compare.stars.RTCalls_this_step[i]:
+                        print("-----", ref.stars.IDs[i], ref.stars.RTCalls_this_step[i], compare.stars.RTCalls_this_step[i])
 
             if break_on_diff:
                 quit()
