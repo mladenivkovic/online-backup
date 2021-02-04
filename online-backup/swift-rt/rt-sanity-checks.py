@@ -35,14 +35,18 @@ kernel_gamma = 1.825742
 def check_hydro_sanity(snapdata):
     """
     Sanity checks for hydro variables.
-    - photons updated every time step?
-    - total calls keep increasing?
+    - injection always done?
+    - gradients always done?
+    - thermochemistry always done?
+    - RT transport calls >= RT gradient calls?
     """
 
     nsnaps = len(snapdata)
     npart = snapdata[0].gas.coords.shape[0]
 
-    # check relative changes
+    #----------------------------------------------
+    # check relative changes between two snapshots
+    #----------------------------------------------
     for s in range(1, nsnaps):
 
         this = snapdata[s].gas
@@ -65,7 +69,9 @@ def check_hydro_sanity(snapdata):
 
 
 
-    # check absolute values every snapshot
+    #----------------------------------------------
+    # check absolute values of every snapshot
+    #----------------------------------------------
     for snap in snapdata:
 
         gas = snap.gas
@@ -75,11 +81,13 @@ def check_hydro_sanity(snapdata):
         # --------------------------------------------------------------
         # check that photons have been updated (ghost1 called)
         # --------------------------------------------------------------
-        if (gas.photons_updated == 0).any():
-            print("--- Some photons haven't been updated")
+
+        mask = gas.InjectionDone != 1
+        if mask.any():
+            print("--- Some photons have injection finished != 1")
             if print_diffs:
                 print("----- IDs with photons_updated==0:")
-                print(gas.IDs[this.photons_updated == 0])
+                print(gas.IDs[mask], gas.InjectionDone[mask])
 
             if break_on_diff:
                 quit()
@@ -87,11 +95,12 @@ def check_hydro_sanity(snapdata):
         # --------------------------------------------------------------
         # check that Gradient is finished
         # --------------------------------------------------------------
-        if (gas.GradientsDone == 0).any():
-            print("--- Some gradients weren't done")
+        mask = gas.GradientsDone == 1
+        if mask.any():
+            print("--- Some gradients were finalized != 1")
             if print_diffs:
-                print("----- IDs with gradients done == 0:")
-                print(gas.IDs[this.GradientsDone == 0])
+                print("----- IDs with gradients done != 1:")
+                print(gas.IDs[mask], gas.GradientsDone[mask])
 
             if break_on_diff:
                 quit()
@@ -99,11 +108,12 @@ def check_hydro_sanity(snapdata):
         # --------------------------------------------------------------
         # check that transport is finished
         # --------------------------------------------------------------
-        if (gas.TransportDone == 0).any():
-            print("--- Some transport wasn't done")
+        mask =gas.TransportDone != 1
+        if mask.any():
+            print("--- Some transport was finalised != 1")
             if print_diffs:
-                print("----- IDs with transport done == 0:")
-                print(gas.IDs[this.TransportDone == 0])
+                print("----- IDs with transport done != 1:")
+                print(gas.IDs[mask], gas.TransportDone[mask])
 
             if break_on_diff:
                 quit()
@@ -112,11 +122,12 @@ def check_hydro_sanity(snapdata):
         # --------------------------------------------------------------
         # check that thermochemistry is finished
         # --------------------------------------------------------------
-        if (gas.ThermochemistryDone == 0).any():
-            print("--- Some thermochemistry wasn't done")
+        mask = gas.ThermochemistryDone != 1
+        if mask.any():
+            print("--- Some thermochemistry done != 1")
             if print_diffs:
-                print("----- IDs with Thermochemistry_done == 0:")
-                print(gas.IDs[this.ThermochemistryDone == 0])
+                print("----- IDs with Thermochemistry_done != 1:")
+                print(gas.IDs[mask], gas.ThermochemistryDone[mask])
 
             if break_on_diff:
                 quit()
@@ -149,7 +160,9 @@ def check_stars_sanity(snapdata):
     nsnaps = len(snapdata)
     npart = snapdata[0].stars.coords.shape[0]
 
+    #-------------------------------
     # check relative changes
+    #-------------------------------
     for s in range(1, nsnaps):
 
         this = snapdata[s].stars
@@ -170,7 +183,9 @@ def check_stars_sanity(snapdata):
 
 
 
+    #----------------------------------------------
     #  check consistency of individual snapshots
+    #----------------------------------------------
     for snap in snapdata:
 
         print("Checking stars sanity pt2", snap.snapnr)

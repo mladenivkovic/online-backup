@@ -29,7 +29,7 @@ class RTGasData(object):
         self.RTCalls_this_step = None
         self.RTStarIact = None
         self.RTTotalCalls = None
-        self.photons_updated = None
+        self.InjectionDone = None
         self.ThermochemistryDone = None
         self.TransportDone = None
         self.GradientsDone = None
@@ -158,7 +158,7 @@ def get_snap_data(prefix="output_", skip_snap_zero=False, skip_last_snap=False):
         newsnap.gas.RTTotalCalls = Gas["RTTotalCalls"][:][inds]
         newsnap.gas.RTCallsIactGradient = Gas["RTCallsIactGradient"][:][inds]
         newsnap.gas.RTCallsIactTransport = Gas["RTCallsIactTransport"][:][inds]
-        newsnap.gas.photons_updated = Gas["RTPhotonsUpdated"][:][inds]
+        newsnap.gas.InjectionDone = Gas["RTInjectionDone"][:][inds]
         newsnap.gas.GradientsDone = Gas["RTGradientsDone"][:][inds]
         newsnap.gas.TransportDone = Gas["RTTransportDone"][:][inds]
         newsnap.gas.ThermochemistryDone = Gas["RTThermochemistryDone"][:][inds]
