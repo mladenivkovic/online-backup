@@ -21,8 +21,6 @@ from swift_rt_io import get_snap_data
 # some behaviour options
 skip_snap_zero = True   # skip snap_0000.hdf5
 skip_last_snap = True   # skip snap_0max.hdf5
-skip_coords = False      # skip coordinates check
-skip_sml = False      # skip smoothing lengths check
 print_diffs = True      # print differences you find
 #  print_diffs = False      # print differences you find
 #  break_on_diff = True   # quit when you find a difference
@@ -44,27 +42,15 @@ def check_hydro_sanity(snapdata):
     nsnaps = len(snapdata)
     npart = snapdata[0].gas.coords.shape[0]
 
+    print("Checking hydro")
+
     #----------------------------------------------
     # check relative changes between two snapshots
     #----------------------------------------------
-    for s in range(1, nsnaps):
-
-        this = snapdata[s].gas
-        prev = snapdata[s-1].gas
-
-        print("Checking hydro sanity pt1",
-            snapdata[s].snapnr, "->", snapdata[s-1].snapnr)
-
-        # check number increase for total calls
-        if (this.RTTotalCalls < prev.RTTotalCalls).any():
-            print("--- Total Calls not consistent")
-            if print_diffs:
-                for i in range(npart):
-                    if this.RTTotalCalls[i] < prev.RTTotalCalls[i]:
-                        print("-----", this.RTTotalCalls[i], prev.RTTotalCalls[i])
-
-            if break_on_diff:
-                quit()
+    #  for s in range(1, nsnaps):
+    #
+    #      this = snapdata[s].gas
+    #      prev = snapdata[s-1].gas
 
 
 
@@ -75,19 +61,31 @@ def check_hydro_sanity(snapdata):
     for snap in snapdata:
 
         gas = snap.gas
+        stars = snap.stars
 
-        print("Checking hydro sanity pt2; snapshot", snap.snapnr)
+        # has a particle been called at least once?
+        called = (gas.RTCallsIactTransport[:] + gas.RTCallsIactGradient[:] + 
+                    gas.InjectionDone[:] + gas.GradientsDone[:] + 
+                    gas.TransportDone[:] + gas.ThermochemistryDone[:]) > 0
 
         # --------------------------------------------------------------
         # check that photons have been updated (ghost1 called)
         # --------------------------------------------------------------
 
         mask = gas.InjectionDone != 1
-        if mask.any():
-            print("--- Some photons have injection finished != 1")
-            if print_diffs:
-                print("----- IDs with photons_updated==0:")
-                print(gas.IDs[mask], gas.InjectionDone[mask])
+        fishy = np.logical_and(mask, called)
+        if fishy.any():
+            print(fishy)
+            # has particle been active in the meantime?
+            print("- checking hydro sanity pt2; snapshot", snap.snapnr)
+            if np.count_nonzero(mask) == npart:
+                print("--- WARNING: zero particles finished injection")
+            else:
+                print("--- Some photons have injection finished != 1: ", 
+                        np.count_nonzero(called), "/", npart)
+                if print_diffs:
+                    print("----- IDs with photons_updated != 1:")
+                    print(gas.IDs[fishy], gas.InjectionDone[fishy])
 
             if break_on_diff:
                 quit()
@@ -95,12 +93,18 @@ def check_hydro_sanity(snapdata):
         # --------------------------------------------------------------
         # check that Gradient is finished
         # --------------------------------------------------------------
-        mask = gas.GradientsDone == 1
-        if mask.any():
-            print("--- Some gradients were finalized != 1")
-            if print_diffs:
-                print("----- IDs with gradients done != 1:")
-                print(gas.IDs[mask], gas.GradientsDone[mask])
+        mask = gas.GradientsDone != 1
+        fishy = np.logical_and(mask, called)
+        if fishy.any():
+            print("- checking hydro sanity pt2; snapshot", snap.snapnr)
+            if np.count_nonzero(mask) == npart:
+                print("---WARNING: zero particles finished gradient")
+            else:
+                print("--- Some gradients were finalized != 1",
+                        np.count_nonzero(called), "/", npart)
+                if print_diffs:
+                    print("----- IDs with gradients done != 1:")
+                    print(gas.IDs[fishy], gas.GradientsDone[fishy])
 
             if break_on_diff:
                 quit()
@@ -108,12 +112,18 @@ def check_hydro_sanity(snapdata):
         # --------------------------------------------------------------
         # check that transport is finished
         # --------------------------------------------------------------
-        mask =gas.TransportDone != 1
-        if mask.any():
-            print("--- Some transport was finalised != 1")
-            if print_diffs:
-                print("----- IDs with transport done != 1:")
-                print(gas.IDs[mask], gas.TransportDone[mask])
+        mask = gas.TransportDone != 1
+        fishy = np.logical_and(mask, called)
+        if fishy.any():
+            print("- checking hydro sanity pt2; snapshot", snap.snapnr)
+            if np.count_nonzero(mask) == npart:
+                print("--- WARNING: zero particles finished transport")
+            else:
+                print("--- Some transport was finalised != 1", 
+                        np.count_nonzero(called), "/", npart)
+                if print_diffs:
+                    print("----- IDs with transport done != 1:")
+                    print(gas.IDs[fishy], gas.TransportDone[fishy])
 
             if break_on_diff:
                 quit()
@@ -123,11 +133,17 @@ def check_hydro_sanity(snapdata):
         # check that thermochemistry is finished
         # --------------------------------------------------------------
         mask = gas.ThermochemistryDone != 1
-        if mask.any():
-            print("--- Some thermochemistry done != 1")
-            if print_diffs:
-                print("----- IDs with Thermochemistry_done != 1:")
-                print(gas.IDs[mask], gas.ThermochemistryDone[mask])
+        fishy = np.logical_and(mask, called)
+        if fishy.any():
+            print("- checking hydro sanity pt2; snapshot", snap.snapnr)
+            if np.count_nonzero(mask) == npart:
+                print("--- WARNING: zero particles finished thermochemistry")
+            else: 
+                print("--- Some thermochemistry done != 1", 
+                        np.count_nonzero(called), "/", npart)
+                if print_diffs:
+                    print("----- IDs with Thermochemistry_done != 1:")
+                    print(gas.IDs[fishy], gas.ThermochemistryDone[fishy])
 
             if break_on_diff:
                 quit()
@@ -141,14 +157,27 @@ def check_hydro_sanity(snapdata):
         # in RT interactions
         # --------------------------------------------------------------
         if (gas.RTCallsIactTransport < gas.RTCallsIactGradient).any():
-            print("   Found RT transport calls < gradient calls:", 
+            print("- checking hydro sanity pt2; snapshot", snap.snapnr)
+            print("--- Found RT transport calls < gradient calls:", 
                     np.count_nonzero(gas.RTCallsIactTransport < gas.RTCallsIactGradient), 
                     "/", npart)
 
+        
+        # --------------------------------------------------------------
+        # check that we didn't loose any radiation
+        # --------------------------------------------------------------
+        sum_gas_tot = gas.RadiationReceivedTot.sum()
+        sum_star_tot = stars.RadiationEmittedTot.sum()
+
+        if (sum_gas_tot != sum_star_tot):
+            print("- checking hydro sanity pt2; snapshot", snap.snapnr)
+            print("--- Total emitted and received radiation not equal:", sum_gas_tot, sum_star_tot)
 
 
 
     return
+
+
 
 
 def check_stars_sanity(snapdata):
@@ -160,27 +189,15 @@ def check_stars_sanity(snapdata):
     nsnaps = len(snapdata)
     npart = snapdata[0].stars.coords.shape[0]
 
+    print("Checking stars")
+
     #-------------------------------
     # check relative changes
     #-------------------------------
-    for s in range(1, nsnaps):
-
-        this = snapdata[s].stars
-        prev = snapdata[s-1].stars
-
-        print("Checking stars sanity pt1", snapdata[s].snapnr, '->', snapdata[s-1].snapnr)
-
-        #  check number increase for total calls
-        if (this.RTTotalCalls < prev.RTTotalCalls).any():
-            print("--- Total Calls not consistent")
-            if print_diffs:
-                for i in range(npart):
-                    if this.RTTotalCalls[i] < prev.RTTotalCalls[i]:
-                        print("-----", this.RTTotalCalls[i], prev.RTTotalCalls[i])
-
-            if break_on_diff:
-                quit()
-
+    #  for s in range(1, nsnaps):
+    #
+    #      this = snapdata[s].stars
+    #      prev = snapdata[s-1].stars
 
 
     #----------------------------------------------
@@ -188,11 +205,10 @@ def check_stars_sanity(snapdata):
     #----------------------------------------------
     for snap in snapdata:
 
-        print("Checking stars sanity pt2", snap.snapnr)
         this = snap.stars
-
         
         if (this.EmissionRateSet != 1).any():
+            print("- checking stars sanity pt2", snap.snapnr)
             print("--- Emisison Rates not consistent")
             count = 0
             for i in range(npart):
@@ -221,6 +237,31 @@ def deprecated_hydro_checks(snapdata):
 
     nsnaps = len(snapdata)
     npart = snapdata[0].gas.coords.shape[0]
+
+    #----------------------------------------------
+    # check relative changes between two snapshots
+    #----------------------------------------------
+    for s in range(1, nsnaps):
+
+        this = snapdata[s].gas
+        prev = snapdata[s-1].gas
+
+
+        # check number increase for total calls
+        if (this.RTTotalCalls < prev.RTTotalCalls).any():
+            print("- checking hydro sanity pt1",
+                snapdata[s].snapnr, "->", snapdata[s-1].snapnr)
+            print("--- Total Calls not consistent")
+            if print_diffs:
+                for i in range(npart):
+                    if this.RTTotalCalls[i] < prev.RTTotalCalls[i]:
+                        print("-----", this.RTTotalCalls[i], prev.RTTotalCalls[i])
+
+            if break_on_diff:
+                quit()
+
+
+
 
 
     # check absolute values every snapshot
@@ -614,6 +655,36 @@ def deprecated_hydro_checks(snapdata):
                 for i in range(npart):
                     if gas.RTHydroCallsIactForce[i] != ForceExpect[i]:
                         print("-----", gas.IDs[i], gas.RTHydroCallsIactForce[i], ForceExpect[i])
+
+            if break_on_diff:
+                quit()
+
+
+
+
+
+def deprecated_stars_checks(snapdata):
+    """
+    Deprecated sanity/debugging checks.
+    Kept here for quick copy-paste.
+    """
+
+    #-------------------------------
+    # check relative changes
+    #-------------------------------
+    for s in range(1, nsnaps):
+
+        this = snapdata[s].stars
+        prev = snapdata[s-1].stars
+
+        #  check number increase for total calls
+        if (this.RTTotalCalls < prev.RTTotalCalls).any():
+            print("- checking stars sanity pt1", snapdata[s].snapnr, '->', snapdata[s-1].snapnr)
+            print("--- Total Calls not consistent")
+            if print_diffs:
+                for i in range(npart):
+                    if this.RTTotalCalls[i] < prev.RTTotalCalls[i]:
+                        print("-----", this.RTTotalCalls[i], prev.RTTotalCalls[i])
 
             if break_on_diff:
                 quit()
