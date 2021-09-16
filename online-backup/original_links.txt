@@ -46,3 +46,4 @@
 /home/mivkov/EPFL/Meshless_Methods/runs/scripts/check_Aijs_new.py:/home/mivkov/coding/small_projects/online-backup/meshless//check_Aijs_new.py
 /home/mivkov/EPFL/rt/runs/IsolatedGalaxy_feedback/rt-debugging-gradient-transport.py:/home/mivkov/coding/small_projects/online-backup/swift-rt/rt-debugging-gradient-transport.py
 /home/mivkov/EPFL/rt/runs/py/rt-sanity-checks.py:/home/mivkov/coding/small_projects/online-backup/swift-rt/rt-sanity-checks.py
+/home/mivkov/EPFL/rt/flux_injection_algorithm_tests/quadrant_method_2D.py:/home/mivkov/coding/small_projects/online-backup/swift-rt/quadrant_method_2D.py
