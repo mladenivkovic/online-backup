@@ -1,1 +1,0 @@
-../py/rt-checks-uniform.py
